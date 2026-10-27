@@ -1,0 +1,8 @@
+{
+  "_note": "PLACEHOLDER rates for development only. Users edit these with their own local prices.",
+  "currency": "NGN",
+  "rates": {
+    "floor_area_m2": 0,
+    "wall_area_m2": 0
+  }
+}
