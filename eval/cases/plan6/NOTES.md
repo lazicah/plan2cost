@@ -19,3 +19,7 @@ Zero-valued quantities (100mm blocks, foundation, 2nd/3rd floor) are omitted bec
 Ground and first-floor runs are "above DPC" wall lengths, each multiplied by a repeat count.
 
 Open question for the author: confirm sheet lengths are centre-line (BESMM4 masonry M1). Thicknesses are used as drawn, never adjusted.
+
+## Corrected blockwork areas (author-confirmed)
+
+The author's sheet gives 507 (external) and 513 (internal) m2. Two inputs in the sheet were errors: storey height 3.3 m (the drawings give 3.0 m) and TD1 deducted at 0.95 m (the schedule gives 0.75 m). With the drawing values, external is 452 and internal is 466 (`ext_blockwork_230_m2`, `int_blockwork_230_m2`). External and internal openings are deducted from their own wall. ASD1 (3000 wide aluminium sliding door) is treated as internal, as in the sheet; open question whether it is an external opening.

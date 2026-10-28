@@ -1,13 +1,53 @@
 {
   "_note": "Opening types read from the plan6 door and window schedule (sheets A303-A308) by the author's survey; the drawings are not in the repo. Sizes in mm.",
-  "AW1": {"width_mm": 600, "height_mm": 1800, "quantity": 22},
-  "AW2": {"width_mm": 900, "height_mm": 1800, "quantity": 20},
-  "AW3": {"width_mm": 1800, "height_mm": 1200, "quantity": 2},
-  "AW4": {"width_mm": 3600, "height_mm": 1800, "quantity": 2},
-  "TD1": {"width_mm": 750, "height_mm": 2100, "quantity": 12},
-  "TD2": {"width_mm": 900, "height_mm": 2100, "quantity": 10},
-  "TD3": {"width_mm": 900, "height_mm": 2100, "quantity": 2},
-  "GD1": {"width_mm": 1200, "height_mm": 2100, "quantity": 4},
-  "SD1": {"width_mm": 900, "height_mm": 2100, "quantity": 4},
-  "ASD1": {"width_mm": 3000, "height_mm": 2100, "quantity": 2}
+  "AW1": {
+    "width_mm": 600,
+    "height_mm": 1800,
+    "quantity": 22
+  },
+  "AW2": {
+    "width_mm": 900,
+    "height_mm": 1800,
+    "quantity": 20
+  },
+  "AW3": {
+    "width_mm": 1800,
+    "height_mm": 1200,
+    "quantity": 2
+  },
+  "AW4": {
+    "width_mm": 3600,
+    "height_mm": 1800,
+    "quantity": 2
+  },
+  "TD1": {
+    "width_mm": 750,
+    "height_mm": 2100,
+    "quantity": 12
+  },
+  "TD2": {
+    "width_mm": 900,
+    "height_mm": 2100,
+    "quantity": 10
+  },
+  "TD3": {
+    "width_mm": 900,
+    "height_mm": 2100,
+    "quantity": 2
+  },
+  "GD1": {
+    "width_mm": 1200,
+    "height_mm": 2100,
+    "quantity": 4
+  },
+  "SD1": {
+    "width_mm": 900,
+    "height_mm": 2100,
+    "quantity": 4
+  },
+  "ASD1": {
+    "width_mm": 3000,
+    "height_mm": 2100,
+    "quantity": 2
+  }
 }

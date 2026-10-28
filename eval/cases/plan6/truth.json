@@ -6,5 +6,7 @@
   "first_ext_girth_230_m": 82.34,
   "first_int_girth_230_m": 89.05,
   "first_int_girth_150_m": 3.14,
-  "first_total_girth_230_m": 171.39
+  "first_total_girth_230_m": 171.39,
+  "ext_blockwork_230_m2": 452,
+  "int_blockwork_230_m2": 466
 }

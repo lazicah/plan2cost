@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from plan2cost.tools.walls import Opening, blockwork_area_m2
 from plan2cost.tools.foundation import PadBase, StripSection, ground_bed_takeoff, pad_concrete_m3, pad_rebar_kg
 
 
@@ -75,6 +76,25 @@ def foundation_extras(pads: list[PadBase], grade: float, slab_area_m2: float | N
             BoqItem("brc_mesh_part1_m2", "Steel fabric reinforcement; BRC mesh; minimum laps 150mm; in ground floor bed", "m2", t["brc_mesh_part1_m2"]),
             BoqItem("ground_slab_m3", f"Reinforced in situ concrete, grade {grade:g}; horizontal work not exceeding 300mm thick; in ground floor bed 150mm thick; poured on hardcore", "m3", t["ground_slab_m3"]),
         ]
+    return items
+
+
+def superstructure_boq(ext_girth: dict[str, float], int_girth: dict[str, float], heights: dict[str, float],
+                       openings: list[Opening], block_mm: int = 230) -> list[BoqItem]:
+    """External and internal walls are measured separately: openings are deducted from the wall they are in, because the
+    facade material and the finishes differ between the two faces."""
+    ext = blockwork_area_m2(ext_girth, heights, [o for o in openings if o.external])
+    internal = blockwork_area_m2(int_girth, heights, [o for o in openings if not o.external])
+    block = f"{block_mm}mm thick hollow sandcrete blockwork; cement mortar (1:6); stretcher bond"
+    items = [
+        BoqItem("ext_blockwork_230_m2", f"{block}; external walls", "m2", ext),
+        BoqItem("int_blockwork_230_m2", f"{block}; internal walls and partitions", "m2", internal),
+        BoqItem("external_wall_render_m2", "Cement-sand rendering to external walls; over 600mm wide; to blockwork", "m2", ext),
+        BoqItem("external_wall_paint_m2", "Weatherproof paint, 2 coats, on rendered walls; general surfaces over 300mm girth", "m2", ext),
+    ]
+    for o in openings:
+        where = "external" if o.external else "internal"
+        items.append(BoqItem(f"opening_{o.label.lower()}_nr", f"{o.label} {o.kind} {int(o.width_m * 1000)} x {int(o.height_m * 1000)}mm; {where}; as schedule", "nr", o.count))
     return items
 
 

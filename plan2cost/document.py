@@ -89,6 +89,13 @@ def to_openings(data: dict) -> tuple[list[Opening], list[str]]:
     return openings, questions
 
 
+def storey_heights_m(levels: dict, floors: tuple[str, ...] = ("ground", "first", "second", "third")) -> dict[str, float]:
+    """Floor-to-floor heights printed on the sections, mapped to floors in order from the ground floor level up.
+    Floors the drawings do not give are left out, so the caller falls back to the default and flags it."""
+    chain = [h for h in levels.get("storey_heights_mm", []) if "FLR" in h["from"].upper() or "FLOOR" in h["from"].upper()]
+    return {f: h["value_mm"] / 1000 for f, h in zip(floors, chain)}
+
+
 def read_document(pdf: str, scratch: str) -> dict:
     pages = classify_pages(index_pages(pdf))
     by_role: dict[str, list[int]] = {}

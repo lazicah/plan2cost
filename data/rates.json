@@ -13,6 +13,10 @@
     "dpm_polythene_m2": 920,
     "brc_mesh_part1_m2": 3759,
     "rebar_y12_foundations_t": 1593750,
-    "rebar_y8_foundations_t": 1605858
+    "rebar_y8_foundations_t": 1605858,
+    "ext_blockwork_230_m2": 13935.5,
+    "int_blockwork_230_m2": 13935.47,
+    "external_wall_render_m2": 4580,
+    "external_wall_paint_m2": 4471.2
   }
 }
