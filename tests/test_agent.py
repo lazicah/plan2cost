@@ -84,3 +84,15 @@ def test_bad_reply_gets_feedback_not_a_crash():
     llm = script({"tool": "no_such_tool"})
     run = run_agent(Run.new("x.pdf", "obj"), llm, max_turns=1)
     assert "Reply with one JSON object" in run.messages[-1]["content"]
+
+
+def test_console_turns_view_pairs_actions_with_results_and_answers():
+    from plan2cost.agent import view
+
+    llm = script(A("set_checklist", items=ITEMS), A("ask_user", item="C1", question="Height?"), A("record_fact", item="C1", name="h", value=3, source="user"))
+    run = run_agent(Run.new("x.pdf", "obj"), llm, max_turns=5)
+    run = resume(run, "3.0", llm, max_turns=1)
+    t = view.turns(run)
+    assert [x["tool"] for x in t] == ["set_checklist", "ask_user", "user_answer", "record_fact"]
+    assert t[1]["result"]["paused"] and t[2]["result"]["answer"] == "3.0"
+    assert view.list_runs()[0]["id"] == run.id
