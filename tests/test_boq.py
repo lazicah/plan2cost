@@ -38,3 +38,12 @@ def test_foundation_extras_priced_and_laterite_left_unpriced():
     out = price_boq(items, json.load(open("data/rates.json")))
     assert out["unpriced"] == ["laterite_m3"]
     assert {i.key for i in items} >= {"column_base_concrete_m3", "rebar_y12_foundations_t", "ground_slab_m3"}
+
+
+def test_trench_width_is_three_times_the_block_unless_drawn():
+    s225, log225, _ = strip_inputs(drawn={"block_mm": 225})
+    s150, _, _ = strip_inputs(drawn={"block_mm": 150})
+    assert (s225.width_mm, s150.width_mm) == (675, 450)
+    assert next(a for a in log225 if a.name == "width_mm").source == "assumed"
+    drawn, _, _ = strip_inputs(drawn={"block_mm": 225, "width_mm": 600})
+    assert drawn.width_mm == 600

@@ -141,17 +141,17 @@ def test_sum_lengths_and_latest_fact_replaces_earlier():
     assert [f["value"] for f in run.facts] == [2]
 
 
-def test_computed_values_must_be_confirmed_before_submit_and_nonsense_girth_is_refused():
+def test_computed_values_need_no_user_confirmation_and_nonsense_girth_points_to_the_estimate():
     run = Run.new("x.pdf", "obj")
     TOOLS["set_checklist"][0](run, ITEMS)
     TOOLS["record_fact"][0](run, item="C1", name="storey_height_ground_m", value=3.0, source="user")
     TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=91.4, source="computed", basis="read_wall_girth page 6")
     TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=0, source="computed", basis="read_wall_girth page 6")
-    assert "not plausible" in TOOLS["compute_boq"][0](run)["problems"][0]
+    bad = TOOLS["compute_boq"][0](run)
+    assert "not plausible" in bad["problems"][0] and "estimate_girth_from_footprint" in bad["error"] and "Do not ask the user" in bad["error"]
+    est = TOOLS["estimate_girth_from_footprint"][0](run, "ground", 19.43, 17.13, 230)
+    assert est["ext_girth_m"] == round(2 * ((19.43 - 0.23) + (17.13 - 0.23)), 2) and est["int_girth_m"] > 0
+    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=est["int_girth_m"], source="assumed", basis=est["basis"])
     run.data["boq"] = {"items": [], "total": 0}
-    refused = TOOLS["submit_boq"][0](run)["refused"]
-    assert any("not yet confirmed" in p and "int_girth_ground_m" in p for p in refused)
-    TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=98.62, source="user")
-    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=84.32, source="user")
-    assert TOOLS["submit_boq"][0](run) == {"filed": True}
-    assert {f["name"]: f["confidence"] for f in run.facts}["ext_girth_ground_m"] == "high"
+    assert TOOLS["submit_boq"][0](run) == {"filed": True}  # measured values are labelled low confidence, not blocked
+    assert {f["name"]: f["confidence"] for f in run.facts}["ext_girth_ground_m"] == "low"

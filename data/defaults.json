@@ -1,13 +1,48 @@
 {
   "_note": "Values assumed when the drawings are silent. Seeded from the author's own surveyed projects (plan2 structural drawing and workbook); confirm or edit per region and soil. Every use is flagged as an assumption in the BoQ.",
   "foundation_strip": {
-    "width_mm": {"value": 675, "basis": "plan2 structural section, 2-storey strip and pad foundation"},
-    "footing_thickness_m": {"value": 0.225, "basis": "plan2 structural section"},
-    "trench_depth_m": {"value": 1.35, "basis": "plan2 survey, from ground level including topsoil"},
-    "topsoil_m": {"value": 0.15, "basis": "author's practice on plan2 and plan6"},
-    "below_blockwork_m": {"value": 0.35, "basis": "plan2 survey: footing and bed below the foundation blockwork"},
-    "working_space_m": {"value": 0.6, "basis": "author's practice, each side of excavation"},
-    "block_mm": {"value": 230, "basis": "drawn external wall thickness on plan2 and plan6"},
-    "concrete_grade": {"value": 20, "basis": "plan2 BoQ: plain grade 20 foundation"}
+    "width_mm": {
+      "value": null,
+      "basis": "convention: trench width is three times the block wall thickness (225mm wall: 675mm; 150mm wall: 450mm)"
+    },
+    "footing_thickness_m": {
+      "value": 0.225,
+      "basis": "plan2 structural section"
+    },
+    "trench_depth_m": {
+      "value": 1.35,
+      "basis": "plan2 survey, from ground level including topsoil"
+    },
+    "topsoil_m": {
+      "value": 0.15,
+      "basis": "author's practice on plan2 and plan6"
+    },
+    "below_blockwork_m": {
+      "value": 0.35,
+      "basis": "plan2 survey: footing and bed below the foundation blockwork"
+    },
+    "working_space_m": {
+      "value": 0.6,
+      "basis": "author's practice, each side of excavation"
+    },
+    "block_mm": {
+      "value": 230,
+      "basis": "drawn external wall thickness on plan2 and plan6"
+    },
+    "concrete_grade": {
+      "value": 20,
+      "basis": "plan2 BoQ: plain grade 20 foundation"
+    }
+  },
+  "estimate": {
+    "_note": "Fallbacks for when the drawings cannot be walked. Placeholders until the author confirms the rule of thumb.",
+    "internal_wall_m_per_m2_floor": {
+      "value": 0.45,
+      "basis": "PLACEHOLDER: internal wall length per m2 of floor; to be confirmed by the author"
+    },
+    "trench_width_times_block": {
+      "value": 3,
+      "basis": "convention: trench width is three times the block wall thickness (225mm wall: 675mm trench; 150mm wall: 450mm)"
+    }
   }
 }

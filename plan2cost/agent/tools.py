@@ -81,6 +81,21 @@ def sum_lengths(run: Run, values_m: list, label: str = "") -> dict:
     return {"label": label, "sum_m": round(sum(float(v) for v in values_m), 3)}
 
 
+def estimate_girth_from_footprint(run: Run, floor: str, length_m: float, width_m: float, wall_mm: int = 230) -> dict:
+    """Fallback when the plan cannot be walked grid by grid: the building's overall length and width (printed on the drawing, or
+    the footprint the user knows) give the external centre-line girth of a plain rectangle. Internal walls are estimated from the
+    floor area with the default ratio in data/defaults.json. Record both as source "assumed" with this tool as the basis."""
+    import json
+    from pathlib import Path
+
+    t = wall_mm / 1000
+    ext = 2 * ((length_m - t) + (width_m - t))  # centre-line of a rectangle whose overall dimensions are outside to outside
+    ratio = json.loads(Path("data/defaults.json").read_text())["estimate"]["internal_wall_m_per_m2_floor"]
+    internal = round(length_m * width_m * ratio["value"], 2)
+    return {"floor": floor, "ext_girth_m": round(ext, 2), "int_girth_m": internal,
+            "basis": f"plain rectangle {length_m} x {width_m} m, {wall_mm}mm walls; internal at {ratio['value']} m per m2 ({ratio['basis']})"}
+
+
 def ask_user(run: Run, item: str, question: str) -> dict:
     """Pause the run for a person. Use it when the drawings do not settle an item and no standard default is safe."""
     run.pending = {"item": item, "question": question}
@@ -101,10 +116,6 @@ def submit_boq(run: Run, summary: str = "") -> dict:
         problems.append(f"Items not settled: {open_items}. Record a fact for each, or ask the user.")
     if run.pending:
         problems.append("A question to the user is still open.")
-    unconfirmed = [f["name"] for f in run.facts if f["source"] == "computed"]
-    if unconfirmed:
-        problems.append(f"Values measured by code from the plan are approximate and not yet confirmed: {unconfirmed}. Ask the user, in one "
-                        "question, to confirm each or give their own figure, then record their answer (source user).")
     unresolved = [f["name"] for f in run.facts if f.get("warning")]
     if unresolved:
         problems.append(f"Facts with an unresolved warning: {unresolved}. Ask the user to confirm them.")
@@ -202,7 +213,7 @@ def compute_boq(run: Run) -> dict:
         if low < 0.6 * top:
             problems.append(f"External girth differs too much between floors ({ext}); upper floors are normally close to the ground floor.")
     if problems:
-        return {"error": "Implausible girth. Ask the user for the figures instead of using them.", "problems": problems}
+        return {"error": "Implausible girth. Re-read the plan, or use estimate_girth_from_footprint for the floor. Do not ask the user about girth.", "problems": problems}
     heights = run.data.get("heights") or {}
     missing = [f for f in ext if f not in heights]
     if missing:
@@ -222,6 +233,7 @@ TOOLS = {
     "read_levels": (read_levels, "no args: storey heights from the sections"),
     "record_fact": (record_fact, 'item: "C1", name: str, value, unit: str, source: "drawing"|"assumed"|"user"|"computed", page: int, quote: exact printed text, basis: str (assumed and computed)'),
     "sum_lengths": (sum_lengths, "values_m: [numbers], label: str: add lengths for you; never add numbers yourself"),
+    "estimate_girth_from_footprint": (estimate_girth_from_footprint, 'floor: str, length_m: number, width_m: number, wall_mm: int: fallback girth from the overall length and width; record as source "assumed"'),
     "ask_user": (ask_user, 'item: "C1", question: str: pause for a person'),
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),

@@ -34,7 +34,11 @@ def strip_inputs(drawn: dict | None = None, defaults: dict | None = None) -> tup
     drawn, defaults = drawn or {}, defaults or load_defaults()
     log, vals = [], {}
     for name, d in defaults.items():
-        if name in drawn:
+        if name == "width_mm" and name not in drawn:
+            block = drawn.get("block_mm", defaults["block_mm"]["value"])
+            vals[name] = 3 * block  # trench width by convention; a width printed on the drawing wins
+            log.append(Assumption(name, vals[name], d["basis"], "assumed"))
+        elif name in drawn:
             vals[name] = drawn[name]
             log.append(Assumption(name, drawn[name], "stated on the drawing", "drawing"))
         else:
