@@ -2,6 +2,8 @@
   "_note": "Numbers read from the structural drawing (sheets 01, 02, 02a) by the author's survey; the drawing itself is not in the repo.",
   "strip": {"width_mm": 675, "thickness_mm": 225},
   "pit_excavation_column_bases_m3": 48,
+  "fdn_blockwork_girth_230_m": 105,
+  "strip_trench_girth_230_m": 70,
   "pad_bases": [
     {"type": "1", "length_mm": 1200, "width_mm": 1200, "count": 4},
     {"type": "2", "length_mm": 1400, "width_mm": 1400, "count": 5},

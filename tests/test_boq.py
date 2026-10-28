@@ -20,3 +20,11 @@ def test_boq_items_and_pricing_never_invent_rates():
     out = price_boq(items, {"currency": "NGN", "rates": {"trench_excavation_strip_m3": 1000}})
     assert out["total"] == items[0].qty * 1000
     assert "strip_footing_concrete_m3" in out["unpriced"]
+
+
+def test_strip_girths_from_extracted_runs():
+    from plan2cost.extract_foundation import strip_girths
+
+    data = {"strip_runs": [{"length_mm": 50000, "count": 1}, {"length_mm": 10000, "count": 2}]}
+    g = strip_girths(data, [PadBase("1", 1.2, 1.2, 5)])
+    assert g == {"fdn_blockwork_girth_230_m": 70, "strip_trench_girth_230_m": 64}

@@ -1,0 +1,219 @@
+# Run 003: plan2 foundation, muse-spark-1.3
+
+2026-10-28 10:12
+
+## Checks against the drawing as read by the author's survey
+
+| item | result |
+|---|---|
+| base_1 | ok |
+| base_2 | ok |
+| base_3 | ok |
+| base_4 | ok |
+| base_5 | ok |
+| strip_width_mm | ok |
+| strip_thickness_mm | ok |
+| pit_excavation_m3 | model 48, survey 48 |
+| blockwork_girth_m | model 95, survey 105 |
+| trench_girth_m | model 67, survey 70 |
+
+## Notes
+
+Adds a grid-line walk of sheet 01 at 200 dpi for strip girth. Trench girth here subtracts pad widths only; junction overlap deductions are not modelled.
+
+## Extraction
+
+```json
+{
+  "strip": {
+    "width_mm": 675,
+    "thickness_mm": 225,
+    "blinding_mm": 50,
+    "blinding_material": "SANDCRETE BLINDING",
+    "slab_mm": 150,
+    "mesh": "A 141",
+    "notes": [
+      "675mm. x 225mm. MASS CONCRETE STRIP FOUNDATION BASE",
+      "50mm. THICK SANDCRETE BLINDING",
+      "150mm. THICK MASS CONCRETE FLOOR SLAB WITH B. R. C. WIRE MESH A 141",
+      "WELL COMPACTED HARDCORE FILLING",
+      "EARTH LATERITE BACKFILLING"
+    ]
+  },
+  "pad_bases": [
+    {
+      "type": "BASE TYPE 1",
+      "length_mm": 1200,
+      "width_mm": 1200,
+      "thickness_mm": 250,
+      "count": 4,
+      "rebar": [
+        "06-Y1202@200c/c B",
+        "06-Y1202@200c/c B"
+      ]
+    },
+    {
+      "type": "BASE TYPE 2",
+      "length_mm": 1400,
+      "width_mm": 1400,
+      "thickness_mm": 250,
+      "count": 5,
+      "rebar": [
+        "07-Y1202@200c/c B",
+        "07-Y1202@200c/c B"
+      ]
+    },
+    {
+      "type": "BASE TYPE 3",
+      "length_mm": 1500,
+      "width_mm": 1500,
+      "thickness_mm": 250,
+      "count": 5,
+      "rebar": [
+        "08-Y1204@200c/c B",
+        "08-Y1204@200c/c B"
+      ]
+    },
+    {
+      "type": "BASE TYPE 4",
+      "length_mm": 1600,
+      "width_mm": 1600,
+      "thickness_mm": 250,
+      "count": 4,
+      "rebar": [
+        "09-Y1205@175c/c B",
+        "09-Y1205@175c/c B"
+      ]
+    },
+    {
+      "type": "BASE TYPE 5",
+      "length_mm": 1700,
+      "width_mm": 1700,
+      "thickness_mm": 250,
+      "count": 1,
+      "rebar": [
+        "11-Y1206@150c/c B",
+        "11-Y1206@150c/c B"
+      ]
+    }
+  ],
+  "section_depths_mm": [
+    {
+      "value": 1200,
+      "meaning": "vertical 1200 dimension shown beside padbase sections above the pad base"
+    },
+    {
+      "value": 250,
+      "meaning": "vertical 250 dimension shown beside padbase sections at the pad base thickness"
+    },
+    {
+      "value": 50,
+      "meaning": "vertical 50 dimension shown beside padbase sections below the pad base"
+    }
+  ],
+  "questions": [
+    "Vertical dimensions printed at right-hand end of SECTION A-A on Foundation Layout sheet are illegible in the image, cannot confirm overall strip foundation depth values.",
+    "50 dimension below pad base in padbase sections is not labelled, cannot confirm if blinding and material, transcribed only as dimension.",
+    "250 dimension at pad base in padbase sections is not labelled as thickness, assumed to be base thickness, confirm.",
+    "1200 dimension above pad base in padbase sections datum is not labelled, confirm what it measures from/to.",
+    "Column/stirrup note printed vertically beside padbase sections e.g. 10Y1005@200 is low resolution/ambiguous, confirm exact reference.",
+    "Bar prefixes 06-, 07-, 08-, 09-, 11- transcribed exactly as printed, confirm whether bar count or bar mark."
+  ],
+  "strip_runs": [
+    {
+      "grid_line": "A",
+      "from": "1",
+      "to": "6",
+      "length_mm": 9838,
+      "count": 1,
+      "evidence": "4263+1500+4075"
+    },
+    {
+      "grid_line": "B",
+      "from": "1",
+      "to": "3",
+      "length_mm": 4263,
+      "count": 1,
+      "evidence": "4263"
+    },
+    {
+      "grid_line": "C",
+      "from": "4",
+      "to": "6",
+      "length_mm": 4075,
+      "count": 1,
+      "evidence": "4075"
+    },
+    {
+      "grid_line": "E",
+      "from": "1",
+      "to": "6",
+      "length_mm": 9838,
+      "count": 1,
+      "evidence": "4263+1500+4075"
+    },
+    {
+      "grid_line": "G",
+      "from": "1",
+      "to": "6",
+      "length_mm": 9838,
+      "count": 1,
+      "evidence": "5763+4075"
+    },
+    {
+      "grid_line": "I",
+      "from": "1",
+      "to": "4",
+      "length_mm": 5763,
+      "count": 1,
+      "evidence": "4263+1500"
+    },
+    {
+      "grid_line": "1",
+      "from": "A",
+      "to": "I",
+      "length_mm": 16525,
+      "count": 1,
+      "evidence": "2325+1500+3225+5050+4425"
+    },
+    {
+      "grid_line": "3",
+      "from": "A",
+      "to": "B",
+      "length_mm": 2325,
+      "count": 1,
+      "evidence": "2325"
+    },
+    {
+      "grid_line": "4",
+      "from": "A",
+      "to": "I",
+      "length_mm": 16525,
+      "count": 1,
+      "evidence": "2325+1500+3225+5050+4425"
+    },
+    {
+      "grid_line": "6",
+      "from": "A",
+      "to": "H",
+      "length_mm": 15625,
+      "count": 1,
+      "evidence": "3825+3225+5050+3525"
+    }
+  ]
+}
+```
+
+## Questions the agent asked instead of guessing
+
+- Vertical dimensions printed at right-hand end of SECTION A-A on Foundation Layout sheet are illegible in the image, cannot confirm overall strip foundation depth values.
+- 50 dimension below pad base in padbase sections is not labelled, cannot confirm if blinding and material, transcribed only as dimension.
+- 250 dimension at pad base in padbase sections is not labelled as thickness, assumed to be base thickness, confirm.
+- 1200 dimension above pad base in padbase sections datum is not labelled, confirm what it measures from/to.
+- Column/stirrup note printed vertically beside padbase sections e.g. 10Y1005@200 is low resolution/ambiguous, confirm exact reference.
+- Bar prefixes 06-, 07-, 08-, 09-, 11- transcribed exactly as printed, confirm whether bar count or bar mark.
+- Grid B strip east of 3 to 6 cannot be placed - confirm if strip continues to meet grid 6 vertical, no pad or dimension shown
+- Grid 3 strip south of B cannot be placed - no pads on 3/E, 3/G, 3/I shown, confirm if vertical continues and extent
+- Grid H strip cannot be placed - only pad 6/H shown, confirm if strip exists on H and extent
+- Connection between 4/I and 6/H on different levels cannot be placed - confirm routing
+- Two small pads below I on grids 3 and 4 - no printed dimensions for connecting strips, confirm extent

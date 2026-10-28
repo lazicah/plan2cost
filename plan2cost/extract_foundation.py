@@ -8,7 +8,7 @@ from pathlib import Path
 from plan2cost.client import get_client, image_part, model_name
 from plan2cost.extract import RUNS_DIR, parse_json, update_index
 from plan2cost.pdf import render_pages
-from plan2cost.tools.foundation import PadBase, pit_excavation_m3
+from plan2cost.tools.foundation import PadBase, pit_excavation_m3, whole_units
 
 PROMPT = """You are reading structural foundation drawings for a quantity surveyor. Extract only what is printed.
 
@@ -29,6 +29,37 @@ Rules:
  "section_depths_mm": [{"value": number, "meaning": str}],
  "questions": [str]}
 """
+
+
+RUNS_PROMPT = """You are reading a structural foundation layout for a quantity surveyor. Extract the continuous STRIP foundation runs
+(the dashed double lines joining the pad bases) so strip girth can be measured grid line by grid line.
+
+Rules:
+- Walk the grid lines one at a time: each lettered line (A, B, C...) and each numbered line (1, 3, 4...).
+- For every grid line list each continuous strip run on it. A run's length is the sum of the printed dimensions it spans
+  (e.g. 2325 + 1500 + 3225 = 7050). Show the sum in "evidence". Never scale from the image and never invent a value.
+- Take a run through pad bases (the strip continues between and through them); pad widths are deducted later by the QS.
+- Do not list pad bases themselves. Do not list a run you cannot place on a grid line; ask in "questions" instead.
+- Lengths in millimetres. "count" is how many identical runs this entry stands for.
+- Reply with JSON only, matching:
+
+{"strip_runs": [{"grid_line": str, "from": str, "to": str, "length_mm": number, "count": int, "evidence": str}], "questions": [str]}
+"""
+
+
+def extract_strip_runs(image_path: str) -> dict:
+    resp = get_client().chat.completions.create(
+        model=model_name(), temperature=0,
+        messages=[{"role": "user", "content": [{"type": "text", "text": RUNS_PROMPT}, image_part(image_path)]}])
+    return parse_json(resp.choices[0].message.content)
+
+
+def strip_girths(data: dict, pads: list[PadBase]) -> dict:
+    """Blockwork girth is the full runs; trench girth takes the pad widths off (pits are dug separately).
+    Junction overlap deductions where walls butt are not modelled yet."""
+    full = sum(r["length_mm"] / 1000 * int(r.get("count") or 1) for r in data.get("strip_runs", []))
+    pad_widths = sum(p.width_m * p.count for p in pads)
+    return {"fdn_blockwork_girth_230_m": whole_units(full) if full else 0, "strip_trench_girth_230_m": whole_units(full - pad_widths) if full else 0}
 
 
 def extract_foundation(image_paths: list[str]) -> dict:
@@ -60,6 +91,10 @@ def score(data: dict, pads: list[PadBase], truth: dict, depth_m: float) -> dict:
     rows["strip_width_mm"] = strip.get("width_mm") == truth["strip"]["width_mm"]
     rows["strip_thickness_mm"] = strip.get("thickness_mm") == truth["strip"]["thickness_mm"]
     rows["pit_excavation_m3"] = (pit_excavation_m3(pads, depth_m), truth["pit_excavation_column_bases_m3"])
+    if "strip_runs" in data:
+        g = strip_girths(data, pads)
+        rows["blockwork_girth_m"] = (g["fdn_blockwork_girth_230_m"], truth["fdn_blockwork_girth_230_m"])
+        rows["trench_girth_m"] = (g["strip_trench_girth_230_m"], truth["strip_trench_girth_230_m"])
     return rows
 
 
@@ -70,8 +105,8 @@ def save_foundation_run(*, case: str, data: dict, rows: dict, questions: list[st
     out = RUNS_DIR / f"{n:03d}-{case}-foundation-{model.lower().replace('/', '-')}"
     out.mkdir()
     hits = [v for v in rows.values() if isinstance(v, bool)]
-    pit = rows["pit_excavation_m3"]
-    pct = {"pit_excavation_m3": round(abs(pit[0] - pit[1]) / pit[1] * 100, 1), "fields_wrong_pct": round(100 * hits.count(False) / len(hits), 1)}
+    pct = {k: round(abs(v[0] - v[1]) / v[1] * 100, 1) for k, v in rows.items() if isinstance(v, tuple)}
+    pct["fields_wrong_pct"] = round(100 * hits.count(False) / len(hits), 1)
     when = datetime.now()
     (out / "result.json").write_text(json.dumps({"case": case, "floor": "foundation", "model": model, "time": when.isoformat(timespec="seconds"),
                                                  "extraction": data, "checks": rows, "pct_error": pct, "questions": questions}, indent=2))
@@ -91,11 +126,17 @@ def main() -> None:
     ap.add_argument("--truth", help="eval/cases/<id>/foundation_truth.json")
     ap.add_argument("--case", required=True)
     ap.add_argument("--note", default="")
+    ap.add_argument("--girth", action="store_true", help="also walk the grid lines on the first page for strip girth")
     ap.add_argument("--scratch", default="/tmp/p2c-pages")
     args = ap.parse_args()
     images = render_pages(args.pdf, [int(p) for p in args.pages.split(",")], args.scratch)
     data = extract_foundation(images)
     pads, questions = to_pads(data)
+    if args.girth:
+        layout = render_pages(args.pdf, [int(args.pages.split(",")[0])], args.scratch, dpi=200)[0]
+        runs = extract_strip_runs(layout)
+        data["strip_runs"] = runs.get("strip_runs", [])
+        questions += runs.get("questions", [])
     print(json.dumps(data, indent=2))
     if args.truth:
         truth = json.loads(Path(args.truth).read_text())
