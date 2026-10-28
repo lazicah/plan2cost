@@ -1,0 +1,20 @@
+{
+  "case": "plan2",
+  "floor": "ground wall detection",
+  "model": "classical image processing (no model); scale from the PDF",
+  "time": "2026-10-28T23:23:02",
+  "extraction": {
+    "walls": 18
+  },
+  "girth": {
+    "total_m": 93.6,
+    "by_thickness_m": {
+      "150": 1.52,
+      "230": 92.04
+    }
+  },
+  "pct_error": {
+    "blockwork_girth_total": 10.7
+  },
+  "questions": []
+}

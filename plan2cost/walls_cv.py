@@ -50,7 +50,7 @@ def _nominal(spacing_mm: float, windows: dict[int, tuple[int, int]]) -> int | No
 
 
 def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, int, int], windows: dict[int, tuple[int, int]] | None = None,
-               min_run_mm: float = 800, bridge_mm: float = 2400, dark: int = 140) -> list[Wall]:
+               min_run_mm: float = 500, bridge_mm: float = 3600, dark: int = 200) -> list[Wall]:
     windows = windows or THICKNESS_WINDOWS_MM
     x0, y0, x1, y1 = region_px
     mask = np.zeros_like(gray, dtype=np.uint8)
