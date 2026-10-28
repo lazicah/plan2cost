@@ -80,15 +80,26 @@ def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, in
 
 
 def _merge(pieces: list[Wall], bridge_mm: float, tol_mm: float = 60) -> list[Wall]:
-    """Collinear pieces (same orientation and centre line) are one run when the gap between them is an opening."""
+    """Collinear pieces (same orientation, centre lines within `tol_mm`) are one run when the gap between them is an opening. Centre
+    lines are clustered by distance, not by rounding, so a tiny shift in scale cannot split a wall in two."""
     merged: list[Wall] = []
-    for p in sorted(pieces, key=lambda w: (w.orient, round(w.centre_mm / tol_mm), w.start_mm)):
-        last = merged[-1] if merged else None
-        if last and last.orient == p.orient and abs(last.centre_mm - p.centre_mm) <= tol_mm and p.start_mm - last.end_mm <= bridge_mm:
-            last.end_mm = max(last.end_mm, p.end_mm)
-            last.thickness_mm = (last.thickness_mm + p.thickness_mm) / 2
-        else:
-            merged.append(Wall(p.orient, p.centre_mm, p.start_mm, p.end_mm, p.thickness_mm))
+    for orient in ("h", "v"):
+        group = sorted((p for p in pieces if p.orient == orient), key=lambda w: w.centre_mm)
+        clusters: list[list[Wall]] = []
+        for p in group:
+            if clusters and p.centre_mm - clusters[-1][-1].centre_mm <= tol_mm:
+                clusters[-1].append(p)
+            else:
+                clusters.append([p])
+        for cl in clusters:
+            last = None
+            for p in sorted(cl, key=lambda w: w.start_mm):
+                if last and p.start_mm - last.end_mm <= bridge_mm:
+                    last.end_mm = max(last.end_mm, p.end_mm)
+                    last.thickness_mm = max(last.thickness_mm, p.thickness_mm)  # nominal classes: keep the thickest piece's class
+                else:
+                    last = Wall(p.orient, p.centre_mm, p.start_mm, p.end_mm, p.thickness_mm)
+                    merged.append(last)
     return merged
 
 
