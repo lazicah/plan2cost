@@ -1,8 +1,10 @@
 {
-  "_note": "PLACEHOLDER rates for development only. Users edit these with their own local prices.",
+  "_note": "Starter rates (NGN, Owerri, 27 Oct 2026) supplied by the author from their own BoQ. Indicative only; users edit these with their own prices. Keys with no rate stay unpriced.",
   "currency": "NGN",
   "rates": {
-    "floor_area_m2": 0,
-    "wall_area_m2": 0
+    "trench_excavation_strip_m3": 8000,
+    "pit_excavation_column_bases_m3": 8000,
+    "strip_footing_concrete_m3": 136250,
+    "fdn_blockwork_230_m2": 13915
   }
 }
