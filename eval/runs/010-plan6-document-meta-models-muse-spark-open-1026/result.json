@@ -1,0 +1,395 @@
+{
+  "case": "plan6",
+  "floor": "document",
+  "model": "meta-models/muse-spark-open-1026",
+  "time": "2026-10-28T22:26:11",
+  "extraction": {
+    "pages": [
+      {
+        "page": 1,
+        "role": "cover",
+        "title": "Proposed Residential Estate Development for Box City Sculpture, on Iwo Road, Ibadan, Oyo State",
+        "floor": null
+      },
+      {
+        "page": 2,
+        "role": "site",
+        "title": "LAYOUT",
+        "floor": null
+      },
+      {
+        "page": 3,
+        "role": "detail",
+        "title": "CALLOUT I",
+        "floor": null
+      },
+      {
+        "page": 4,
+        "role": "detail",
+        "title": "ALLOUT II",
+        "floor": null
+      },
+      {
+        "page": 5,
+        "role": "detail",
+        "title": "ALLOUT III",
+        "floor": null
+      },
+      {
+        "page": 6,
+        "role": "floor_plan",
+        "title": "GROUND FLOOR PLAN",
+        "floor": "ground floor"
+      },
+      {
+        "page": 7,
+        "role": "floor_plan",
+        "title": "FIRST FLOOR PLAN",
+        "floor": "first floor"
+      },
+      {
+        "page": 8,
+        "role": "roof_plan",
+        "title": "ROOF PLAN",
+        "floor": "roof"
+      },
+      {
+        "page": 9,
+        "role": "section",
+        "title": "SECTION A",
+        "floor": null
+      },
+      {
+        "page": 10,
+        "role": "section",
+        "title": "SECTION B",
+        "floor": null
+      },
+      {
+        "page": 11,
+        "role": "section",
+        "title": "SECTION C",
+        "floor": null
+      },
+      {
+        "page": 12,
+        "role": "section",
+        "title": "SECTION D",
+        "floor": null
+      },
+      {
+        "page": 13,
+        "role": "elevation",
+        "title": "APPROACH ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 14,
+        "role": "elevation",
+        "title": "RIGHT SIDE ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 15,
+        "role": "elevation",
+        "title": "REAR ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 16,
+        "role": "elevation",
+        "title": "LEFT SIDE ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 17,
+        "role": "ceiling_plan",
+        "title": "GROUND FLOOR RCP",
+        "floor": "ground floor"
+      },
+      {
+        "page": 18,
+        "role": "ceiling_plan",
+        "title": "FIRST FLOOR RCP",
+        "floor": "first floor"
+      },
+      {
+        "page": 19,
+        "role": "detail",
+        "title": "STAIRCASE DETAIL I",
+        "floor": null
+      },
+      {
+        "page": 20,
+        "role": "detail",
+        "title": "STAIRCASE DETAIL II",
+        "floor": null
+      },
+      {
+        "page": 21,
+        "role": "floor_plan",
+        "title": "GROUND FLOOR INDICATOR PLAN",
+        "floor": "ground floor"
+      },
+      {
+        "page": 22,
+        "role": "floor_plan",
+        "title": "FIRST FLOOR INDICATOR PLAN",
+        "floor": "first floor"
+      },
+      {
+        "page": 23,
+        "role": "opening_schedule",
+        "title": "AW1 & AW2",
+        "floor": null
+      },
+      {
+        "page": 24,
+        "role": "opening_schedule",
+        "title": "AW3 & AW4",
+        "floor": null
+      },
+      {
+        "page": 25,
+        "role": "opening_schedule",
+        "title": "TD1 & TD2",
+        "floor": null
+      },
+      {
+        "page": 26,
+        "role": "opening_schedule",
+        "title": "TD3 & GD1",
+        "floor": null
+      },
+      {
+        "page": 27,
+        "role": "opening_schedule",
+        "title": "SD1 & ASD1",
+        "floor": null
+      }
+    ],
+    "openings": {
+      "openings": [
+        {
+          "mark": "AW1",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 600,
+          "height_mm": 1800,
+          "quantity": 22,
+          "floors": [
+            "GROUND FLR. LEVEL",
+            "FIRST FLR. LEVEL"
+          ],
+          "evidence": "Aluminium Window.1 (AW1) elevation 600 x 1800, QUANTITY 22, Grand total: 22, AW1 LOCATION table GROUND FLR. LEVEL + FIRST FLR. LEVEL"
+        },
+        {
+          "mark": "AW2",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 900,
+          "height_mm": 1800,
+          "quantity": 20,
+          "floors": [
+            "GROUND FLR. LEVEL",
+            "FIRST FLR. LEVEL"
+          ],
+          "evidence": "Aluminium Window.2 (AW2) elevation 900 x 1800, QUANTITY 20, Grand total: 20, AW2 LOCATION table GROUND FLR. LEVEL + FIRST FLR. LEVEL"
+        },
+        {
+          "mark": "AW3",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 1800,
+          "height_mm": 1200,
+          "quantity": 2,
+          "floors": [
+            "GROUND FLR. LEVEL"
+          ],
+          "evidence": "Aluminium Window. 3 (AW3) elevation 1800 x 1200, QUANTITY 2, Grand total: 2, AW3 LOCATION table GROUND FLR. LEVEL WG005 G011 WG016 G016"
+        },
+        {
+          "mark": "AW4",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 3600,
+          "height_mm": 1800,
+          "quantity": 2,
+          "floors": [
+            "GROUND FLR. LEVEL"
+          ],
+          "evidence": "Aluminium Window. 4 (AW4) elevation 3600 x 1800, QUANTITY 2, Grand total: 2, AW4 LOCATION table GROUND FLR. LEVEL WG002a WG013a G013"
+        },
+        {
+          "mark": "TD1",
+          "kind": "door",
+          "material": "timber",
+          "width_mm": 750,
+          "height_mm": 2100,
+          "quantity": 12,
+          "floors": [],
+          "evidence": "TIMBER DOOR.1 (TD1) elevation 750 x 2100, QUANTITY 12"
+        },
+        {
+          "mark": "TD2",
+          "kind": "door",
+          "material": "timber",
+          "width_mm": 900,
+          "height_mm": 2100,
+          "quantity": 10,
+          "floors": [],
+          "evidence": "TIMBER DOOR.2 (TD2) elevation 900 x 2100, QUANTITY 10"
+        },
+        {
+          "mark": "TD3",
+          "kind": "door",
+          "material": "timber",
+          "width_mm": 900,
+          "height_mm": 2100,
+          "quantity": 2,
+          "floors": [],
+          "evidence": "TIMBER DOOR.3 (TD3) elevation 900 x 2100, QUANTITY 2"
+        },
+        {
+          "mark": "GD1",
+          "kind": "door",
+          "material": "glass",
+          "width_mm": 1200,
+          "height_mm": 2100,
+          "quantity": 4,
+          "floors": [],
+          "evidence": "GLASS DOOR. 1 (GD1) elevation 1200 x 2100, QUANTITY 4"
+        },
+        {
+          "mark": "SD1",
+          "kind": "door",
+          "material": "steel",
+          "width_mm": 900,
+          "height_mm": 2150,
+          "quantity": 4,
+          "floors": [],
+          "evidence": "STEEL DOOR.1 (SD1) elevation 900 x 2150, QUANTITY 4"
+        },
+        {
+          "mark": "ASD1",
+          "kind": "door",
+          "material": "aluminium",
+          "width_mm": 3000,
+          "height_mm": 2100,
+          "quantity": 2,
+          "floors": [],
+          "evidence": "ALUMINIUM SLIDING DOOR.1 (ASD1) elevation 3000 x 2100, QUANTITY 2"
+        }
+      ],
+      "questions": [
+        "AW2 quantity 20 disagrees with AW2 LOCATION table count: 4 entries under GROUND FLR. LEVEL + 17 entries under FIRST FLR. LEVEL = 21 entries vs Grand total: 20 and QUANTITY 20",
+        "AW1 LOCATION and AW2 LOCATION tables contain several WINDOW NO. entries with blank LOCATION (ROOM NO) cells (e.g., AW1 WG006, WG009b, WG008; AW2 WG002b, WG018a, W105, W116 etc.) - room allocation incomplete",
+        "No location/floor tables provided for TD1, TD2, TD3, GD1, SD1, ASD1 - floors left empty per rules"
+      ]
+    },
+    "levels": {
+      "levels": [
+        {
+          "name": "NGL",
+          "value_mm": 0,
+          "page": 9
+        },
+        {
+          "name": "GROUND FLR. LEVL",
+          "value_mm": 600,
+          "page": 9
+        },
+        {
+          "name": "FIRST FLR. LEVEL",
+          "value_mm": 3600,
+          "page": 9
+        },
+        {
+          "name": "ROOF BASE LEVEL",
+          "value_mm": 6600,
+          "page": 9
+        },
+        {
+          "name": "BUILDING APEX LEVEL",
+          "value_mm": 7800,
+          "page": 9
+        },
+        {
+          "name": "NGL",
+          "value_mm": 0,
+          "page": 10
+        },
+        {
+          "name": "GROUND FLR. LEVL",
+          "value_mm": 600,
+          "page": 10
+        },
+        {
+          "name": "FIRST FLR. LEVEL",
+          "value_mm": 3600,
+          "page": 10
+        },
+        {
+          "name": "ROOF BASE LEVEL",
+          "value_mm": 6600,
+          "page": 10
+        },
+        {
+          "name": "BUILDING APEX LEVEL",
+          "value_mm": 7800,
+          "page": 10
+        }
+      ],
+      "storey_heights_mm": [
+        {
+          "from": "NGL",
+          "to": "GROUND FLR. LEVL",
+          "value_mm": 600
+        },
+        {
+          "from": "GROUND FLR. LEVL",
+          "to": "FIRST FLR. LEVEL",
+          "value_mm": 3000
+        },
+        {
+          "from": "FIRST FLR. LEVEL",
+          "to": "ROOF BASE LEVEL",
+          "value_mm": 3000
+        },
+        {
+          "from": "ROOF BASE LEVEL",
+          "to": "BUILDING APEX LEVEL",
+          "value_mm": 1200
+        }
+      ],
+      "questions": [
+        "Left-hand dimension string shows 600, 3000, 3000, 1200 corroborating level differences; confirm these are the intended floor-to-floor heights and datum is NGL 0.",
+        "Additional printed vertical figures 2700, 2900 on page 9 and 2700, 2100, 1800 on page 10 appear without explicit from-to labels; confirm if these are clear floor-to-ceiling/sill heights and their reference (top of structural slab vs finished floor vs soffit).",
+        "No other printed level figures for natural ground level variations; confirm NGL 0 is uniform across both sections."
+      ]
+    }
+  },
+  "checks": {
+    "AW1": true,
+    "AW2": true,
+    "AW3": true,
+    "AW4": true,
+    "TD1": true,
+    "TD2": true,
+    "TD3": true,
+    "GD1": true,
+    "SD1": false,
+    "ASD1": true
+  },
+  "pct_error": {
+    "opening_types_wrong_pct": 10.0
+  },
+  "questions": [
+    "AW2 quantity 20 disagrees with AW2 LOCATION table count: 4 entries under GROUND FLR. LEVEL + 17 entries under FIRST FLR. LEVEL = 21 entries vs Grand total: 20 and QUANTITY 20",
+    "AW1 LOCATION and AW2 LOCATION tables contain several WINDOW NO. entries with blank LOCATION (ROOM NO) cells (e.g., AW1 WG006, WG009b, WG008; AW2 WG002b, WG018a, W105, W116 etc.) - room allocation incomplete",
+    "No location/floor tables provided for TD1, TD2, TD3, GD1, SD1, ASD1 - floors left empty per rules",
+    "Left-hand dimension string shows 600, 3000, 3000, 1200 corroborating level differences; confirm these are the intended floor-to-floor heights and datum is NGL 0.",
+    "Additional printed vertical figures 2700, 2900 on page 9 and 2700, 2100, 1800 on page 10 appear without explicit from-to labels; confirm if these are clear floor-to-ceiling/sill heights and their reference (top of structural slab vs finished floor vs soffit).",
+    "No other printed level figures for natural ground level variations; confirm NGL 0 is uniform across both sections."
+  ]
+}
