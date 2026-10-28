@@ -25,3 +25,14 @@ def test_walls_are_paired_faces_merged_across_the_door_and_dimension_lines_ignor
     assert abs(bottom.length_mm - 4000) < 100  # full run: the door gap is bridged
     g = girth_by_thickness(walls)
     assert list(g) == [230] and abs(g[230] - (2 * 4.0 + 2 * 3.24)) < 0.3
+
+
+def test_outer_walls_are_external_and_an_inner_partition_is_internal():
+    from plan2cost.walls_cv import Wall, classify_external
+
+    mm = 20.0
+    # a 6 m x 4 m box of walls (centre lines, 230mm) with one partition across the middle, on a 400 x 300 px sheet
+    walls = [Wall("h", 60 * mm, 40 * mm, 340 * mm, 230), Wall("h", 220 * mm, 40 * mm, 340 * mm, 230),
+             Wall("v", 40 * mm, 60 * mm, 220 * mm, 230), Wall("v", 340 * mm, 60 * mm, 220 * mm, 230),
+             Wall("v", 190 * mm, 60 * mm, 220 * mm, 230)]
+    assert classify_external(walls, (300, 400), mm) == ["external"] * 4 + ["internal"]

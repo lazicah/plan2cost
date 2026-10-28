@@ -50,7 +50,7 @@ def _nominal(spacing_mm: float, windows: dict[int, tuple[int, int]]) -> int | No
 
 
 def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, int, int], windows: dict[int, tuple[int, int]] | None = None,
-               min_run_mm: float = 500, bridge_mm: float = 3600, dark: int = 200) -> list[Wall]:
+               min_run_mm: float = 350, bridge_mm: float = 3600, dark: int = 200) -> list[Wall]:
     windows = windows or THICKNESS_WINDOWS_MM
     x0, y0, x1, y1 = region_px
     mask = np.zeros_like(gray, dtype=np.uint8)
@@ -99,3 +99,36 @@ def girth_by_thickness(walls: list[Wall], classes_mm=(100, 150, 230)) -> dict[in
         c = min(classes_mm, key=lambda c: abs(c - w.thickness_mm))
         out[c] = out.get(c, 0.0) + w.length_mm / 1000
     return {c: round(v, 2) for c, v in sorted(out.items())}
+
+
+def classify_external(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 1500, margin_px: int = 3) -> list[str]:
+    """"external" or "internal" for each wall, by flood-filling the outdoors from the image border over the wall layout. Openings in the
+    envelope (a porch, a terrace) are closed over by `close_mm` so the outdoors cannot leak into the rooms; a wall with the outdoors on one
+    side is external, with it on neither side internal. Pixel space of the sheet, so `shape` is the page image's (height, width)."""
+    h, w = shape
+    canvas = np.zeros((h, w), np.uint8)
+
+    def rect(wall: Wall, grow_px: int = 0) -> tuple[tuple[int, int], tuple[int, int]]:
+        t = wall.thickness_mm / mm_per_px / 2 + grow_px
+        c, a, b = wall.centre_mm / mm_per_px, wall.start_mm / mm_per_px, wall.end_mm / mm_per_px
+        return ((int(a), int(c - t)), (int(b), int(c + t))) if wall.orient == "h" else ((int(c - t), int(a)), (int(c + t), int(b)))
+
+    for wall in walls:
+        p1, p2 = rect(wall)
+        cv2.rectangle(canvas, p1, p2, 1, -1)
+    k = max(3, int(close_mm / mm_per_px))
+    padded = cv2.copyMakeBorder(canvas, k, k, k, k, cv2.BORDER_CONSTANT, value=0)  # the sheet edge must not be closed over
+    closed = cv2.morphologyEx(padded, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k)))[k:-k, k:-k]
+    free = (closed == 0).astype(np.uint8)
+    outside = np.zeros((h + 2, w + 2), np.uint8)
+    cv2.floodFill(free.copy(), outside, (0, 0), 2)  # the mask of everything reachable from the corner without crossing a wall
+    outdoors = outside[1:-1, 1:-1] > 0
+    out = []
+    for wall in walls:
+        mid = (wall.start_mm + wall.end_mm) / 2 / mm_per_px
+        c = wall.centre_mm / mm_per_px
+        off = wall.thickness_mm / mm_per_px / 2 + margin_px
+        pts = [(int(mid), int(c - off)), (int(mid), int(c + off))] if wall.orient == "h" else [(int(c - off), int(mid)), (int(c + off), int(mid))]
+        sides = [bool(outdoors[min(max(y, 0), h - 1), min(max(x, 0), w - 1)]) for x, y in pts]
+        out.append("external" if any(sides) else "internal")
+    return out
