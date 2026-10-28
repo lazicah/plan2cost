@@ -17,6 +17,11 @@
     "ext_blockwork_230_m2": 13935.5,
     "int_blockwork_230_m2": 13935.47,
     "external_wall_render_m2": 4580,
-    "external_wall_paint_m2": 4471.2
+    "external_wall_paint_m2": 4471.2,
+    "blinding_foundations_m3": 95250,
+    "formwork_foundation_sides_m2": 5000,
+    "backfill_around_foundations_m3": 3200,
+    "concrete_filling_blockwork_voids_m3": 95250,
+    "fdn_wall_render_m2": 4580
   }
 }

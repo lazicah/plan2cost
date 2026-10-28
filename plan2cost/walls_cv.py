@@ -151,11 +151,9 @@ def girth_by_thickness(walls: list[Wall], classes_mm=(100, 150, 230)) -> dict[in
     return {c: round(v, 2) for c, v in sorted(out.items())}
 
 
-def external_fractions(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 2500, margin_px: int = 3,
-                       step_mm: float = 500) -> list[float]:
-    """For each wall, the share of its length that has the outdoors on one side. The outdoors is found by flood-filling from the sheet
-    edge over the wall layout, with openings up to `close_mm` closed so it cannot leak into the rooms. Sampling along the wall (not
-    at one point) lets a long run that is partly a party wall and partly an outer wall be split fairly."""
+def _outdoors(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float) -> np.ndarray:
+    """Boolean mask of the outdoors: flood-filled from the sheet edge over the wall layout, with openings up to `close_mm` closed so it
+    cannot leak into the rooms."""
     h, w = shape
     canvas = np.zeros((h, w), np.uint8)
     for wall in walls:
@@ -169,7 +167,28 @@ def external_fractions(walls: list[Wall], shape: tuple[int, int], mm_per_px: flo
     free = (closed == 0).astype(np.uint8)
     reach = np.zeros((h + 2, w + 2), np.uint8)
     cv2.floodFill(free.copy(), reach, (0, 0), 2)
-    outdoors = reach[1:-1, 1:-1] > 0
+    return reach[1:-1, 1:-1] > 0
+
+
+def footprint_area_m2(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 2500) -> float:
+    """The area enclosed by the outer walls (walls included), in m2: everything that is not outdoors."""
+    outdoors = _outdoors(walls, shape, mm_per_px, close_mm)
+    return float((~outdoors).sum()) * (mm_per_px / 1000) ** 2
+
+
+def extents_m(walls: list[Wall]) -> tuple[float, float]:
+    """Overall length (x) and width (y) of the wall layout, in metres."""
+    xs = [w.start_mm for w in walls if w.orient == "h"] + [w.end_mm for w in walls if w.orient == "h"] + [w.centre_mm for w in walls if w.orient == "v"]
+    ys = [w.start_mm for w in walls if w.orient == "v"] + [w.end_mm for w in walls if w.orient == "v"] + [w.centre_mm for w in walls if w.orient == "h"]
+    return (max(xs) - min(xs)) / 1000, (max(ys) - min(ys)) / 1000
+
+
+def external_fractions(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 2500, margin_px: int = 3,
+                       step_mm: float = 500) -> list[float]:
+    """For each wall, the share of its length that has the outdoors on one side (see _outdoors). Sampling along the wall, not at one
+    point, lets a long run that is partly a party wall and partly an outer wall be split fairly."""
+    h, w = shape
+    outdoors = _outdoors(walls, shape, mm_per_px, close_mm)
     out = []
     for wall in walls:
         c = wall.centre_mm / mm_per_px

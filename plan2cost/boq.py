@@ -1,8 +1,11 @@
 """Plan -> BoQ: BESMM4-style items from a take-off, with every assumed input flagged and no invented prices."""
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
+from plan2cost.tools.substructure import (blinding_foundations_m3, disposal_and_backfill, formwork_foundation_sides_m2, levelling_compaction_m2,
+                                          topsoil_strip_m2, void_filling_m3)
 from plan2cost.tools.walls import Opening, blockwork_area_m2
 from plan2cost.tools.foundation import PadBase, StripSection, ground_bed_takeoff, pad_concrete_m3, pad_rebar_kg
 
@@ -100,6 +103,31 @@ def superstructure_boq(ext_girth: dict[str, float], int_girth: dict[str, float],
         where = "external" if o.external else "internal"
         items.append(BoqItem(f"opening_{o.label.lower()}_nr", f"{o.label} {o.kind} {int(o.width_m * 1000)} x {int(o.height_m * 1000)}mm; {where}; as schedule", "nr", o.count))
     return items
+
+
+def substructure_extras(t: dict, s: StripSection, pads: list[PadBase], trench_girth_m: float, building_length_m: float, building_width_m: float,
+                        extras: dict) -> list[BoqItem]:
+    """Items that follow from the strip, pits and bases: topsoil, surface treatment, levelling, blinding, formwork, disposal and backfill, void
+    filling and foundation wall finishes. `t` is the foundation take-off, `extras` the quantities already computed (footing, bases, blinding)."""
+    width = s.width_m
+    top = topsoil_strip_m2(building_length_m, building_width_m, s.working_space_m)
+    blind = blinding_foundations_m3(trench_girth_m, width, pads)
+    exc = t["trench_excavation_strip_m3"] + t["pit_excavation_column_bases_m3"]
+    db = disposal_and_backfill(exc, t[f"fdn_blockwork_girth_{s.block_mm}_m"], s.blockwork_height_m, s.block_mm, blind,
+                               t["strip_footing_concrete_m3"], extras.get("column_base_concrete_m3", 0), extras.get("column_concrete_m3", 0))
+    fdn_block = t[f"fdn_blockwork_{s.block_mm}_m2"]
+    rows = [
+        ("topsoil_strip_m2", "Excavate topsoil for preservation; average depth 150mm", "m2", top),
+        ("excavated_surface_treatment_m2", "Anti-termite treatment applied to excavated surfaces", "m2", int(math.ceil(t["earthwork_support_m2"]))),
+        ("levelling_compaction_m2", "Level and compact the bottom of excavations", "m2", levelling_compaction_m2(trench_girth_m, width, pads)),
+        ("blinding_foundations_m3", "Plain in situ concrete (1:3:6); blinding 50mm thick under strip footings and 100mm under column bases; poured against earth", "m3", blind),
+        ("formwork_foundation_sides_m2", "Formwork to sides of column bases; plain vertical; height 250-500mm", "m2", formwork_foundation_sides_m2(pads)),
+        ("disposal_off_site_m3", "Excavated material; off site; transported away from excavation and deposited in spoil heaps", "m3", db["disposal_off_site_m3"]),
+        ("backfill_around_foundations_m3", "Filling to excavations; selected excavated material; compacted around foundations", "m3", db["backfill_around_foundations_m3"]),
+        ("concrete_filling_blockwork_voids_m3", "Plain in situ concrete, grade 15; mass concrete filling the voids in sandcrete blockwork", "m3", void_filling_m3(fdn_block)),
+        ("fdn_wall_render_m2", "Cement-sand (1:3) rendering to external face of foundation walls; 15mm thick", "m2", fdn_block),
+    ]
+    return [BoqItem(k, d, u, q) for k, d, u, q in rows]
 
 
 def price_boq(items: list[BoqItem], rates: dict) -> dict:

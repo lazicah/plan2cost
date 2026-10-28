@@ -177,7 +177,8 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
     if m.get("error"):
         return m
     return {"floor": floor, "ext_girth_m": float(m["external_m"]), "int_girth_m": float(m["internal_m"]), "walls": m["walls"],
-            "junction_ends": m["junction_ends"], "scale": m["scale"], "note": "approximate: measured from the image; typically within about 10 percent on clean CAD plans"}
+            "junction_ends": m["junction_ends"], "building_length_m": float(m["length_m"]), "building_width_m": float(m["width_m"]),
+            "scale": m["scale"], "note": "approximate: measured from the image; typically within about 10 percent on clean CAD plans"}
 
 
 def read_notes(run: Run, pages: list | None = None) -> dict:
@@ -221,10 +222,43 @@ def read_foundation_section(run: Run) -> dict:
     return {"page": page, "recorded": recorded, "layers_close": out["layers_close"], "questions": out["questions"]}
 
 
+def read_pad_bases(run: Run) -> dict:
+    """Column base (pad) types from the structural drawing: size, thickness, number of each and the bar note. The model reads the base
+    detail sheets; each size and count is kept only if it is printed on the page ("4no Thus")."""
+    import re
+
+    from plan2cost.extract_foundation import extract_foundation, to_pads
+    from plan2cost.pdf import page_count, page_text, render_pages
+
+    if not run.structural_pdf:
+        return {"error": "No structural drawing was given for this run."}
+    pages = [p for p in range(1, page_count(run.structural_pdf) + 1) if re.search(r"BASE\s*TYPE", page_text(run.structural_pdf, p), re.I)]
+    if not pages:
+        return {"error": "No column base details found in the structural drawing."}
+    text = " ".join(page_text(run.structural_pdf, p) for p in pages)
+    printed = set(re.findall(r"\d+", text))
+    data = extract_foundation(render_pages(run.structural_pdf, pages, str(run.dir / "scratch"), dpi=130))
+    pads, questions = to_pads(data)
+    kept = []
+    for p in pads:
+        ok = str(int(p.length_m * 1000)) in printed and str(int(p.width_m * 1000)) in printed and re.search(rf"{p.count}\s*no", text, re.I)
+        if ok:
+            kept.append(p)
+        else:
+            questions.append(f"Base type {p.type}: size or number is not printed on the page, so it was not used.")
+    run.data["pads"] = [p.__dict__ for p in kept]
+    item = next((c["id"] for c in run.checklist if "foundation" in c["question"].lower()), run.checklist[0]["id"] if run.checklist else "C1")
+    for p in kept:
+        record_fact(run, item=item, name=f"pad_type_{p.type}", value=f"{p.length_m:g} x {p.width_m:g} m x {p.count}", source="drawing",
+                    page=pages[0], quote=f"{p.count}no", file="structural")
+    return {"pages": pages, "bases": [f"type {p.type}: {p.length_m:g} x {p.width_m:g} m, {p.thickness_m * 1000:.0f}mm thick, {p.count} no" for p in kept], "questions": questions}
+
+
 def compute_foundation(run: Run, block_mm: int = 230) -> dict:
     """Strip foundation from the ground floor walls when no foundation layout is given: trench girth is the ground floor wall girth less
     the overlaps at joints, trench width is three times the block thickness, depths are flagged defaults. Needs the facts
-    ext_girth_ground_m and int_girth_ground_m (and, if known, junction_ends_ground). Items are added to the BoQ by compute_boq."""
+    ext_girth_ground_m and int_girth_ground_m (and, if known, junction_ends_ground, building_length_m, building_width_m; with the lengths it also
+    computes the ground bed, topsoil, blinding, formwork, disposal and backfill). Items are added to the BoQ by compute_boq."""
     from plan2cost.boq import foundation_boq, strip_inputs
     from plan2cost.tools.foundation import GridLine, foundation_takeoff
 
@@ -244,8 +278,18 @@ def compute_foundation(run: Run, block_mm: int = 230) -> dict:
     for a in log:
         if a.source == "assumed":
             run.assumptions.append({"name": f"foundation_{a.name}", "value": a.value, "basis": a.basis})
-    t = foundation_takeoff([GridLine("ground floor walls", runs=[(total, 1)], deductions=[(overlaps, 1)] if overlaps else [])], [], section)
+    from plan2cost.boq import foundation_extras, substructure_extras
+    from plan2cost.tools.foundation import PadBase
+
+    pads = [PadBase(**d) for d in run.data.get("pads", [])]
+    t = foundation_takeoff([GridLine("ground floor walls", runs=[(total, 1)], deductions=[(overlaps, 1)] if overlaps else [])], pads, section)
     items = foundation_boq(t, section, grade)
+    length, width = facts.get("building_length_m"), facts.get("building_width_m")
+    if length and width:  # the author's slab area is the overall length x width; fills are that less the wall footprint
+        slab = float(length) * float(width)
+        items += foundation_extras(pads, grade, slab_area_m2=slab, fill_area_m2=slab - total * block_mm / 1000)
+        extras = {i.key: i.qty for i in items}
+        items += substructure_extras(t, section, pads, total - overlaps, float(length), float(width), extras)
     run.data["foundation_items"] = [i.__dict__ for i in items]
     return {"trench_girth_m": round(total - overlaps, 2), "trench_width_mm": section.width_mm, "lines": [f"{i.key} {i.qty} {i.unit}" for i in items],
             "assumed": [f"{a.name}={a.value}" for a in log if a.source == "assumed"]}
@@ -296,6 +340,7 @@ TOOLS = {
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
     "read_foundation_section": (read_foundation_section, "no args: foundation cross-section (footing, blinding, slab, filling, overall depth) from the structural drawing, when one is given"),
+    "read_pad_bases": (read_pad_bases, "no args: column base types (size, thickness, number) from the structural drawing, when one is given"),
     "compute_foundation": (compute_foundation, "block_mm: int (default 230): strip foundation from the ground floor walls; run after the ground girth is recorded, before compute_boq"),
     "compute_boq": (compute_boq, "no args: wall areas and priced lines from the recorded facts"),
     "submit_boq": (submit_boq, 'summary: str: the gate; refused unless everything is settled'),

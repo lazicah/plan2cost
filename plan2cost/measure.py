@@ -7,7 +7,7 @@ import cv2
 from plan2cost.dims import dimension_tokens
 from plan2cost.grid import calibrate, find_grid
 from plan2cost.pdf import render_pages
-from plan2cost.walls_cv import external_fractions, find_walls, junctions
+from plan2cost.walls_cv import extents_m, external_fractions, find_walls, footprint_area_m2, junctions
 
 
 # Walls are drawn at a fixed width on paper whatever the sheet's scale (plan2's 230mm wall is 5.27 pt on both its sheets), so the accepted face
@@ -34,7 +34,9 @@ def measure_walls(pdf: str, page: int, dpi: int = 150, margin_mm: float = 2500) 
     fr = external_fractions(walls, gray.shape, mm_px)
     total = sum(w.length_mm for w in walls) / 1000
     ext = sum(w.length_mm * f for w, f in zip(walls, fr)) / 1000
-    return {"scale": grid.scale_basis, "walls": len(walls), "total_m": round(total, 2), "external_m": round(ext, 2),
+    length, width = extents_m(walls)
+    return {"scale": grid.scale_basis, "length_m": round(length, 2), "width_m": round(width, 2),
+            "footprint_m2": round(footprint_area_m2(walls, gray.shape, mm_px), 1), "walls": len(walls), "total_m": round(total, 2), "external_m": round(ext, 2),
             "internal_m": round(total - ext, 2), "junction_ends": junctions(walls),
             "by_thickness_m": {int(t): round(sum(w.length_mm for w in walls if abs(w.thickness_mm - t) < 1) / 1000, 2) for t in {w.thickness_mm for w in walls}},
             "confidence": "medium"}
