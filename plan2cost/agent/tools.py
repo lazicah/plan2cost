@@ -30,7 +30,7 @@ def set_checklist(run: Run, items: list) -> dict:
 
 
 def record_fact(run: Run, item: str, name: str, value, unit: str = "", source: str = "drawing", page: int | None = None,
-                quote: str = "", basis: str = "") -> dict:
+                quote: str = "", basis: str = "", file: str = "main") -> dict:
     """Record one value against a checklist item. A value read from the drawings needs the page and the exact printed text; one
     that is assumed needs the basis; one the user gave is recorded as theirs."""
     entry = next((c for c in run.checklist if c["id"] == item), None)
@@ -38,13 +38,13 @@ def record_fact(run: Run, item: str, name: str, value, unit: str = "", source: s
         return {"error": f"No checklist item {item}. Items: {[c['id'] for c in run.checklist]}"}
     if source not in SOURCES:
         return {"error": f"source must be one of {SOURCES}"}
-    fact = {"item": item, "name": name, "value": value, "unit": unit, "source": source, "page": page, "quote": quote, "basis": basis}
+    fact = {"item": item, "name": name, "value": value, "unit": unit, "source": source, "page": page, "quote": quote, "basis": basis, "file": file}
     if source == "drawing":
         if not page or not quote:
             return {"error": "A value from the drawings needs the page number and the exact printed text (quote)."}
         from plan2cost.pdf import page_text
 
-        text = page_text(run.pdf, int(page))
+        text = page_text(run.structural_pdf if file == "structural" and run.structural_pdf else run.pdf, int(page))
         if text.strip():
             if not quote_on_page(quote, text):
                 return {"error": f"Refused: the quote {quote!r} is not on page {page}. Copy the printed text exactly."}
@@ -194,6 +194,33 @@ def read_notes(run: Run, pages: list | None = None) -> dict:
     return out
 
 
+def read_foundation_section(run: Run) -> dict:
+    """Layers and dimensions of the strip foundation cross-section on the structural drawing (footing width and thickness, blinding, slab,
+    filling, overall depth). Every number is checked to be printed on the page and the layers are checked to add up to the overall depth.
+    The verified values are recorded as facts (source drawing, file structural) against the foundation checklist item."""
+    import re
+
+    from plan2cost.pdf import page_count, page_text
+    from plan2cost.structural import read_foundation_section as read
+
+    if not run.structural_pdf:
+        return {"error": "No structural drawing was given for this run."}
+    page = next((p for p in range(1, page_count(run.structural_pdf) + 1)
+                 if re.search(r"SECTION\s*A\s*-\s*A", page_text(run.structural_pdf, p), re.I) and re.search(r"FOUNDATION|BLINDING", page_text(run.structural_pdf, p), re.I)), None)
+    if not page:
+        return {"error": "No foundation section found in the structural drawing."}
+    out = read(run.structural_pdf, page, str(run.dir / "scratch"))
+    item = next((c["id"] for c in run.checklist if "foundation" in c["question"].lower()), run.checklist[0]["id"] if run.checklist else "C1")
+    names = {"footing_width_mm": "fdn_footing_width_mm", "footing_thickness_mm": "fdn_footing_thickness_mm", "blinding_mm": "fdn_blinding_mm",
+             "slab_mm": "fdn_slab_mm", "fill_depth_mm": "fdn_fill_depth_mm", "overall_depth_mm": "fdn_overall_depth_mm"}
+    recorded = []
+    for key, v in out["values"].items():
+        if key in names:
+            r = record_fact(run, item=item, name=names[key], value=v, unit="mm", source="drawing", page=page, quote=str(int(v)), file="structural")
+            recorded.append(names[key] if "error" not in r else f"{names[key]} (refused: {r['error']})")
+    return {"page": page, "recorded": recorded, "layers_close": out["layers_close"], "questions": out["questions"]}
+
+
 def compute_foundation(run: Run, block_mm: int = 230) -> dict:
     """Strip foundation from the ground floor walls when no foundation layout is given: trench girth is the ground floor wall girth less
     the overlaps at joints, trench width is three times the block thickness, depths are flagged defaults. Needs the facts
@@ -206,7 +233,14 @@ def compute_foundation(run: Run, block_mm: int = 230) -> dict:
         return {"error": "Record ext_girth_ground_m and int_girth_ground_m first (read_wall_girth on the ground floor plan)."}
     total = float(facts["ext_girth_ground_m"]) + float(facts["int_girth_ground_m"])
     overlaps = float(facts.get("junction_ends_ground", 0)) * block_mm / 1000
-    section, log, grade = strip_inputs(drawn={"block_mm": block_mm})
+    drawn = {"block_mm": block_mm}
+    if "fdn_footing_width_mm" in facts:
+        drawn["width_mm"] = float(facts["fdn_footing_width_mm"])
+    if "fdn_footing_thickness_mm" in facts:
+        drawn["footing_thickness_m"] = float(facts["fdn_footing_thickness_mm"]) / 1000
+    if "fdn_overall_depth_mm" in facts:  # the printed overall depth is measured from the stripped level; topsoil is added back for the dig from ground level
+        drawn["trench_depth_m"] = float(facts["fdn_overall_depth_mm"]) / 1000 + 0.15
+    section, log, grade = strip_inputs(drawn=drawn)
     for a in log:
         if a.source == "assumed":
             run.assumptions.append({"name": f"foundation_{a.name}", "value": a.value, "basis": a.basis})
@@ -261,6 +295,7 @@ TOOLS = {
     "ask_user": (ask_user, 'item: "C1", question: str: pause for a person'),
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
+    "read_foundation_section": (read_foundation_section, "no args: foundation cross-section (footing, blinding, slab, filling, overall depth) from the structural drawing, when one is given"),
     "compute_foundation": (compute_foundation, "block_mm: int (default 230): strip foundation from the ground floor walls; run after the ground girth is recorded, before compute_boq"),
     "compute_boq": (compute_boq, "no args: wall areas and priced lines from the recorded facts"),
     "submit_boq": (submit_boq, 'summary: str: the gate; refused unless everything is settled'),

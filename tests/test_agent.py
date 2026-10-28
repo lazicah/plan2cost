@@ -169,3 +169,16 @@ def test_foundation_from_ground_walls_uses_three_times_the_block_and_flags_defau
     out = TOOLS["compute_foundation"][0](run, 225)
     assert out["trench_width_mm"] == 675 and out["trench_girth_m"] == round(100 - 20 * 0.225, 2)
     assert any(a["name"] == "foundation_width_mm" for a in run.assumptions) and run.data["foundation_items"]
+
+
+def test_foundation_uses_section_values_printed_on_the_structural_drawing(monkeypatch):
+    monkeypatch.setattr("plan2cost.pdf.page_text", lambda pdf, p: "675mm 225 1200")
+    run = Run.new("x.pdf", "obj", structural_pdf="s.pdf")
+    TOOLS["set_checklist"][0](run, [{"question": "foundation?"}, {"question": "girth?"}, {"question": "doors?"}])
+    for name, v in (("fdn_footing_width_mm", 675), ("fdn_footing_thickness_mm", 225), ("fdn_overall_depth_mm", 1200)):
+        assert "recorded" in TOOLS["record_fact"][0](run, item="C1", name=name, value=v, unit="mm", page=3, quote=str(v), file="structural")
+    TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=50.0, source="computed", basis="x")
+    TOOLS["record_fact"][0](run, item="C2", name="int_girth_ground_m", value=50.0, source="computed", basis="x")
+    out = TOOLS["compute_foundation"][0](run, 230)
+    assert out["trench_width_mm"] == 675  # printed, not 3 x 230
+    assert not any(a["name"] in ("foundation_width_mm", "foundation_footing_thickness_m") for a in run.assumptions)
