@@ -3,4 +3,6 @@
 __pycache__/
 *.pyc
 eval/results/
-reference/workspace/
+reference/
+workspace/
+.DS_Store
