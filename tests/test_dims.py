@@ -16,3 +16,13 @@ def test_same_window_on_two_chain_layers_counts_once():
     outer = row(400, [10, 60, 110, 160], 900)
     toks = layer1 + layer2 + outer
     assert len(width_candidates(toks, 600)) == 1
+
+
+def test_tight_slice_sits_inward_of_the_chain():
+    from PIL import Image
+    from plan2cost.openings_from_dims import tight_slice
+
+    img = Image.new("RGB", (1000, 800))
+    top = DimToken(600, 400, 100, 409, 106)   # horizontal token on the top chain
+    crop = tight_slice(img, top, 1.0, "top")
+    assert crop.size == (160, 400)             # 80pt wide x 200pt deep, doubled

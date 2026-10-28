@@ -45,6 +45,17 @@ def slice_image(page_img: Image.Image, token: DimToken, scale: float, half_pts: 
     return page_img.crop(box)
 
 
+def tight_slice(page_img: Image.Image, token: DimToken, scale: float, side: str, half_pts: float = 40.0, depth_pts: float = 190.0) -> Image.Image:
+    """A small box on the wall nearest the chain: the chains sit outside the building, so the wall lies just inward of the token.
+    Enlarged so the thin symbol lines are legible."""
+    sign = 1 if side in ("top", "left") else -1
+    a0, a1 = (token.along - half_pts) * scale, (token.along + half_pts) * scale
+    c0, c1 = sorted((token.across - sign * 10 * scale / scale, token.across + sign * depth_pts))
+    box = (a0, c0 * scale, a1, c1 * scale) if not token.vertical else (c0 * scale, a0, c1 * scale, a1)
+    img = page_img.crop(tuple(int(v) for v in box))
+    return img.resize((img.width * 2, img.height * 2), Image.LANCZOS)
+
+
 def side_of(token: DimToken, page_w: float, page_h: float) -> str:
     if token.vertical:
         return "left" if token.across < page_w * 0.45 else "right"
@@ -79,5 +90,18 @@ def find_openings(pdf: str, page: int, floor: str, widths: tuple[int, ...], scra
             jobs.append((t, side, str(path)))
     with ThreadPoolExecutor(workers) as ex:
         results = list(ex.map(lambda j: verify(j[0], j[2], j[1]), jobs))
-    return [{"floor": floor, "width_mm": t.value, "side": side, "kind": r["kind"], "evidence": r["evidence"], "count": 1}
-            for (t, side, _), r in zip(jobs, results)]
+    # second pass: whatever came back unclear is re-asked on a tight crop of the wall beside the chain
+    again = [i for i, r in enumerate(results) if r["kind"] == "other"]
+    tight_paths = []
+    for i in again:
+        t, side, _ = jobs[i]
+        path = Path(scratch) / f"tight_{page}_{t.value}_{int(t.x0)}_{int(t.y0)}.jpg"
+        tight_slice(img, t, scale, side).save(path, quality=92)
+        tight_paths.append(str(path))
+    with ThreadPoolExecutor(workers) as ex:
+        second = list(ex.map(lambda i_p: verify(jobs[i_p[0]][0], i_p[1], jobs[i_p[0]][1]), zip(again, tight_paths)))
+    passes = [1] * len(results)
+    for i, r in zip(again, second):
+        results[i], passes[i] = r, 2
+    return [{"floor": floor, "width_mm": t.value, "side": side, "kind": r["kind"], "evidence": r["evidence"], "count": 1, "pass": ps}
+            for (t, side, _), r, ps in zip(jobs, results, passes)]
