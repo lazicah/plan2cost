@@ -6,7 +6,7 @@ import re
 
 from plan2cost.client import get_client, image_part, model_name
 from plan2cost.extract import parse_json
-from plan2cost.pdf import page_count, page_text, render_pages, title_block_text
+from plan2cost.pdf import page_count, page_text, render_pages, render_tiles, title_block_text
 from plan2cost.tools.walls import Opening
 
 ROLES = ["cover", "site", "floor_plan", "roof_plan", "section", "elevation", "ceiling_plan", "detail", "opening_schedule",
@@ -40,6 +40,27 @@ Use only printed numbers, in millimetres. Do not infer. Reply with JSON only:
 {"levels": [{"name": str, "value_mm": number, "page": int}], "storey_heights_mm": [{"from": str, "to": str, "value_mm": number}],
  "questions": [str]}
 """
+
+
+PLAN_OPENINGS_PROMPT = """You are reading floor plans (and elevations, if given) for a quantity surveyor. There is NO door and window schedule,
+so find the openings from the drawing symbols.
+
+How to read them:
+- Door: a gap in a wall with a swing arc, or a leaf line; sliding doors show offset parallel leaves. Window: a thin multi-line
+  break in a wall (sill/glazing lines). Other openings: archways or wall gaps with no leaf.
+- Width: the dimension printed beside or along the opening, or an opening width in a dimension chain. Use only printed numbers.
+- Height: only from an elevation or section if the opening is dimensioned there or its sill and head levels are printed.
+  If no height is printed, set height_mm to null. Never guess a height.
+- "wall" is "external" if the opening is in an outside wall and "internal" if it is between rooms.
+- Group identical openings (same kind, width, wall, floor) into one entry with a "count"; count each opening once.
+- Put anything you cannot size or classify in "questions" instead of guessing.
+- Reply with JSON only:
+
+{"openings": [{"floor": str, "kind": "door"|"window"|"other", "width_mm": number|null, "height_mm": number|null, "wall": "external"|"internal",
+ "count": int, "evidence": str}], "questions": [str]}
+"""
+
+DEFAULT_OPENING_HEIGHT_M = {"door": 2.1, "window": 1.2, "other": 2.1}  # used only when no schedule or elevation gives it
 
 
 def index_pages(pdf: str, limit: int = 250) -> list[dict]:
@@ -89,6 +110,45 @@ def to_openings(data: dict) -> tuple[list[Opening], list[str]]:
     return openings, questions
 
 
+def extract_plan_openings(pdf: str, pages: list[int], scratch: str) -> dict:
+    images = render_pages(pdf, pages, scratch, dpi=170)
+    return _chat([{"type": "text", "text": f"{PLAN_OPENINGS_PROMPT}\nPages given, in order: {pages}"}, *[image_part(p) for p in images]])
+
+
+TILE_NOTE = """This image is one TILE (row {r}, column {c} of a {rows} x {cols} grid) of the {floor} floor plan. Report only the openings whose
+centre lies inside this tile; ignore any that are cut by the tile edge and belong mostly to a neighbouring tile."""
+
+
+def extract_plan_openings_tiled(pdf: str, page: int, floor: str, scratch: str, cols: int = 2, rows: int = 2) -> dict:
+    """Read one floor plan tile by tile so door and window symbols are legible, then pool the results."""
+    merged: dict = {"openings": [], "questions": []}
+    for i, tile in enumerate(render_tiles(pdf, page, scratch, cols=cols, rows=rows)):
+        note = TILE_NOTE.format(r=i // cols, c=i % cols, rows=rows, cols=cols, floor=floor)
+        part = _chat([{"type": "text", "text": f"{PLAN_OPENINGS_PROMPT}\n{note}"}, image_part(tile)])
+        for o in part.get("openings", []):
+            o["floor"] = floor
+            o["tile"] = f"r{i // cols}c{i % cols}"
+            merged["openings"].append(o)
+        merged["questions"] += part.get("questions", [])
+    return merged
+
+
+def plan_openings_to_openings(data: dict) -> tuple[list[Opening], list[str]]:
+    """Openings found from plan symbols. A missing height falls back to the standard one and is asked about, never silent."""
+    openings, questions = [], list(data.get("questions", []))
+    for i, o in enumerate(data.get("openings", []), 1):
+        kind = o.get("kind") if o.get("kind") in DEFAULT_OPENING_HEIGHT_M else "other"
+        if not o.get("width_mm") or not o.get("count"):
+            questions.append(f"{o.get('floor')} {kind} #{i}: width not printed on the plan.")
+            continue
+        h = o.get("height_mm")
+        if not h:
+            h = DEFAULT_OPENING_HEIGHT_M[kind] * 1000
+            questions.append(f"{kind} {int(o['width_mm'])}mm ({o.get('floor')}): no height on an elevation; assumed {int(h)}mm. Confirm?")
+        openings.append(Opening(f"{kind[0].upper()}{i}", o["width_mm"] / 1000, h / 1000, int(o["count"]), kind, o.get("wall") == "external"))
+    return openings, questions
+
+
 def storey_heights_m(levels: dict, floors: tuple[str, ...] = ("ground", "first", "second", "third")) -> dict[str, float]:
     """Floor-to-floor heights printed on the sections, mapped to floors in order from the ground floor level up.
     Floors the drawings do not give are left out, so the caller falls back to the default and flags it."""
@@ -104,6 +164,9 @@ def read_document(pdf: str, scratch: str) -> dict:
     out = {"pages": pages, "openings": {"openings": [], "questions": []}, "levels": {"levels": [], "questions": []}}
     if by_role.get("opening_schedule"):
         out["openings"] = extract_openings(pdf, by_role["opening_schedule"], scratch)
+    if not by_role.get("opening_schedule"):  # no schedule: fall back to symbols on the plans, heights from elevations
+        plan_pages = by_role.get("floor_plan", []) + by_role.get("elevation", [])
+        out["openings_from_plan"] = extract_plan_openings(pdf, plan_pages, scratch) if plan_pages else {"openings": [], "questions": []}
     if by_role.get("section"):
         out["levels"] = extract_levels(pdf, by_role["section"][:2], scratch)
     return out
@@ -171,3 +234,26 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def score_plan_openings(found: list[dict], schedule_truth: dict, tolerance_mm: int = 60) -> dict:
+    """Recall and precision of symbol-detected openings against the schedule: an opening counts when kind matches and the
+    width is within tolerance of a schedule width (plan widths can include the frame). Each schedule opening is matched once."""
+    from collections import Counter
+
+    truth = Counter()
+    for mark, t in schedule_truth.items():
+        if not mark.startswith("_"):
+            truth[("window" if mark.startswith("AW") else "door", t["width_mm"])] += t["quantity"]
+    left, hits, total_found = Counter(truth), 0, 0
+    for o in found:
+        n = int(o.get("count") or 0)
+        total_found += n
+        for _ in range(n):
+            key = next((k for k in left if left[k] > 0 and k[0] == o.get("kind") and abs(k[1] - (o.get("width_mm") or -1e9)) <= tolerance_mm), None)
+            if key:
+                left[key] -= 1
+                hits += 1
+    total_truth = sum(truth.values())
+    return {"schedule_openings": total_truth, "found": total_found, "matched": hits,
+            "recall_pct": round(100 * hits / total_truth, 1), "precision_pct": round(100 * hits / total_found, 1) if total_found else 0.0}

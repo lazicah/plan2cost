@@ -45,3 +45,22 @@ def title_block_text(pdf: str, page: int) -> str:
     exe = pdftoppm().replace("pdftoppm", "pdftotext")
     args = [exe, "-f", str(page), "-l", str(page), "-x", str(int(w * 0.9)), "-y", str(int(h * 0.82)), "-W", str(int(w * 0.1)), "-H", str(int(h * 0.15)), "-layout", pdf, "-"]
     return re.sub(r"\s+", " ", subprocess.run(args, capture_output=True, text=True).stdout).strip()
+
+
+def render_tiles(pdf: str, page: int, out_dir: str, dpi: int = 220, cols: int = 2, rows: int = 2, drawing_width: float = 0.9) -> list[str]:
+    """Split a page into a cols x rows grid (the left `drawing_width` of the sheet, leaving the title-block column) so small
+    symbols are legible. Tiles do not overlap; the caller asks the model to count only what lies inside its tile."""
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    whole = render_pages(pdf, [page], out_dir, dpi)[0]
+    from PIL import Image
+
+    img = Image.open(whole)
+    w, h = int(img.width * drawing_width), img.height
+    paths = []
+    for r in range(rows):
+        for c in range(cols):
+            tile = img.crop((c * w // cols, r * h // rows, (c + 1) * w // cols, (r + 1) * h // rows))
+            path = Path(out_dir) / f"p{page:02d}_r{r}c{c}.jpg"
+            tile.save(path, quality=90)
+            paths.append(str(path))
+    return paths
