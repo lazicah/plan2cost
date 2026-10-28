@@ -20,3 +20,16 @@ def test_plan6_internal_blockwork_513():
 
 def test_default_height_when_elevation_missing():
     assert facade_area_m2({"ground": 10}) == 30.0
+
+
+def test_schedule_to_openings_marks_timber_doors_internal():
+    from plan2cost.document import to_openings
+
+    data = {"openings": [
+        {"mark": "TD2", "kind": "door", "material": "timber", "width_mm": 900, "height_mm": 2100, "quantity": 10},
+        {"mark": "SD1", "kind": "door", "material": "steel", "width_mm": 900, "height_mm": 2100, "quantity": 4},
+        {"mark": "AW1", "kind": "window", "material": "aluminium", "width_mm": 600, "height_mm": 1800, "quantity": 22},
+        {"mark": "X", "kind": "door", "material": "timber", "width_mm": None, "height_mm": 2100, "quantity": 1}]}
+    ops, q = to_openings(data)
+    assert [(o.label, o.external) for o in ops] == [("TD2", False), ("SD1", True), ("AW1", True)]
+    assert len(q) == 1

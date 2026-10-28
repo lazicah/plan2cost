@@ -1,0 +1,391 @@
+{
+  "case": "plan6",
+  "floor": "document",
+  "model": "muse-spark-1.3",
+  "time": "2026-10-28T10:57:53",
+  "extraction": {
+    "pages": [
+      {
+        "page": 1,
+        "role": "cover",
+        "title": "Proposed Residential Estate Development for Box City Sculpture, on Iwo Road, Ibadan, Oyo State",
+        "floor": null
+      },
+      {
+        "page": 2,
+        "role": "site",
+        "title": "LAYOUT",
+        "floor": null
+      },
+      {
+        "page": 3,
+        "role": "site",
+        "title": "CALLOUT I",
+        "floor": null
+      },
+      {
+        "page": 4,
+        "role": "site",
+        "title": "CALLOUT II",
+        "floor": null
+      },
+      {
+        "page": 5,
+        "role": "site",
+        "title": "CALLOUT III",
+        "floor": null
+      },
+      {
+        "page": 6,
+        "role": "floor_plan",
+        "title": "GROUND FLOOR PLAN",
+        "floor": "ground"
+      },
+      {
+        "page": 7,
+        "role": "floor_plan",
+        "title": "FIRST FLOOR PLAN",
+        "floor": "first"
+      },
+      {
+        "page": 8,
+        "role": "roof_plan",
+        "title": "ROOF PLAN",
+        "floor": "roof"
+      },
+      {
+        "page": 9,
+        "role": "section",
+        "title": "SECTION A",
+        "floor": null
+      },
+      {
+        "page": 10,
+        "role": "section",
+        "title": "SECTION B",
+        "floor": null
+      },
+      {
+        "page": 11,
+        "role": "section",
+        "title": "SECTION C",
+        "floor": null
+      },
+      {
+        "page": 12,
+        "role": "section",
+        "title": "SECTION D",
+        "floor": null
+      },
+      {
+        "page": 13,
+        "role": "elevation",
+        "title": "APPROACH ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 14,
+        "role": "elevation",
+        "title": "RIGHT SIDE ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 15,
+        "role": "elevation",
+        "title": "REAR ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 16,
+        "role": "elevation",
+        "title": "LEFT SIDE ELEVATION",
+        "floor": null
+      },
+      {
+        "page": 17,
+        "role": "ceiling_plan",
+        "title": "GROUND FLOOR RCP",
+        "floor": "ground"
+      },
+      {
+        "page": 18,
+        "role": "ceiling_plan",
+        "title": "FIRST FLOOR RCP",
+        "floor": "first"
+      },
+      {
+        "page": 19,
+        "role": "detail",
+        "title": "STAIRCASE DETAIL I",
+        "floor": null
+      },
+      {
+        "page": 20,
+        "role": "detail",
+        "title": "STAIRCASE DETAIL II",
+        "floor": null
+      },
+      {
+        "page": 21,
+        "role": "floor_plan",
+        "title": "GROUND FLOOR INDICATOR PLAN",
+        "floor": "ground"
+      },
+      {
+        "page": 22,
+        "role": "floor_plan",
+        "title": "FIRST FLOOR INDICATOR PLAN",
+        "floor": "first"
+      },
+      {
+        "page": 23,
+        "role": "opening_schedule",
+        "title": "AW1 & AW2",
+        "floor": null
+      },
+      {
+        "page": 24,
+        "role": "opening_schedule",
+        "title": "AW3 & AW4",
+        "floor": null
+      },
+      {
+        "page": 25,
+        "role": "opening_schedule",
+        "title": "TD1 & TD2",
+        "floor": null
+      },
+      {
+        "page": 26,
+        "role": "opening_schedule",
+        "title": "TD3 & GD1",
+        "floor": null
+      },
+      {
+        "page": 27,
+        "role": "opening_schedule",
+        "title": "SD1 & ASD1",
+        "floor": null
+      }
+    ],
+    "openings": {
+      "openings": [
+        {
+          "mark": "AW1",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 600,
+          "height_mm": 1800,
+          "quantity": 22,
+          "floors": [
+            "GROUND FLR. LEVL",
+            "FIRST FLR. LEVEL"
+          ],
+          "evidence": "Aluminium Window.1 (AW1) elevation 600x1800, QUANTITY 22, Grand total: 22"
+        },
+        {
+          "mark": "AW2",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 900,
+          "height_mm": 1800,
+          "quantity": 20,
+          "floors": [
+            "GROUND FLR. LEVL",
+            "FIRST FLR. LEVEL"
+          ],
+          "evidence": "Aluminium Window.2 (AW2) elevation 900x1800, QUANTITY 20, location Grand total: 20"
+        },
+        {
+          "mark": "AW3",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 1800,
+          "height_mm": 1200,
+          "quantity": 2,
+          "floors": [
+            "GROUND FLR. LEVL"
+          ],
+          "evidence": "Aluminium Window. 3 (AW3) elevation 1800x1200, QUANTITY 2, Grand total: 2"
+        },
+        {
+          "mark": "AW4",
+          "kind": "window",
+          "material": "aluminium",
+          "width_mm": 3600,
+          "height_mm": 1800,
+          "quantity": 2,
+          "floors": [
+            "GROUND FLR. LEVL"
+          ],
+          "evidence": "Aluminium Window. 4 (AW4) elevation 3600x1800, QUANTITY 2, Grand total: 2"
+        },
+        {
+          "mark": "TD1",
+          "kind": "door",
+          "material": "timber",
+          "width_mm": 750,
+          "height_mm": 2100,
+          "quantity": 12,
+          "floors": [],
+          "evidence": "TIMBER DOOR.1 (TD1) elevation 750x2100, QUANTITY 12"
+        },
+        {
+          "mark": "TD2",
+          "kind": "door",
+          "material": "timber",
+          "width_mm": 900,
+          "height_mm": 2100,
+          "quantity": 10,
+          "floors": [],
+          "evidence": "TIMBER DOOR.2 (TD2) elevation 900x2100, QUANTITY 10"
+        },
+        {
+          "mark": "TD3",
+          "kind": "door",
+          "material": "timber",
+          "width_mm": 900,
+          "height_mm": 2100,
+          "quantity": 2,
+          "floors": [],
+          "evidence": "TIMBER DOOR.3 (TD3) elevation 900x2100, QUANTITY 2"
+        },
+        {
+          "mark": "GD1",
+          "kind": "door",
+          "material": "glass",
+          "width_mm": 1200,
+          "height_mm": 2100,
+          "quantity": 4,
+          "floors": [],
+          "evidence": "GLASS DOOR. 1 (GD1) elevation 1200x2100, QUANTITY 4"
+        },
+        {
+          "mark": "SD1",
+          "kind": "door",
+          "material": "steel",
+          "width_mm": 900,
+          "height_mm": 2150,
+          "quantity": 4,
+          "floors": [],
+          "evidence": "STEEL DOOR.1 (SD1) elevation 900x2150, QUANTITY 4"
+        },
+        {
+          "mark": "ASD1",
+          "kind": "door",
+          "material": "aluminium",
+          "width_mm": 3000,
+          "height_mm": 2100,
+          "quantity": 2,
+          "floors": [],
+          "evidence": "ALUMINIUM SLIDING DOOR.1 (ASD1) elevation 3000x2100, QUANTITY 2"
+        }
+      ],
+      "questions": [
+        "AW2 description footer reads 'Grand total: 2' which disagrees with QUANTITY 20 and location Grand total: 20 - QUANTITY 20 used.",
+        "AW1 and AW2 location tables list individual WINDOW NO. / ROOM NO. entries that are partly illegible in the images; only floor levels GROUND FLR. LEVL and FIRST FLR. LEVEL extracted, room-by-room allocation not verified against Grand totals.",
+        "No location / floor table printed for TD1, TD2, TD3, GD1, SD1, ASD1 - floors left empty."
+      ]
+    },
+    "levels": {
+      "levels": [
+        {
+          "name": "Building Apex Level",
+          "value_mm": 7800,
+          "page": 9
+        },
+        {
+          "name": "Roof Base Level",
+          "value_mm": 6600,
+          "page": 9
+        },
+        {
+          "name": "First Floor Level",
+          "value_mm": 3600,
+          "page": 9
+        },
+        {
+          "name": "Ground Floor Level",
+          "value_mm": 600,
+          "page": 9
+        },
+        {
+          "name": "NGL",
+          "value_mm": 0,
+          "page": 9
+        },
+        {
+          "name": "Building Apex Level",
+          "value_mm": 7800,
+          "page": 10
+        },
+        {
+          "name": "Roof Base Level",
+          "value_mm": 6600,
+          "page": 10
+        },
+        {
+          "name": "First Floor Level",
+          "value_mm": 3600,
+          "page": 10
+        },
+        {
+          "name": "Ground Floor Level",
+          "value_mm": 600,
+          "page": 10
+        },
+        {
+          "name": "NGL",
+          "value_mm": 0,
+          "page": 10
+        }
+      ],
+      "storey_heights_mm": [
+        {
+          "from": "NGL",
+          "to": "Ground Floor Level",
+          "value_mm": 600
+        },
+        {
+          "from": "Ground Floor Level",
+          "to": "First Floor Level",
+          "value_mm": 3000
+        },
+        {
+          "from": "First Floor Level",
+          "to": "Roof Base Level",
+          "value_mm": 3000
+        },
+        {
+          "from": "Roof Base Level",
+          "to": "Building Apex Level",
+          "value_mm": 1200
+        }
+      ],
+      "questions": [
+        "Internal room clear height dimensions (2700mm range) are partially legible on sections - please confirm if separate floor-to-ceiling heights apply for QS measurement?"
+      ]
+    }
+  },
+  "checks": {
+    "AW1": true,
+    "AW2": true,
+    "AW3": true,
+    "AW4": true,
+    "TD1": true,
+    "TD2": true,
+    "TD3": true,
+    "GD1": true,
+    "SD1": false,
+    "ASD1": true
+  },
+  "pct_error": {
+    "opening_types_wrong_pct": 10.0
+  },
+  "questions": [
+    "AW2 description footer reads 'Grand total: 2' which disagrees with QUANTITY 20 and location Grand total: 20 - QUANTITY 20 used.",
+    "AW1 and AW2 location tables list individual WINDOW NO. / ROOM NO. entries that are partly illegible in the images; only floor levels GROUND FLR. LEVL and FIRST FLR. LEVEL extracted, room-by-room allocation not verified against Grand totals.",
+    "No location / floor table printed for TD1, TD2, TD3, GD1, SD1, ASD1 - floors left empty.",
+    "Internal room clear height dimensions (2700mm range) are partially legible on sections - please confirm if separate floor-to-ceiling heights apply for QS measurement?"
+  ]
+}
