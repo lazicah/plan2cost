@@ -23,3 +23,5 @@ Open question for the author: confirm sheet lengths are centre-line (BESMM4 maso
 ## Corrected blockwork areas (author-confirmed)
 
 The author's sheet gives 507 (external) and 513 (internal) m2. Two inputs in the sheet were errors: storey height 3.3 m (the drawings give 3.0 m) and TD1 deducted at 0.95 m (the schedule gives 0.75 m). With the drawing values, external is 452 and internal is 466 (`ext_blockwork_230_m2`, `int_blockwork_230_m2`). External and internal openings are deducted from their own wall. ASD1 (3000 wide aluminium sliding door) is treated as internal, as in the sheet; open question whether it is an external opening.
+
+Update: SD1 is 900 x 2150 (confirmed), so external deductions are 0.18 m2 larger; external blockwork is 451.62, still 452 after rounding up. Internal is unchanged at 466.

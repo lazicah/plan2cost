@@ -376,11 +376,11 @@
     "TD2": true,
     "TD3": true,
     "GD1": true,
-    "SD1": false,
+    "SD1": true,
     "ASD1": true
   },
   "pct_error": {
-    "opening_types_wrong_pct": 10.0
+    "opening_types_wrong_pct": 0.0
   },
   "questions": [
     "AW2 description footer reads 'Grand total: 2' which disagrees with QUANTITY 20 and location Grand total: 20 - QUANTITY 20 used.",

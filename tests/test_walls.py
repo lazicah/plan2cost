@@ -40,7 +40,7 @@ def test_plan6_corrected_with_drawing_height_and_schedule_sizes():
     ext = {"ground": 98.62, "first": 82.34}
     internal = {"ground": 84.32, "first": 89.05}
     h = {"ground": 3.0, "first": 3.0}
-    ext_open = [Opening("SD1", 0.9, 2.1, 4, "door"), Opening("GD1", 1.2, 2.1, 4, "door"), Opening("AW1", 0.6, 1.8, 22),
+    ext_open = [Opening("SD1", 0.9, 2.15, 4, "door"), Opening("GD1", 1.2, 2.1, 4, "door"), Opening("AW1", 0.6, 1.8, 22),
                 Opening("AW2", 0.9, 1.8, 20), Opening("AW3", 1.8, 1.2, 2), Opening("AW4", 3.6, 1.8, 2)]
     int_open = [Opening("TD1", 0.75, 2.1, 12, "door", False), Opening("TD2", 0.9, 2.1, 10, "door", False),
                 Opening("TD3", 0.9, 2.1, 2, "door", False), Opening("ASD1", 3.0, 2.1, 2, "door", False)]

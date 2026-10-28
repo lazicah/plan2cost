@@ -48,7 +48,7 @@ The model indexed every page of the set, classified each page, then read the ope
 | TD2 | ok |
 | TD3 | ok |
 | GD1 | ok |
-| SD1 | WRONG |
+| SD1 | ok |
 | ASD1 | ok |
 
 ## Levels read from the sections
@@ -136,6 +136,9 @@ The model indexed every page of the set, classified each page, then read the ope
 ```
 
 ## Notes
+
+Rescored 2026-10-28 after the author confirmed SD1 is 900 x 2150 (the earlier truth value, 2100, was the sheet's error): all 10 opening types match.
+
 
 Whole 27-page set read: page titles from the title block, schedules from pages 23-27, levels from the sections. SD1 height: drawing prints 2150, the author's sheet uses 2100.
 

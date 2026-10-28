@@ -1,5 +1,5 @@
 {
-  "_note": "Opening types read from the plan6 door and window schedule (sheets A303-A308) by the author's survey; the drawings are not in the repo. Sizes in mm.",
+  "_note": "Opening types from the plan6 door and window schedule (sheets A303-A308). SD1 is 900 x 2150 (author confirmed 2026-10-28; the author's sheet used 2100 in error). Sizes in mm.",
   "AW1": {
     "width_mm": 600,
     "height_mm": 1800,
@@ -42,7 +42,7 @@
   },
   "SD1": {
     "width_mm": 900,
-    "height_mm": 2100,
+    "height_mm": 2150,
     "quantity": 4
   },
   "ASD1": {

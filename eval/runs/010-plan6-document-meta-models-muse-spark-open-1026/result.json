@@ -378,11 +378,11 @@
     "TD2": true,
     "TD3": true,
     "GD1": true,
-    "SD1": false,
+    "SD1": true,
     "ASD1": true
   },
   "pct_error": {
-    "opening_types_wrong_pct": 10.0
+    "opening_types_wrong_pct": 0.0
   },
   "questions": [
     "AW2 quantity 20 disagrees with AW2 LOCATION table count: 4 entries under GROUND FLR. LEVEL + 17 entries under FIRST FLR. LEVEL = 21 entries vs Grand total: 20 and QUANTITY 20",
