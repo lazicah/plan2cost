@@ -180,6 +180,20 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
             "junction_ends": m["junction_ends"], "scale": m["scale"], "note": "approximate: measured from the image; typically within about 10 percent on clean CAD plans"}
 
 
+def read_notes(run: Run, pages: list | None = None) -> dict:
+    """Specification notes (roof sheet, timber, ceiling, floor finish, slab thickness...) from the pages' text, each with its exact
+    quote already checked against the page. Default pages: sections, details, roof plans and elevations. Record the ones you need
+    with record_fact (source drawing) using the page and the quote."""
+    from plan2cost.notes import extract_notes
+
+    pages = [int(p) for p in pages] if pages else [p["page"] for p in run.pages if p["role"] in ("section", "detail", "roof_plan", "elevation")]
+    if not pages:
+        return {"error": "No pages to read; run index_document first or give page numbers."}
+    out = extract_notes(run.pdf, pages)
+    run.data["notes"] = out["notes"]
+    return out
+
+
 def compute_boq(run: Run) -> dict:
     """Wall blockwork and priced BoQ lines from recorded facts: girth per floor (facts named ext_girth_<floor>_m and
     int_girth_<floor>_m), storey heights and the openings read from the drawings."""
