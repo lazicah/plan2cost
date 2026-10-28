@@ -86,7 +86,8 @@ function render(run) {
   const checklist = run.checklist.length ? run.checklist.map(c => `<tr><td>${esc(c.id)}</td><td>${esc(c.question)}</td>
       <td><span class="pill ${c.status}">${esc(c.status)}</span></td></tr>`).join('') : '<tr><td class="mute">Not set yet</td></tr>';
   const facts = run.facts.map(f => `<tr><td>${esc(f.item)}</td><td>${esc(f.name)}</td><td class="n">${esc(f.value)} ${esc(f.unit)}</td>
-      <td><span class="pill ${f.source === 'assumed' ? 'assumed' : f.source === 'computed' ? 'open' : 'proven'}">${esc(f.source)}</span></td>
+      <td><span class="pill ${f.source === 'assumed' ? 'assumed' : f.source === 'computed' ? 'open' : 'proven'}">${esc(f.source)}</span>
+      <span class="pill ${f.confidence === 'high' ? 'proven' : f.confidence === 'medium' ? 'assumed' : 'escalated'}">${esc(f.confidence || '')}</span></td>
       <td class="small mute">${f.page ? 'p.' + esc(f.page) + ' ' : ''}${esc(f.verified || f.basis || '')}</td></tr>`).join('');
   const boq = run.boq ? `<section class="card"><h2>Bill of quantities</h2><table>
       <tr><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>
@@ -100,7 +101,7 @@ function render(run) {
       <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${q}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
-      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${boq}`;
+      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${boq}`;
   const btn = $('#answer');
   if (btn) btn.onclick = async () => { btn.disabled = true; await api(`/api/runs/${run.id}/answer`, {answer: $('#ans').value}); };
 }

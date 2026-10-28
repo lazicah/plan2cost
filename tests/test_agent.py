@@ -139,3 +139,19 @@ def test_sum_lengths_and_latest_fact_replaces_earlier():
     TOOLS["record_fact"][0](run, item="C1", name="h", value=1, source="user")
     TOOLS["record_fact"][0](run, item="C1", name="h", value=2, source="user")
     assert [f["value"] for f in run.facts] == [2]
+
+
+def test_computed_values_must_be_confirmed_before_submit_and_nonsense_girth_is_refused():
+    run = Run.new("x.pdf", "obj")
+    TOOLS["set_checklist"][0](run, ITEMS)
+    TOOLS["record_fact"][0](run, item="C1", name="storey_height_ground_m", value=3.0, source="user")
+    TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=91.4, source="computed", basis="read_wall_girth page 6")
+    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=0, source="computed", basis="read_wall_girth page 6")
+    assert "not plausible" in TOOLS["compute_boq"][0](run)["problems"][0]
+    run.data["boq"] = {"items": [], "total": 0}
+    refused = TOOLS["submit_boq"][0](run)["refused"]
+    assert any("not yet confirmed" in p and "int_girth_ground_m" in p for p in refused)
+    TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=98.62, source="user")
+    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=84.32, source="user")
+    assert TOOLS["submit_boq"][0](run) == {"filed": True}
+    assert {f["name"]: f["confidence"] for f in run.facts}["ext_girth_ground_m"] == "high"

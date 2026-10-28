@@ -67,6 +67,8 @@ def record_fact(run: Run, item: str, name: str, value, unit: str = "", source: s
             fact["warning"] = (f"{value} m equals the perimeter of a plain rectangle ({box:.2f} m) from the overall dimensions. "
                                "Girth is only that when the plan has no recesses or terraces. Ask the user to confirm, or record the "
                                "centre-line girth with basis containing 'confirmed by user'.")
+    fact["confidence"] = ("high" if source == "user" or fact.get("verified", "").startswith("quote found")
+                          else "medium" if source == "drawing" else "low")
     run.facts = [f for f in run.facts if f["name"] != name]  # the latest value for a name replaces the earlier one
     run.facts.append(fact)
     if entry["status"] == "open":
@@ -99,6 +101,10 @@ def submit_boq(run: Run, summary: str = "") -> dict:
         problems.append(f"Items not settled: {open_items}. Record a fact for each, or ask the user.")
     if run.pending:
         problems.append("A question to the user is still open.")
+    unconfirmed = [f["name"] for f in run.facts if f["source"] == "computed"]
+    if unconfirmed:
+        problems.append(f"Values measured by code from the plan are approximate and not yet confirmed: {unconfirmed}. Ask the user, in one "
+                        "question, to confirm each or give their own figure, then record their answer (source user).")
     unresolved = [f["name"] for f in run.facts if f.get("warning")]
     if unresolved:
         problems.append(f"Facts with an unresolved warning: {unresolved}. Ask the user to confirm them.")
@@ -165,6 +171,20 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
     return {"floor": floor, "ext_girth_m": round(ext, 2), "int_girth_m": round(internal, 2), "wall_runs": len(runs), "questions": questions}
 
 
+def read_notes(run: Run, pages: list | None = None) -> dict:
+    """Specification notes (roof sheet, timber, ceiling, floor finish, slab thickness...) from the pages' text, each with its exact
+    quote already checked against the page. Default pages: sections, details, roof plans and elevations. Record the ones you need
+    with record_fact (source drawing) using the page and the quote."""
+    from plan2cost.notes import extract_notes
+
+    pages = [int(p) for p in pages] if pages else [p["page"] for p in run.pages if p["role"] in ("section", "detail", "roof_plan", "elevation")]
+    if not pages:
+        return {"error": "No pages to read; run index_document first or give page numbers."}
+    out = extract_notes(run.pdf, pages)
+    run.data["notes"] = out["notes"]
+    return out
+
+
 def compute_boq(run: Run) -> dict:
     """Wall blockwork and priced BoQ lines from recorded facts: girth per floor (facts named ext_girth_<floor>_m and
     int_girth_<floor>_m), storey heights and the openings read from the drawings."""
@@ -175,6 +195,14 @@ def compute_boq(run: Run) -> dict:
     internal = {f["name"][len("int_girth_"):-2]: float(f["value"]) for f in run.facts if f["name"].startswith("int_girth_") and f["name"].endswith("_m")}
     if not ext or not internal:
         return {"error": "Record the external and internal girth per floor first, as facts named ext_girth_<floor>_m and int_girth_<floor>_m."}
+    problems = [f"{f}: internal girth is {g} m, which is not plausible for a floor with rooms" for f, g in internal.items() if g <= 0]
+    problems += [f"{f}: external girth is {g} m, which is not plausible" for f, g in ext.items() if g <= 0]
+    if len(ext) > 1:
+        top, low = max(ext.values()), min(ext.values())
+        if low < 0.6 * top:
+            problems.append(f"External girth differs too much between floors ({ext}); upper floors are normally close to the ground floor.")
+    if problems:
+        return {"error": "Implausible girth. Ask the user for the figures instead of using them.", "problems": problems}
     heights = run.data.get("heights") or {}
     missing = [f for f in ext if f not in heights]
     if missing:
@@ -195,6 +223,7 @@ TOOLS = {
     "record_fact": (record_fact, 'item: "C1", name: str, value, unit: str, source: "drawing"|"assumed"|"user"|"computed", page: int, quote: exact printed text, basis: str (assumed and computed)'),
     "sum_lengths": (sum_lengths, "values_m: [numbers], label: str: add lengths for you; never add numbers yourself"),
     "ask_user": (ask_user, 'item: "C1", question: str: pause for a person'),
+    "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
     "compute_boq": (compute_boq, "no args: wall areas and priced lines from the recorded facts"),
     "submit_boq": (submit_boq, 'summary: str: the gate; refused unless everything is settled'),

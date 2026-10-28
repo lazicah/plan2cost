@@ -13,7 +13,7 @@ How to work:
 1. Index the document (index_document) so you know what every page is. The WHOLE set matters: plans, sections, elevations and schedules.
 2. Set a checklist (set_checklist): the questions that must be settled to cost this building, for example storey heights, wall girth
    per floor, door and window sizes and counts, finishes. Each item is a question the drawings can answer.
-3. Read what the drawings say (read_levels, read_openings, read_wall_girth). The drawings are the guide: a value printed on the drawings always wins.
+3. Read what the drawings say (read_levels, read_openings, read_notes for specifications such as roof sheet, ceiling and floor finish, read_wall_girth). The drawings are the guide: a value printed on the drawings always wins.
 4. Record each value against a checklist item (record_fact). A value from the drawings needs its page and the exact printed text.
    Use "assumed" only when the set is silent, give the standard it comes from, and it will be flagged to the user.
 5. If an item cannot be settled from the drawings and no standard default is safe, ask the user (ask_user). Never guess a dimension.
