@@ -19,3 +19,4 @@ Progress log, one row per run (newest last). Error is % off the author's surveye
 | [013-plan2-ground-walls-external-internal](013-plan2-ground-walls-external-internal/report.md) | classical image processing (no model); scale from the PDF | ground external/internal walls | 8.1% | 12.3% | 0 |
 | [014-walls-measure-plan2-and-plan6](014-walls-measure-plan2-and-plan6/report.md) | classical image processing (no model); scale from the PDF | measure_walls | 31.9% | 63.7% | 0 |
 | [015-walls-generalisation-untuned](015-walls-generalisation-untuned/report.md) | classical image processing (no model); scale from the PDF | ground and first | 47.2% | 79.7% | 2 |
+| [016-plan2-foundation-section-muse-spark-1.3](016-plan2-foundation-section-muse-spark-1.3/report.md) | muse-spark-1.3 | foundation section | 0.0% | 0.0% | 1 |
