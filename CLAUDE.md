@@ -28,9 +28,28 @@ Bonus prizes to aim for: Best Build on Open Weights (Muse Spark Open / Glimmer),
 - Evaluate against the author's own surveyed quantities (`eval/cases/<id>/plan.* + truth.json`).
 
 ## Dev
-- `python -m pytest -q`; `python -m eval.run --cases eval/cases`
-- Model client is OpenAI-compatible; configure via `.env` (see `.env.example`).
+- Python 3.10+. `pip install -r requirements.txt`, then `python -m pytest -q` (all tests run offline; no network).
+- Needs poppler (`pdftoppm`, `pdftotext`, `pdfinfo`); `plan2cost/pdf.py` also looks in /opt/local/bin (MacPorts) and /opt/homebrew/bin.
+- `.env` (never print or commit it): `P2C_BASE_URL`, `P2C_API_KEY`, `P2C_MODEL` for the Meta Model API; `P2C_OPEN_*` for Muse Spark Open on Baseten. `P2C_PROFILE=open` runs everything on Spark Open.
+- Run the agent: `python -m plan2cost.agent --pdf <drawing set.pdf>`; console: `python ui/server.py` then http://127.0.0.1:8765.
+- `reference/` (the author's drawings, workbooks, rules, price data) and `workspace/` (agent runs) are gitignored. Drawings are third-party work: never copy them into the repo, only numbers read from them.
 - The cloud sandbox cannot reach the model APIs, so model-calling code is run locally.
 
-## Status
-Scaffold done (PR #1). Next: model client smoke test on a real plan, extraction prompt + JSON schema, agent loop, quote audit, stage-photo spike, eval cases, demo.
+## Layout
+- `plan2cost/agent/` the agent loop (checklist, quote-checked facts, ask_user pause and resume, submit gate), tools wrap everything below; `ui/` the console.
+- `plan2cost/document.py` whole drawing set: page index and classification, opening schedules, levels, plan-symbol openings. `notes.py` spec notes with checked quotes.
+- `plan2cost/dims.py`, `grid.py` printed dimensions, chains, grid bubbles and scale from the PDF text layer. `walls_cv.py` walls from raster plans (in progress). `sam.py` SAM 3.1 client (no matches on CAD line art; for photos).
+- `plan2cost/tools/` deterministic take-off maths: `takeoff.py` girth by dimension kind, `foundation.py`, `walls.py`. `boq.py` BoQ items and pricing; `data/defaults.json`, `data/rates.json`.
+- `eval/cases/<id>/` the author's surveyed truth; `eval/runs/` one report per model run (progress log for the Meta team).
+
+## Rules of the domain (from the author, a quantity surveyor)
+- Drawings are the guide; defaults are a flagged fallback. Never ask a non-technical user about girth or measurement terms.
+- Dimension kinds: centre-line, end-to-end, in-to-in. Use wall thickness as drawn (230 stays 230). BESMM4: dimensions to the nearest 10mm (0.675 -> 0.68), whole units, minimum 1.
+- Blockwork: full runs on the centre line, girth x storey height (from the section) less openings; external and internal walls are measured and deducted separately.
+- Trench width is three times the block thickness unless the drawing prints it; with no foundation layout the ground floor plan stands in.
+- Score girth against totals only (the author's sheets merge identical runs).
+
+## Status (Oct 28 night)
+Works: page classification and schedule/level/notes reading (both models); wall area and foundation maths reproduce the author's sheets; plan-symbol openings about 86 percent; agent loop, console, Spark Open.
+Not working: wall girth from a plan (model reading about 20 percent off; image detector finds about 74 percent of plan2 wall length), so no trustworthy end-to-end estimate yet. Not built: roof, finishes, services, preliminaries, additions in the BoQ; quote audit; stage photos.
+Next, in order: (1) finish `walls_cv.py` on plan2 (heavy exterior walls, stairs false positives, snap to printed breakpoints), footprint estimate as flagged fallback; (2) one complete plan2 BoQ end to end, compared with the author's own total; (3) quote audit; (4) SAM 3.1 stage-photo demo; (5) README (prior work vs new, AI-assistance disclosure), demo video, submit by Nov 3.
