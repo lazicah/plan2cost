@@ -59,6 +59,10 @@ def to_runs(data: dict) -> tuple[list[WallRun], list[str]]:
     return runs, questions
 
 
+def extract_walls_image(image_path: str, floor: str) -> dict:
+    return extract_walls(image_path, floor)
+
+
 def extract_walls(image_path: str, floor: str) -> dict:
     resp = get_client().chat.completions.create(
         model=model_name(),
