@@ -28,3 +28,13 @@ def test_strip_girths_from_extracted_runs():
     data = {"strip_runs": [{"length_mm": 50000, "count": 1}, {"length_mm": 10000, "count": 2}]}
     g = strip_girths(data, [PadBase("1", 1.2, 1.2, 5)])
     assert g == {"fdn_blockwork_girth_230_m": 70, "strip_trench_girth_230_m": 64}
+
+
+def test_foundation_extras_priced_and_laterite_left_unpriced():
+    import json
+    from plan2cost.boq import foundation_extras
+
+    items = foundation_extras([PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B",))], 20, slab_area_m2=200.55, fill_area_m2=184)
+    out = price_boq(items, json.load(open("data/rates.json")))
+    assert out["unpriced"] == ["laterite_m3"]
+    assert {i.key for i in items} >= {"column_base_concrete_m3", "rebar_y12_foundations_t", "ground_slab_m3"}

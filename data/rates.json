@@ -5,6 +5,14 @@
     "trench_excavation_strip_m3": 8000,
     "pit_excavation_column_bases_m3": 8000,
     "strip_footing_concrete_m3": 136250,
-    "fdn_blockwork_230_m2": 13915
+    "fdn_blockwork_230_m2": 13915,
+    "column_base_concrete_m3": 136250,
+    "ground_slab_m3": 127461,
+    "blinding_on_hardcore_m3": 95250,
+    "hardcore_m3": 10525,
+    "dpm_polythene_m2": 920,
+    "brc_mesh_part1_m2": 3759,
+    "rebar_y12_foundations_t": 1593750,
+    "rebar_y8_foundations_t": 1605858
   }
 }

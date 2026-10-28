@@ -75,7 +75,8 @@ def to_pads(data: dict) -> tuple[list[PadBase], list[str]]:
         if not (p.get("length_mm") and p.get("width_mm") and p.get("count")):
             questions.append(f"Base type {p.get('type')}: size or number is not readable on the drawing.")
             continue
-        pads.append(PadBase(re.sub(r"\D", "", str(p["type"])) or str(p["type"]), p["length_mm"] / 1000, p["width_mm"] / 1000, int(p["count"])))
+        pads.append(PadBase(re.sub(r"\D", "", str(p["type"])) or str(p["type"]), p["length_mm"] / 1000, p["width_mm"] / 1000, int(p["count"]),
+                        (p["thickness_mm"] / 1000) if p.get("thickness_mm") else 0.25, tuple(p.get("rebar") or ())))
     return pads, questions
 
 

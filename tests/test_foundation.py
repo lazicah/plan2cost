@@ -29,3 +29,20 @@ def test_drawn_675mm_rounds_to_0_68_and_changes_trench_volume():
 
 def test_whole_units_minimum_one():
     assert whole_units(0.2) == 1 and whole_units(2.5) == 3
+
+
+def test_ground_bed_matches_author_workbook():
+    from plan2cost.tools.foundation import ground_bed_takeoff
+
+    t = ground_bed_takeoff(200.55, fill_area_m2=184)
+    assert (t["ground_slab_m3"], t["brc_mesh_part1_m2"], t["dpm_polythene_m2"]) == (30, 200, 200)
+    assert (t["hardcore_m3"], t["laterite_m3"], t["blinding_on_hardcore_m3"]) == (28, 28, 10)
+
+
+def test_pad_concrete_and_rebar_from_drawing():
+    from plan2cost.tools.foundation import PadBase, pad_concrete_m3, pad_rebar_kg
+
+    pads = [PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B", "06-Y1202@200c/c B"))]
+    assert pad_concrete_m3(pads) == 1  # 1.44 m3
+    kg = pad_rebar_kg(pads)
+    assert list(kg) == [12] and round(kg[12], 1) == round(2 * 6 * (1.1 + 0.3) * 0.888889 * 4, 1)

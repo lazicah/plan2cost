@@ -3,6 +3,8 @@
 Follows the author's method: girth is built grid line by grid line, pad-base widths are deducted from the
 trench girth (pits are excavated separately) but not from the blockwork girth, which runs through the pads.
 """
+import math
+import re
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -27,6 +29,8 @@ class PadBase:
     length_m: float
     width_m: float
     count: int
+    thickness_m: float = 0.25  # as drawn on the pad base detail
+    rebar: tuple[str, ...] = ()  # notes as printed, e.g. "06-Y1202@200c/c B"
 
 
 @dataclass
@@ -87,3 +91,37 @@ def foundation_takeoff(lines: list[GridLine], pads: list[PadBase], s: StripSecti
         "strip_footing_concrete_m3": whole_units(t_girth * s.width_m * s.footing_thickness_m),
         f"fdn_blockwork_{s.block_mm}_m2": whole_units(b_girth * s.blockwork_height_m),
     }
+
+
+def pad_concrete_m3(pads: list[PadBase]) -> int:
+    return whole_units(sum(p.length_m * p.width_m * p.thickness_m * p.count for p in pads))
+
+
+BAR_NOTE = re.compile(r"(\d+)\s*-\s*Y(\d{2})\d{2}\s*@\s*(\d+)")  # "06-Y1202@200c/c B": 6 bars, Y12, mark 02, 200 centres
+
+
+def pad_rebar_kg(pads: list[PadBase], cover_m: float = 0.05) -> dict[int, float]:
+    """Mass of base reinforcement by bar diameter (mm). Each note is one direction of a square base; bars run the full
+    length less cover with both ends turned up the depth of the base less cover (assumed; not dimensioned on the drawing)."""
+    kg: dict[int, float] = {}
+    for p in pads:
+        for note in p.rebar[:1]:  # the two directions are repeated notes for the same bars; take one and double it
+            m = BAR_NOTE.search(note)
+            if not m:
+                continue
+            n, d = int(m.group(1)), int(m.group(2))
+            length = (p.length_m - 2 * cover_m) + 2 * (p.thickness_m - 2 * cover_m)
+            kg[d] = kg.get(d, 0) + 2 * n * length * (d * d / 162.0) * p.count  # d^2/162 kg/m
+    return kg
+
+
+def ground_bed_takeoff(slab_area_m2: float, fill_area_m2: float | None = None, slab_t: float = 0.15, blinding_t: float = 0.05,
+                       hardcore_t: float = 0.15, laterite_t: float = 0.15) -> dict:
+    """Ground floor bed: slab concrete from the footprint; mesh and DPM from the rounded slab volume (as the author does);
+    fills from the net bed area (footprint less the wall girth), rounded up."""
+    fill = fill_area_m2 if fill_area_m2 is not None else slab_area_m2
+    slab_m3 = whole_units(slab_area_m2 * slab_t)
+    area = whole_units(slab_m3 / slab_t)
+    up = lambda x: int(math.ceil(round(x, 6)))
+    return {"ground_slab_m3": slab_m3, "brc_mesh_part1_m2": area, "dpm_polythene_m2": area,
+            "blinding_on_hardcore_m3": up(fill * blinding_t), "hardcore_m3": up(fill * hardcore_t), "laterite_m3": up(fill * laterite_t)}
