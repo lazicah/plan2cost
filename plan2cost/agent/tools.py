@@ -168,32 +168,16 @@ def read_levels(run: Run) -> dict:
 
 
 def read_wall_girth(run: Run, page: int, floor: str) -> dict:
-    """Wall girth for one floor from a floor-plan page: the model reads wall runs and how each was dimensioned
-    (centre-line, end-to-end, in-to-in); code converts them to centre-line girth. Approximate: record it as source "computed"."""
-    from plan2cost.extract import extract_walls_image, to_runs
-    from plan2cost.pdf import render_pages
-    from plan2cost.tools.takeoff import girth
+    """Wall girth for one floor from a floor-plan page, measured: scale and grid from the PDF, walls from the page image, external and
+    internal split by what is outdoors. Approximate (record it as source "computed"); if the page has no readable grid it says so and
+    you should use estimate_girth_from_footprint."""
+    from plan2cost.measure import measure_walls
 
-    img = render_pages(run.pdf, [int(page)], str(run.dir / "scratch"), dpi=200)[0]
-    runs, questions = to_runs(extract_walls_image(img, floor))
-    g = girth(runs)
-    ext = sum(v for k, v in g.items() if k.startswith("ext_girth_"))
-    internal = sum(v for k, v in g.items() if k.startswith("int_girth_"))
-    return {"floor": floor, "ext_girth_m": round(ext, 2), "int_girth_m": round(internal, 2), "wall_runs": len(runs), "questions": questions}
-
-
-def read_notes(run: Run, pages: list | None = None) -> dict:
-    """Specification notes (roof sheet, timber, ceiling, floor finish, slab thickness...) from the pages' text, each with its exact
-    quote already checked against the page. Default pages: sections, details, roof plans and elevations. Record the ones you need
-    with record_fact (source drawing) using the page and the quote."""
-    from plan2cost.notes import extract_notes
-
-    pages = [int(p) for p in pages] if pages else [p["page"] for p in run.pages if p["role"] in ("section", "detail", "roof_plan", "elevation")]
-    if not pages:
-        return {"error": "No pages to read; run index_document first or give page numbers."}
-    out = extract_notes(run.pdf, pages)
-    run.data["notes"] = out["notes"]
-    return out
+    m = measure_walls(run.pdf, int(page))
+    if m.get("error"):
+        return m
+    return {"floor": floor, "ext_girth_m": float(m["external_m"]), "int_girth_m": float(m["internal_m"]), "walls": m["walls"],
+            "junction_ends": m["junction_ends"], "scale": m["scale"], "note": "approximate: measured from the image; typically within about 10 percent on clean CAD plans"}
 
 
 def compute_boq(run: Run) -> dict:

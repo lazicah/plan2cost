@@ -101,34 +101,56 @@ def girth_by_thickness(walls: list[Wall], classes_mm=(100, 150, 230)) -> dict[in
     return {c: round(v, 2) for c, v in sorted(out.items())}
 
 
-def classify_external(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 1500, margin_px: int = 3) -> list[str]:
-    """"external" or "internal" for each wall, by flood-filling the outdoors from the image border over the wall layout. Openings in the
-    envelope (a porch, a terrace) are closed over by `close_mm` so the outdoors cannot leak into the rooms; a wall with the outdoors on one
-    side is external, with it on neither side internal. Pixel space of the sheet, so `shape` is the page image's (height, width)."""
+def external_fractions(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 2500, margin_px: int = 3,
+                       step_mm: float = 500) -> list[float]:
+    """For each wall, the share of its length that has the outdoors on one side. The outdoors is found by flood-filling from the sheet
+    edge over the wall layout, with openings up to `close_mm` closed so it cannot leak into the rooms. Sampling along the wall (not
+    at one point) lets a long run that is partly a party wall and partly an outer wall be split fairly."""
     h, w = shape
     canvas = np.zeros((h, w), np.uint8)
-
-    def rect(wall: Wall, grow_px: int = 0) -> tuple[tuple[int, int], tuple[int, int]]:
-        t = wall.thickness_mm / mm_per_px / 2 + grow_px
-        c, a, b = wall.centre_mm / mm_per_px, wall.start_mm / mm_per_px, wall.end_mm / mm_per_px
-        return ((int(a), int(c - t)), (int(b), int(c + t))) if wall.orient == "h" else ((int(c - t), int(a)), (int(c + t), int(b)))
-
     for wall in walls:
-        p1, p2 = rect(wall)
+        t = wall.thickness_mm / mm_per_px / 2
+        c, a, b = wall.centre_mm / mm_per_px, wall.start_mm / mm_per_px, wall.end_mm / mm_per_px
+        p1, p2 = (((int(a), int(c - t)), (int(b), int(c + t))) if wall.orient == "h" else ((int(c - t), int(a)), (int(c + t), int(b))))
         cv2.rectangle(canvas, p1, p2, 1, -1)
     k = max(3, int(close_mm / mm_per_px))
     padded = cv2.copyMakeBorder(canvas, k, k, k, k, cv2.BORDER_CONSTANT, value=0)  # the sheet edge must not be closed over
     closed = cv2.morphologyEx(padded, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k)))[k:-k, k:-k]
     free = (closed == 0).astype(np.uint8)
-    outside = np.zeros((h + 2, w + 2), np.uint8)
-    cv2.floodFill(free.copy(), outside, (0, 0), 2)  # the mask of everything reachable from the corner without crossing a wall
-    outdoors = outside[1:-1, 1:-1] > 0
+    reach = np.zeros((h + 2, w + 2), np.uint8)
+    cv2.floodFill(free.copy(), reach, (0, 0), 2)
+    outdoors = reach[1:-1, 1:-1] > 0
     out = []
     for wall in walls:
-        mid = (wall.start_mm + wall.end_mm) / 2 / mm_per_px
         c = wall.centre_mm / mm_per_px
         off = wall.thickness_mm / mm_per_px / 2 + margin_px
-        pts = [(int(mid), int(c - off)), (int(mid), int(c + off))] if wall.orient == "h" else [(int(c - off), int(mid)), (int(c + off), int(mid))]
-        sides = [bool(outdoors[min(max(y, 0), h - 1), min(max(x, 0), w - 1)]) for x, y in pts]
-        out.append("external" if any(sides) else "internal")
+        n = max(1, int(wall.length_mm / step_mm))
+        hits = 0
+        for i in range(n):
+            m = (wall.start_mm + (i + 0.5) * wall.length_mm / n) / mm_per_px
+            pts = [(int(m), int(c - off)), (int(m), int(c + off))] if wall.orient == "h" else [(int(c - off), int(m)), (int(c + off), int(m))]
+            hits += any(bool(outdoors[min(max(y, 0), h - 1), min(max(x, 0), w - 1)]) for x, y in pts)
+        out.append(hits / n)
     return out
+
+
+def classify_external(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, **kw) -> list[str]:
+    """"external" when at least half of a wall's length has the outdoors on one side, else "internal"."""
+    return ["external" if f >= 0.5 else "internal" for f in external_fractions(walls, shape, mm_per_px, **kw)]
+
+
+def junctions(walls: list[Wall], tol_mm: float = 150) -> int:
+    """Count the ends of walls that butt into another wall (T and L joints). A butting end double-counts the other wall's thickness, so
+    each one takes a deduction when the trench or blockwork girth is built from full runs."""
+    n = 0
+    for w in walls:
+        for end in (w.start_mm, w.end_mm):
+            for v in walls:
+                if v is w or v.orient == w.orient:
+                    continue
+                along_ok = abs(end - v.centre_mm) <= v.thickness_mm / 2 + tol_mm
+                across_ok = v.start_mm - tol_mm <= w.centre_mm <= v.end_mm + tol_mm
+                if along_ok and across_ok:
+                    n += 1
+                    break
+    return n
