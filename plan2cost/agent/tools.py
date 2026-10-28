@@ -96,26 +96,6 @@ def assume_floor_like_ground(run: Run, floor: str) -> dict:
     return {"floor": floor, "assumed_like_ground": True, **out}
 
 
-def sum_lengths(run: Run, values_m: list, label: str = "") -> dict:
-    """Add lengths. The model never does arithmetic: use this."""
-    return {"label": label, "sum_m": round(sum(float(v) for v in values_m), 3)}
-
-
-def estimate_girth_from_footprint(run: Run, floor: str, length_m: float, width_m: float, wall_mm: int = 230) -> dict:
-    """Fallback when the plan cannot be walked grid by grid: the building's overall length and width (printed on the drawing, or
-    the footprint the user knows) give the external centre-line girth of a plain rectangle. Internal walls are estimated from the
-    floor area with the default ratio in data/defaults.json. Record both as source "assumed" with this tool as the basis."""
-    import json
-    from pathlib import Path
-
-    t = wall_mm / 1000
-    ext = 2 * ((length_m - t) + (width_m - t))  # centre-line of a rectangle whose overall dimensions are outside to outside
-    ratio = json.loads(Path("data/defaults.json").read_text())["estimate"]["internal_wall_m_per_m2_floor"]
-    internal = round(length_m * width_m * ratio["value"], 2)
-    return {"floor": floor, "ext_girth_m": round(ext, 2), "int_girth_m": internal,
-            "basis": f"plain rectangle {length_m} x {width_m} m, {wall_mm}mm walls; internal at {ratio['value']} m per m2 ({ratio['basis']})"}
-
-
 def ask_user(run: Run, item: str, question: str) -> dict:
     """Pause the run for a person. Use it when the drawings do not settle an item and no standard default is safe."""
     run.pending = {"item": item, "question": question}
@@ -190,7 +170,7 @@ def read_levels(run: Run) -> dict:
 def read_wall_girth(run: Run, page: int, floor: str) -> dict:
     """Wall girth for one floor from a floor-plan page, measured: scale and grid from the PDF, walls from the page image, external and
     internal split by what is outdoors. Approximate (record it as source "computed"); if the page has no readable grid it says so and
-    you should use estimate_girth_from_footprint."""
+    for an upper floor use assume_floor_like_ground."""
     from plan2cost.measure import measure_walls
 
     m = measure_walls(run.pdf, int(page))
