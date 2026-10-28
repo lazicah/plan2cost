@@ -27,7 +27,7 @@ MIN_FACE_PX = 3  # a cut-wall face is drawn heavy; grid, dimension and extension
 MAX_FACE_PX = 7  # a face line plus a grid or extension line drawn alongside it is still one face
 
 
-def _runs(mask: np.ndarray, orient: str, min_len_px: int) -> list[tuple[int, int, int]]:
+def _runs(mask: np.ndarray, orient: str, min_len_px: int, min_px: int = MIN_FACE_PX, max_px: int = MAX_FACE_PX) -> list[tuple[int, int, int]]:
     """Straight dark runs as (across_px, start_px, end_px), one per face line."""
     k = (min_len_px, 1) if orient == "h" else (1, min_len_px)
     opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, k))
@@ -35,9 +35,9 @@ def _runs(mask: np.ndarray, orient: str, min_len_px: int) -> list[tuple[int, int
     out = []
     for i in range(1, n):
         x, y, w, h, _ = stats[i]
-        if orient == "h" and MIN_FACE_PX <= h <= MAX_FACE_PX:
+        if orient == "h" and min_px <= h <= max_px:
             out.append((int(y + h / 2), x, x + w))
-        elif orient == "v" and MIN_FACE_PX <= w <= MAX_FACE_PX:
+        elif orient == "v" and min_px <= w <= max_px:
             out.append((int(x + w / 2), y, y + h))
     return out
 
@@ -47,6 +47,21 @@ THICKNESS_WINDOWS_MM = {100: (85, 135), 150: (135, 185), 230: (195, 270)}  # nom
 
 def _nominal(spacing_mm: float, windows: dict[int, tuple[int, int]]) -> int | None:
     return next((n for n, (lo, hi) in windows.items() if lo <= spacing_mm <= hi), None)
+
+
+def _solid_runs(mask: np.ndarray, orient: str, min_len_px: int, min_w_px: int, max_w_px: int) -> list[tuple[int, int, int, int]]:
+    """Walls drawn as one solid band (some plans fill the wall instead of drawing two faces): (across_px, start_px, end_px, width_px)."""
+    k = (min_len_px, 1) if orient == "h" else (1, min_len_px)
+    opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, k))
+    n, _, stats, _ = cv2.connectedComponentsWithStats(opened, connectivity=8)
+    out = []
+    for i in range(1, n):
+        x, y, w, h, _a = stats[i]
+        if orient == "h" and min_w_px <= h <= max_w_px:
+            out.append((int(y + h / 2), x, x + w, h))
+        elif orient == "v" and min_w_px <= w <= max_w_px:
+            out.append((int(x + w / 2), y, y + h, w))
+    return out
 
 
 def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, int, int], windows: dict[int, tuple[int, int]] | None = None,
@@ -76,6 +91,30 @@ def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, in
                 continue
             used.update((i, j))
             pieces.append(Wall(orient, centre * mm_per_px, lo * mm_per_px, hi * mm_per_px, float(nominal)))
+        # some plans draw one face of a wall heavy and the other thin: pair the heavy faces still unused with a thin line at wall spacing
+        thin = sorted(_runs(mask, orient, min_len, 1, MIN_FACE_PX - 1))
+        extra = []
+        for i, (a, s1, e1) in enumerate(runs):
+            if i in used:
+                continue
+            for t, (b, s2, e2) in enumerate(thin):
+                gap = abs(b - a)
+                nominal = _nominal(gap * mm_per_px, windows)
+                lo, hi = max(s1, s2), min(e1, e2)
+                # the thin line must run alongside most of the heavy face, and a 100mm wall is never inferred from a thin line
+                if nominal and nominal >= 150 and hi - lo >= min_len and hi - lo >= 0.7 * (e1 - s1):
+                    extra.append((hi - lo, i, t, nominal, lo, hi, (a + b) / 2))
+        used_thin: set[int] = set()
+        for length, i, t, nominal, lo, hi, centre in sorted(extra, reverse=True):
+            if i in used or t in used_thin:
+                continue
+            used.add(i); used_thin.add(t)
+            pieces.append(Wall(orient, centre * mm_per_px, lo * mm_per_px, hi * mm_per_px, float(nominal)))
+        lo_px, hi_px = min(lo for lo, _ in windows.values()) / mm_per_px * 0.8, max(hi for _, hi in windows.values()) / mm_per_px
+        for across, s1, e1, width in _solid_runs(mask, orient, min_len, int(MAX_FACE_PX + 1), int(hi_px)):
+            nominal = _nominal(width * mm_per_px * 1.15, windows)  # a drawn band is a little narrower than the wall it stands for
+            if nominal and width >= lo_px:
+                pieces.append(Wall(orient, across * mm_per_px, s1 * mm_per_px, e1 * mm_per_px, float(nominal)))
     return _merge(pieces, bridge_mm)
 
 

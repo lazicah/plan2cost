@@ -33,16 +33,5 @@
       "value": 20,
       "basis": "plan2 BoQ: plain grade 20 foundation"
     }
-  },
-  "estimate": {
-    "_note": "Fallbacks for when the drawings cannot be walked. Placeholders until the author confirms the rule of thumb.",
-    "internal_wall_m_per_m2_floor": {
-      "value": 0.45,
-      "basis": "PLACEHOLDER: internal wall length per m2 of floor; to be confirmed by the author"
-    },
-    "trench_width_times_block": {
-      "value": 3,
-      "basis": "convention: trench width is three times the block wall thickness (225mm wall: 675mm trench; 150mm wall: 450mm)"
-    }
   }
 }

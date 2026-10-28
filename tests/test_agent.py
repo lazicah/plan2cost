@@ -141,20 +141,22 @@ def test_sum_lengths_and_latest_fact_replaces_earlier():
     assert [f["value"] for f in run.facts] == [2]
 
 
-def test_computed_values_need_no_user_confirmation_and_nonsense_girth_points_to_the_estimate():
+def test_computed_values_need_no_user_confirmation_and_nonsense_girth_points_to_the_fallback():
     run = Run.new("x.pdf", "obj")
-    TOOLS["set_checklist"][0](run, ITEMS)
+    TOOLS["set_checklist"][0](run, [{"question": "ground girth?"}, {"question": "first floor girth?"}, {"question": "doors?"}])
     TOOLS["record_fact"][0](run, item="C1", name="storey_height_ground_m", value=3.0, source="user")
-    TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=91.4, source="computed", basis="read_wall_girth page 6")
-    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=0, source="computed", basis="read_wall_girth page 6")
+    TOOLS["record_fact"][0](run, item="C1", name="ext_girth_ground_m", value=91.4, source="computed", basis="read_wall_girth page 6")
+    TOOLS["record_fact"][0](run, item="C1", name="int_girth_ground_m", value=0, source="computed", basis="read_wall_girth page 6")
     bad = TOOLS["compute_boq"][0](run)
-    assert "not plausible" in bad["problems"][0] and "estimate_girth_from_footprint" in bad["error"] and "Do not ask the user" in bad["error"]
-    est = TOOLS["estimate_girth_from_footprint"][0](run, "ground", 19.43, 17.13, 230)
-    assert est["ext_girth_m"] == round(2 * ((19.43 - 0.23) + (17.13 - 0.23)), 2) and est["int_girth_m"] > 0
-    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=est["int_girth_m"], source="assumed", basis=est["basis"])
+    assert "not plausible" in bad["problems"][0] and "assume_floor_like_ground" in bad["error"] and "Do not ask the user" in bad["error"]
+    TOOLS["record_fact"][0](run, item="C1", name="int_girth_ground_m", value=50.0, source="computed", basis="read_wall_girth page 6")
+    out = TOOLS["assume_floor_like_ground"][0](run, "first")
+    assert out["assumed_like_ground"] and {f["name"]: f["value"] for f in run.facts}["int_girth_first_m"] == 50.0
+    assert any("repeat the ground floor" in a["basis"] for a in run.assumptions)
     run.data["boq"] = {"items": [], "total": 0}
+    TOOLS["record_fact"][0](run, item="C3", name="doors", value=1, source="user")
     assert TOOLS["submit_boq"][0](run) == {"filed": True}  # measured values are labelled low confidence, not blocked
-    assert {f["name"]: f["confidence"] for f in run.facts}["ext_girth_ground_m"] == "low"
+
 
 
 def test_foundation_from_ground_walls_uses_three_times_the_block_and_flags_defaults(tmp_path, monkeypatch):

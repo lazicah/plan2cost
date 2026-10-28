@@ -10,6 +10,11 @@ from plan2cost.pdf import render_pages
 from plan2cost.walls_cv import external_fractions, find_walls, junctions
 
 
+# Walls are drawn at a fixed width on paper whatever the sheet's scale (plan2's 230mm wall is 5.27 pt on both its sheets), so the accepted face
+# spacing is set in points and converted with the sheet's own scale. Class names are the nominal block thicknesses.
+THICKNESS_WINDOWS_PT = {100: (1.9, 2.9), 150: (2.9, 4.5), 230: (4.6, 6.0)}
+
+
 def measure_walls(pdf: str, page: int, dpi: int = 150, margin_mm: float = 2500) -> dict:
     grid = calibrate(find_grid(pdf, page), [t.value for t in dimension_tokens(pdf, page)])
     if grid.mm_per_pt is None or len(grid.verticals) < 2 or len(grid.horizontals) < 2:
@@ -22,7 +27,8 @@ def measure_walls(pdf: str, page: int, dpi: int = 150, margin_mm: float = 2500) 
     xs = [g.pos_pts for g in grid.verticals]
     ys = [g.pos_pts for g in grid.horizontals]
     region = tuple(int(v * k) for v in (min(xs) - m, min(ys) - m, max(xs) + m, max(ys) + m))
-    walls = find_walls(gray, mm_px, (max(region[0], 0), max(region[1], 0), region[2], region[3]))
+    windows = {n: (lo * grid.mm_per_pt, hi * grid.mm_per_pt) for n, (lo, hi) in THICKNESS_WINDOWS_PT.items()}
+    walls = find_walls(gray, mm_px, (max(region[0], 0), max(region[1], 0), region[2], region[3]), windows=windows)
     if not walls:
         return {"error": "No walls were found on this page.", "confidence": "none"}
     fr = external_fractions(walls, gray.shape, mm_px)

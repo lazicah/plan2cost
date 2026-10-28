@@ -81,6 +81,26 @@ def sum_lengths(run: Run, values_m: list, label: str = "") -> dict:
     return {"label": label, "sum_m": round(sum(float(v) for v in values_m), 3)}
 
 
+def assume_floor_like_ground(run: Run, floor: str) -> dict:
+    """Fallback when an upper floor's walls cannot be read reliably: assume it repeats the ground floor's external and internal girth.
+    Recorded as an assumption with the reason, so it is flagged in the BoQ. There is no rule of thumb behind it and no invented dimension."""
+    facts = {f["name"]: f for f in run.facts}
+    if "ext_girth_ground_m" not in facts or "int_girth_ground_m" not in facts:
+        return {"error": "The ground floor girth must be recorded first."}
+    item = next((c["id"] for c in run.checklist if floor in c["question"].lower() and "girth" in c["question"].lower()), facts["ext_girth_ground_m"]["item"])
+    out = {}
+    for kind in ("ext", "int"):
+        r = record_fact(run, item=item, name=f"{kind}_girth_{floor}_m", value=facts[f"{kind}_girth_ground_m"]["value"], unit="m", source="assumed",
+                        basis=f"{floor} floor walls could not be read from its plan; assumed to repeat the ground floor")
+        out[kind] = r.get("error") or "recorded"
+    return {"floor": floor, "assumed_like_ground": True, **out}
+
+
+def sum_lengths(run: Run, values_m: list, label: str = "") -> dict:
+    """Add lengths. The model never does arithmetic: use this."""
+    return {"label": label, "sum_m": round(sum(float(v) for v in values_m), 3)}
+
+
 def estimate_girth_from_footprint(run: Run, floor: str, length_m: float, width_m: float, wall_mm: int = 230) -> dict:
     """Fallback when the plan cannot be walked grid by grid: the building's overall length and width (printed on the drawing, or
     the footprint the user knows) give the external centre-line girth of a plain rectangle. Internal walls are estimated from the
@@ -234,7 +254,7 @@ def compute_boq(run: Run) -> dict:
         if low < 0.6 * top:
             problems.append(f"External girth differs too much between floors ({ext}); upper floors are normally close to the ground floor.")
     if problems:
-        return {"error": "Implausible girth. Re-read the plan, or use estimate_girth_from_footprint for the floor. Do not ask the user about girth.", "problems": problems}
+        return {"error": "Implausible girth. Re-read the plan, or use assume_floor_like_ground for an upper floor. Do not ask the user about girth.", "problems": problems}
     heights = run.data.get("heights") or {}
     missing = [f for f in ext if f not in heights]
     if missing:
@@ -257,7 +277,7 @@ TOOLS = {
     "read_levels": (read_levels, "no args: storey heights from the sections"),
     "record_fact": (record_fact, 'item: "C1", name: str, value, unit: str, source: "drawing"|"assumed"|"user"|"computed", page: int, quote: exact printed text, basis: str (assumed and computed)'),
     "sum_lengths": (sum_lengths, "values_m: [numbers], label: str: add lengths for you; never add numbers yourself"),
-    "estimate_girth_from_footprint": (estimate_girth_from_footprint, 'floor: str, length_m: number, width_m: number, wall_mm: int: fallback girth from the overall length and width; record as source "assumed"'),
+    "assume_floor_like_ground": (assume_floor_like_ground, "floor: str: fallback for an upper floor whose walls cannot be read: assume it repeats the ground floor (flagged as an assumption)"),
     "ask_user": (ask_user, 'item: "C1", question: str: pause for a person'),
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),

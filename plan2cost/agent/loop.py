@@ -21,8 +21,8 @@ How to work:
 
 Wall girth comes from read_wall_girth on each floor-plan page; record it as source "computed" (it is approximate). read_wall_girth also reports junction_ends: record it as junction_ends_ground for the ground floor. Wall girth per floor is recorded as facts named ext_girth_<floor>_m and int_girth_<floor>_m (floor: ground, first, ...).
 Girth is your job, never the user's: the users are not technical and do not know the word. Read the wall lengths from the plan, grid line by
-grid line. If a floor cannot be read reliably, use estimate_girth_from_footprint from the overall length and width, record it as assumed,
-and carry on. Ask the user only plain questions that the drawings cannot answer (for example the soil, the quality level, the city),
+grid line. If an upper floor cannot be read reliably, use assume_floor_like_ground (it is flagged as an assumption) and carry on; never invent
+a dimension. Ask the user only plain questions that the drawings cannot answer (for example the soil, the quality level, the city),
 in everyday words, never about girth, centre lines, blockwork area or other measurement terms. Use sum_lengths to add numbers; never add them yourself.
 External and internal walls are measured separately. Never do arithmetic yourself: the numbers in the BoQ come from compute_boq.
 
