@@ -81,11 +81,11 @@ def width_candidates(tokens: list[DimToken], value: int, tolerance_pts: float = 
 
 
 def bbox_perimeter_m(tokens: list[DimToken]) -> float | None:
-    """The perimeter of the plain rectangle implied by the largest horizontal and vertical printed dimensions on the outer chains.
-    A building with recesses or terraces has more wall than this, so a girth equal to it is suspect."""
-    outer = outer_chain_tokens(tokens)
-    horiz = [t.value for t in outer if not t.vertical and t.value >= 3000]
-    vert = [t.value for t in outer if t.vertical and t.value >= 3000]
+    """The perimeter of the plain rectangle implied by the largest horizontal and largest vertical printed dimensions on the sheet
+    (the overall dimensions, which often sit on short chains of their own). A building with recesses or terraces has more wall than
+    this, so a girth equal to it is suspect."""
+    horiz = [t.value for t in tokens if not t.vertical and t.value >= 3000]
+    vert = [t.value for t in tokens if t.vertical and t.value >= 3000]
     if not horiz or not vert:
         return None
     return 2 * (max(horiz) + max(vert)) / 1000
