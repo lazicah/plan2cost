@@ -14,3 +14,4 @@ Progress log, one row per run (newest last). Error is % off the author's surveye
 | [008-plan6-windows-two-pass-muse-spark-1.3](008-plan6-windows-two-pass-muse-spark-1.3/report.md) | muse-spark-1.3 | candidates, two-pass | 21.4% | 21.4% | 0 |
 | [009-plan6-windows-mirror-muse-spark-1.3](009-plan6-windows-mirror-muse-spark-1.3/report.md) | muse-spark-1.3 | candidates, two-pass, mirror check | 14.3% | 14.3% | 0 |
 | [010-plan6-document-meta-models-muse-spark-open-1026](010-plan6-document-meta-models-muse-spark-open-1026/report.md) | meta-models/muse-spark-open-1026 | document | 0.0% | 0.0% | 6 |
+| [011-plan6-windows-candidates-meta-models-muse-spark-open-1026](011-plan6-windows-candidates-meta-models-muse-spark-open-1026/report.md) | meta-models/muse-spark-open-1026 | candidates, two-pass, mirror check | 26.2% | 26.2% | 0 |
