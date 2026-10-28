@@ -59,10 +59,24 @@ def record_fact(run: Run, item: str, name: str, value, unit: str = "", source: s
         if not basis:
             return {"error": "An assumed value needs the basis (the standard or default it comes from)."}
         run.assumptions.append({"name": name, "value": value, "basis": basis})
+    if name.startswith(("ext_girth_", "int_girth_")) and name.startswith("ext_girth_") and page and "confirmed" not in basis.lower():
+        from plan2cost.dims import bbox_perimeter_m, dimension_tokens
+
+        box = bbox_perimeter_m(dimension_tokens(run.pdf, int(page)))
+        if box and abs(float(value) - box) <= 0.01 * box:
+            fact["warning"] = (f"{value} m equals the perimeter of a plain rectangle ({box:.2f} m) from the overall dimensions. "
+                               "Girth is only that when the plan has no recesses or terraces. Ask the user to confirm, or record the "
+                               "centre-line girth with basis containing 'confirmed by user'.")
+    run.facts = [f for f in run.facts if f["name"] != name]  # the latest value for a name replaces the earlier one
     run.facts.append(fact)
     if entry["status"] == "open":
         entry["status"] = "assumed" if source == "assumed" else "proven"
-    return {"recorded": fact, "open_items": [c["id"] for c in run.checklist if c["status"] == "open"]}
+    return {"recorded": fact, "warning": fact.get("warning"), "open_items": [c["id"] for c in run.checklist if c["status"] == "open"]}
+
+
+def sum_lengths(run: Run, values_m: list, label: str = "") -> dict:
+    """Add lengths. The model never does arithmetic: use this."""
+    return {"label": label, "sum_m": round(sum(float(v) for v in values_m), 3)}
 
 
 def ask_user(run: Run, item: str, question: str) -> dict:
@@ -85,6 +99,9 @@ def submit_boq(run: Run, summary: str = "") -> dict:
         problems.append(f"Items not settled: {open_items}. Record a fact for each, or ask the user.")
     if run.pending:
         problems.append("A question to the user is still open.")
+    unresolved = [f["name"] for f in run.facts if f.get("warning")]
+    if unresolved:
+        problems.append(f"Facts with an unresolved warning: {unresolved}. Ask the user to confirm them.")
     if "boq" not in run.data:
         problems.append("No BoQ has been computed yet (compute_boq).")
     if problems:
@@ -176,6 +193,7 @@ TOOLS = {
     "read_openings": (read_openings, "no args: door and window types from the schedule pages"),
     "read_levels": (read_levels, "no args: storey heights from the sections"),
     "record_fact": (record_fact, 'item: "C1", name: str, value, unit: str, source: "drawing"|"assumed"|"user"|"computed", page: int, quote: exact printed text, basis: str (assumed and computed)'),
+    "sum_lengths": (sum_lengths, "values_m: [numbers], label: str: add lengths for you; never add numbers yourself"),
     "ask_user": (ask_user, 'item: "C1", question: str: pause for a person'),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
     "compute_boq": (compute_boq, "no args: wall areas and priced lines from the recorded facts"),

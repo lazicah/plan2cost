@@ -20,6 +20,9 @@ How to work:
 6. compute_boq, then submit_boq. Submit is refused until every checklist item is settled.
 
 Wall girth comes from read_wall_girth on each floor-plan page; record it as source "computed" (it is approximate). Wall girth per floor is recorded as facts named ext_girth_<floor>_m and int_girth_<floor>_m (floor: ground, first, ...).
+If a girth cannot be read, ask the user for the centre-line girth of that floor as they measured it, for external and internal walls
+together in one question. Never ask for, or accept, length x width: buildings have recesses and terraces, so a plain-rectangle perimeter
+is wrong. Use sum_lengths to add numbers; never add them yourself.
 External and internal walls are measured separately. Never do arithmetic yourself: the numbers in the BoQ come from compute_boq.
 
 Tools:

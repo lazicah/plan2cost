@@ -40,9 +40,18 @@ def parse_json(text: str) -> dict:
     return json.loads(m.group(0))
 
 
+def stated_external_thickness(data: dict) -> int | None:
+    """The external wall thickness the drawing states most often (e.g. 230), used for external runs that carry none."""
+    stated = [int(r["thickness_mm"]) for r in data.get("wall_runs", []) if r.get("thickness_mm") and r.get("external")]
+    stated = stated or [int(r["thickness_mm"]) for r in data.get("wall_runs", []) if r.get("thickness_mm")]
+    return max(set(stated), key=stated.count) if stated else None
+
+
 def to_runs(data: dict) -> tuple[list[WallRun], list[str]]:
-    """Validate extraction into WallRuns; anything unusable becomes a question, not a guess."""
+    """Validate extraction into WallRuns; anything unusable becomes a question, not a guess. An external run with no thickness
+    of its own takes the thickness the drawing states for external walls, and that is said out loud."""
     runs, questions = [], list(data.get("questions", []))
+    fallback = stated_external_thickness(data)
     for r in data.get("wall_runs", []):
         label = r.get("label", "?")
         try:
@@ -50,11 +59,15 @@ def to_runs(data: dict) -> tuple[list[WallRun], list[str]]:
         except ValueError:
             questions.append(f"{label}: which dimension kind is {r.get('length_mm')}mm (centre-line, end-to-end or in-to-in)?")
             continue
-        if not r.get("thickness_mm") or not r.get("length_mm"):
+        thickness = r.get("thickness_mm")
+        if not thickness and r.get("external") and fallback:
+            thickness = fallback
+            questions.append(f"{label}: no thickness printed; used {fallback}mm, the external thickness stated elsewhere on the drawing. Confirm?")
+        if not thickness or not r.get("length_mm"):
             questions.append(f"{label}: wall thickness or length is not readable on the drawing.")
             continue
         end = tuple(r["end_thickness_mm"]) if r.get("end_thickness_mm") else None
-        runs.append(WallRun(label, r["length_mm"] / 1000, kind, int(r["thickness_mm"]), end,
+        runs.append(WallRun(label, r["length_mm"] / 1000, kind, int(thickness), end,
                             int(r.get("count") or 1), bool(r.get("external"))))
     return runs, questions
 

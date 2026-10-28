@@ -96,3 +96,46 @@ def test_console_turns_view_pairs_actions_with_results_and_answers():
     assert [x["tool"] for x in t] == ["set_checklist", "ask_user", "user_answer", "record_fact"]
     assert t[1]["result"]["paused"] and t[2]["result"]["answer"] == "3.0"
     assert view.list_runs()[0]["id"] == run.id
+
+
+def test_external_run_without_thickness_takes_the_stated_one_and_says_so():
+    from plan2cost.extract import to_runs
+
+    data = {"wall_runs": [
+        {"label": "party", "length_mm": 9600, "kind": "centre_line", "thickness_mm": 230, "external": True},
+        {"label": "north", "length_mm": 19430, "kind": "end_to_end", "thickness_mm": None, "external": True},
+        {"label": "partition", "length_mm": 3000, "kind": "in_to_in", "thickness_mm": None, "external": False}]}
+    runs, q = to_runs(data)
+    assert [r.label for r in runs] == ["party", "north"] and runs[1].thickness_mm == 230
+    assert any("used 230mm" in x for x in q) and any("partition: wall thickness" in x for x in q)
+
+
+def test_bounding_box_girth_is_flagged_and_blocks_submit(monkeypatch):
+    from plan2cost.dims import DimToken
+
+    def row(y, vals):  # a horizontal chain of four numbers, then a vertical one
+        return [DimToken(v, 100 + i * 60, y, 120 + i * 60, y + 6) for i, v in enumerate(vals)]
+    toks = row(50, [19430, 4000, 4000, 4000]) + row(60, [9600, 9600, 4000, 4000]) + row(70, [1000, 2000, 3000, 4000])
+    toks += [DimToken(v, 40, 100 + i * 60, 46, 120 + i * 60) for i, v in enumerate([17130, 4000, 4000, 4000])]
+    toks += [DimToken(v, 50, 100 + i * 60, 56, 120 + i * 60) for i, v in enumerate([6000, 6000, 4000, 4000])]
+    toks += [DimToken(v, 60, 100 + i * 60, 66, 120 + i * 60) for i, v in enumerate([1000, 2000, 3000, 4000])]
+    monkeypatch.setattr("plan2cost.dims.dimension_tokens", lambda pdf, p: toks)
+    run = Run.new("x.pdf", "obj")
+    TOOLS["set_checklist"][0](run, ITEMS)
+    out = TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=73.12, source="user", page=6)
+    assert "plain rectangle" in out["warning"]
+    run.data["boq"] = {"items": [], "total": 0}
+    for i in ("C1", "C3"):
+        TOOLS["record_fact"][0](run, item=i, name=f"n{i}", value=1, source="user")
+    assert any("unresolved warning" in p for p in TOOLS["submit_boq"][0](run)["refused"])
+    ok = TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=98.62, source="user", page=6, basis="confirmed by user")
+    assert not ok["warning"] and TOOLS["submit_boq"][0](run) == {"filed": True}
+
+
+def test_sum_lengths_and_latest_fact_replaces_earlier():
+    run = Run.new("x.pdf", "obj")
+    TOOLS["set_checklist"][0](run, ITEMS)
+    assert TOOLS["sum_lengths"][0](run, [1.5, 2.25], "x")["sum_m"] == 3.75
+    TOOLS["record_fact"][0](run, item="C1", name="h", value=1, source="user")
+    TOOLS["record_fact"][0](run, item="C1", name="h", value=2, source="user")
+    assert [f["value"] for f in run.facts] == [2]
