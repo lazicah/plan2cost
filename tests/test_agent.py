@@ -155,3 +155,15 @@ def test_computed_values_need_no_user_confirmation_and_nonsense_girth_points_to_
     run.data["boq"] = {"items": [], "total": 0}
     assert TOOLS["submit_boq"][0](run) == {"filed": True}  # measured values are labelled low confidence, not blocked
     assert {f["name"]: f["confidence"] for f in run.facts}["ext_girth_ground_m"] == "low"
+
+
+def test_foundation_from_ground_walls_uses_three_times_the_block_and_flags_defaults(tmp_path, monkeypatch):
+    run = Run.new("x.pdf", "obj")
+    TOOLS["set_checklist"][0](run, ITEMS)
+    assert "error" in TOOLS["compute_foundation"][0](run)
+    TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=50.0, source="computed", basis="read_wall_girth")
+    TOOLS["record_fact"][0](run, item="C3", name="int_girth_ground_m", value=50.0, source="computed", basis="read_wall_girth")
+    TOOLS["record_fact"][0](run, item="C3", name="junction_ends_ground", value=20, source="computed", basis="read_wall_girth")
+    out = TOOLS["compute_foundation"][0](run, 225)
+    assert out["trench_width_mm"] == 675 and out["trench_girth_m"] == round(100 - 20 * 0.225, 2)
+    assert any(a["name"] == "foundation_width_mm" for a in run.assumptions) and run.data["foundation_items"]

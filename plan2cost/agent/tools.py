@@ -194,6 +194,29 @@ def read_notes(run: Run, pages: list | None = None) -> dict:
     return out
 
 
+def compute_foundation(run: Run, block_mm: int = 230) -> dict:
+    """Strip foundation from the ground floor walls when no foundation layout is given: trench girth is the ground floor wall girth less
+    the overlaps at joints, trench width is three times the block thickness, depths are flagged defaults. Needs the facts
+    ext_girth_ground_m and int_girth_ground_m (and, if known, junction_ends_ground). Items are added to the BoQ by compute_boq."""
+    from plan2cost.boq import foundation_boq, strip_inputs
+    from plan2cost.tools.foundation import GridLine, foundation_takeoff
+
+    facts = {f["name"]: f["value"] for f in run.facts}
+    if "ext_girth_ground_m" not in facts or "int_girth_ground_m" not in facts:
+        return {"error": "Record ext_girth_ground_m and int_girth_ground_m first (read_wall_girth on the ground floor plan)."}
+    total = float(facts["ext_girth_ground_m"]) + float(facts["int_girth_ground_m"])
+    overlaps = float(facts.get("junction_ends_ground", 0)) * block_mm / 1000
+    section, log, grade = strip_inputs(drawn={"block_mm": block_mm})
+    for a in log:
+        if a.source == "assumed":
+            run.assumptions.append({"name": f"foundation_{a.name}", "value": a.value, "basis": a.basis})
+    t = foundation_takeoff([GridLine("ground floor walls", runs=[(total, 1)], deductions=[(overlaps, 1)] if overlaps else [])], [], section)
+    items = foundation_boq(t, section, grade)
+    run.data["foundation_items"] = [i.__dict__ for i in items]
+    return {"trench_girth_m": round(total - overlaps, 2), "trench_width_mm": section.width_mm, "lines": [f"{i.key} {i.qty} {i.unit}" for i in items],
+            "assumed": [f"{a.name}={a.value}" for a in log if a.source == "assumed"]}
+
+
 def compute_boq(run: Run) -> dict:
     """Wall blockwork and priced BoQ lines from recorded facts: girth per floor (facts named ext_girth_<floor>_m and
     int_girth_<floor>_m), storey heights and the openings read from the drawings."""
@@ -218,6 +241,9 @@ def compute_boq(run: Run) -> dict:
         return {"error": f"No storey height for {missing}. Read the levels, record an assumed height, or ask the user."}
     openings = [Opening(**o) for o in run.data.get("openings", [])]
     items = superstructure_boq(ext, internal, heights, openings)
+    from plan2cost.boq import BoqItem
+
+    items += [BoqItem(**d) for d in run.data.get("foundation_items", [])]
     rates = json.loads(Path("data/rates.json").read_text())
     priced = price_boq(items, rates)
     run.data["boq"] = {"items": [i.__dict__ for i in items], **priced}
@@ -235,6 +261,7 @@ TOOLS = {
     "ask_user": (ask_user, 'item: "C1", question: str: pause for a person'),
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
+    "compute_foundation": (compute_foundation, "block_mm: int (default 230): strip foundation from the ground floor walls; run after the ground girth is recorded, before compute_boq"),
     "compute_boq": (compute_boq, "no args: wall areas and priced lines from the recorded facts"),
     "submit_boq": (submit_boq, 'summary: str: the gate; refused unless everything is settled'),
 }
