@@ -1,0 +1,39 @@
+{
+  "case": "walls generalisation",
+  "floor": "ground and first",
+  "model": "classical image processing (no model); scale from the PDF",
+  "time": "2026-10-28T23:57:41",
+  "extraction": {
+    "plan2 ground (tuned on this)": {
+      "measured_m": 108.9,
+      "author_m": 107.1
+    },
+    "plan2 first (tuned on this)": {
+      "measured_m": 101.4,
+      "author_m": 127.6
+    },
+    "plan6 ground": {
+      "measured_m": 70.4,
+      "author_m": 185.9
+    },
+    "plan8 ground": {
+      "measured_m": 29.7,
+      "author_m": 105.3
+    },
+    "plan4 ground": {
+      "measured_m": 23.4,
+      "author_m": 115.5
+    }
+  },
+  "pct_error": {
+    "plan2 ground (tuned on this)": 1.7,
+    "plan2 first (tuned on this)": 20.5,
+    "plan6 ground": 62.1,
+    "plan8 ground": 71.8,
+    "plan4 ground": 79.7
+  },
+  "questions": [
+    "plan7: no floor plan page found by the model (text-less pages)",
+    "plan9: no grid or scale readable from the text layer"
+  ]
+}
