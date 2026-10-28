@@ -76,3 +76,16 @@ def calibrate(grid: Grid, chain_values_mm: list[int], tolerance: float = 0.02) -
     if best and best_hits >= 3:
         grid.mm_per_pt, grid.scale_basis = best, f"fitted to printed chain dimensions ({best_hits} bays match)"
     return grid
+
+
+def snap_bays(bays: list[tuple[str, str, float]], printed_mm: list[int], tolerance: float = 0.015) -> list[tuple[str, str, int, str]]:
+    """Bay lengths from bubble positions carry a fraction of a percent of scatter; a printed dimension within the tolerance is exact,
+    so use it. Returns (from, to, length_mm, "printed" | "scaled"). A bay with no printed match stays scaled and is flagged as such.
+    Chains also print sums of bays (e.g. an overall 9838), which can never match a single bay within a 1.5 percent tolerance by chance
+    unless it really is that bay, so they are safe to include."""
+    out = []
+    for a, b, v in bays:
+        near = [p for p in set(printed_mm) if v and abs(p - v) <= tolerance * v]
+        best = min(near, key=lambda p: abs(p - v)) if near else None
+        out.append((a, b, best, "printed") if best else (a, b, round(v), "scaled"))
+    return out
