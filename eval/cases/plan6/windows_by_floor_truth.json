@@ -7,5 +7,14 @@
   "first": {
     "900": 16,
     "600": 6
+  },
+  "_ground_600_per_flat_by_room": {
+    "Entrance porch": 1,
+    "Living room": 1,
+    "Pantry": 1,
+    "Bathroom": 1,
+    "Staff room": 2,
+    "Bathroom in guest room": 1,
+    "Guest bedroom": 1
   }
 }

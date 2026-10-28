@@ -26,3 +26,13 @@ def test_tight_slice_sits_inward_of_the_chain():
     top = DimToken(600, 400, 100, 409, 106)   # horizontal token on the top chain
     crop = tight_slice(img, top, 1.0, "top")
     assert crop.size == (160, 400)             # 80pt wide x 200pt deep, doubled
+
+
+def test_mirror_check_splits_flats_and_flags_difference():
+    from plan2cost.openings_from_dims import mirror_check
+
+    def rec(side, along, kind="window"):
+        return {"floor": "ground", "width_mm": 600, "side": side, "kind": kind, "along_pts": along, "page_w_pts": 1000}
+
+    recs = [rec("top", 100), rec("top", 800), rec("left", 300), rec("right", 300), rec("bottom", 120), rec("top", 130, "door")]
+    assert mirror_check(recs) == {"ground": {"600": {"A": 3, "B": 2}}}

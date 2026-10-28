@@ -103,5 +103,28 @@ def find_openings(pdf: str, page: int, floor: str, widths: tuple[int, ...], scra
     passes = [1] * len(results)
     for i, r in zip(again, second):
         results[i], passes[i] = r, 2
-    return [{"floor": floor, "width_mm": t.value, "side": side, "kind": r["kind"], "evidence": r["evidence"], "count": 1, "pass": ps}
+    return [{"floor": floor, "width_mm": t.value, "side": side, "kind": r["kind"], "evidence": r["evidence"], "count": 1, "pass": ps,
+             "along_pts": round(t.along, 1), "across_pts": round(t.across, 1), "page_w_pts": round(page_w, 1)}
             for (t, side, _), r, ps in zip(jobs, results, passes)]
+
+
+def flat_of(rec: dict) -> str:
+    """Which half of a mirrored building an opening is in. Left and right chains are the two outer walls; for top and bottom
+    chains the mirror axis is the centre of the drawing area (the title-block column is excluded)."""
+    if rec["side"] == "left":
+        return "A"
+    if rec["side"] == "right":
+        return "B"
+    return "A" if rec["along_pts"] < rec["page_w_pts"] * 0.9 / 2 + rec["page_w_pts"] * 0.03 else "B"
+
+
+def mirror_check(records: list[dict]) -> dict:
+    """For a building made of two mirrored flats, each flat must have the same windows. Returns per floor and width the counts
+    in each flat; a mismatch means a candidate was missed or misjudged and the user is asked, not guessed for."""
+    out: dict = {}
+    for r in records:
+        if r["kind"] != "window":
+            continue
+        cell = out.setdefault(r["floor"], {}).setdefault(str(r["width_mm"]), {"A": 0, "B": 0})
+        cell[flat_of(r)] += 1
+    return out
