@@ -7,6 +7,7 @@ import re
 from plan2cost.client import get_client, image_part, model_name
 from plan2cost.extract import parse_json
 from plan2cost.pdf import page_count, page_text, render_pages, render_tiles, title_block_text
+from plan2cost.symbols import LEGEND
 from plan2cost.tools.walls import Opening
 
 ROLES = ["cover", "site", "floor_plan", "roof_plan", "section", "elevation", "ceiling_plan", "detail", "opening_schedule",
@@ -42,18 +43,10 @@ Use only printed numbers, in millimetres. Do not infer. Reply with JSON only:
 """
 
 
-PLAN_OPENINGS_PROMPT = """You are reading floor plans (and elevations, if given) for a quantity surveyor. There is NO door and window schedule,
+PLAN_OPENINGS_PROMPT_TEMPLATE = """You are reading floor plans (and elevations, if given) for a quantity surveyor. There is NO door and window schedule,
 so find the openings from the drawing symbols.
 
-Symbol legend (conventional plan symbols):
-- Hinged door: a leaf drawn as a line from the hinge, with a quarter-circle swing arc; the opening is the gap in the wall. Double doors have two arcs.
-- Sliding door or window: two or more offset parallel leaves, often with arrows; no swing arc.
-- Window: a gap in the wall thickness crossed by two or three thin parallel lines (frame and glass), with no arc. Small and high-level
-  windows (bathrooms, stores) look the same but are narrow (about 600mm).
-- Tags: if an opening carries a tag such as D1, W3 or AW2 (often in a circle or box), read the tag and count by tag; the same tag is
-  the same type, so its size repeats. If there are no tags, count each symbol once.
-- Do not count: stair flights, furniture, sanitary fittings, wall hatching, grid bubbles or dimension ticks.
-- Mirrored or repeated units (flats, duplexes) usually repeat their openings; count each unit's openings separately.
+{legend}
 
 How to read them:
 - Door: a gap in a wall with a swing arc, or a leaf line; sliding doors show offset parallel leaves. Window: a thin multi-line
@@ -69,6 +62,8 @@ How to read them:
 {"openings": [{"floor": str, "kind": "door"|"window"|"other", "width_mm": number|null, "height_mm": number|null, "wall": "external"|"internal",
  "count": int, "evidence": str}], "questions": [str]}
 """
+
+PLAN_OPENINGS_PROMPT = PLAN_OPENINGS_PROMPT_TEMPLATE.replace("{legend}", LEGEND)
 
 DEFAULT_OPENING_HEIGHT_M = {"door": 2.1, "window": 1.2, "other": 2.1}  # used only when no schedule or elevation gives it
 

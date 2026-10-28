@@ -1,0 +1,83 @@
+"""Candidate-and-verify opening finder. The PDF text layer gives every printed width with its position (dims.py); for each
+candidate the model looks at a slice of the plan through that position and says what is there. Labelled example symbols are
+loaded from reference/symbols/ when present (they are other people's drawings, so they stay local and out of git)."""
+import json
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+from PIL import Image
+
+from plan2cost.client import get_client, image_part, model_name
+from plan2cost.dims import DimToken, dimension_tokens, width_candidates
+from plan2cost.extract import parse_json
+from plan2cost.pdf import render_pages
+from plan2cost.symbols import DOORS, WALLS_AND_HATCH, WINDOWS
+
+SYMBOL_DIR = Path("reference/symbols")
+KINDS = ("window", "door", "wall_piece", "other")
+
+VERIFY_PROMPT = """You are checking one printed dimension on a floor plan, for a quantity surveyor.
+The strip image is a slice through the plan at the position of a printed dimension of {value}mm on the {side} dimension chain.
+Look at the {side} wall of the building in this strip, at the position that dimension spans, and say what is there.
+
+""" + DOORS + "\n\n" + WINDOWS + "\n\n" + WALLS_AND_HATCH + """
+
+Answer with one of: "window", "door", "wall_piece" (solid hatched wall of that length, so the dimension is not an opening) or "other"
+(anything else, or you cannot tell). Do not guess: if the strip is unclear, answer "other".
+Reply with JSON only: {{"kind": "window"|"door"|"wall_piece"|"other", "evidence": str}}
+"""
+
+
+def examples() -> list[tuple[str, str]]:
+    """(caption, path) for each local example symbol; the file name says what it shows (example_<kind>_<where>.png)."""
+    out = []
+    for p in sorted(SYMBOL_DIR.glob("example_*.png")):
+        kind = p.stem.split("_")[1]
+        out.append((f"Example of a {kind} symbol from this kind of drawing:", str(p)))
+    return out
+
+
+def slice_image(page_img: Image.Image, token: DimToken, scale: float, half_pts: float = 40.0) -> Image.Image:
+    """A band through the whole drawing, centred on the token along the wall, so the wall it dimensions is inside it."""
+    w, h = page_img.size
+    a0, a1 = int((token.along - half_pts) * scale), int((token.along + half_pts) * scale)
+    box = (a0, int(h * 0.05), a1, int(h * 0.95)) if not token.vertical else (int(w * 0.03), a0, int(w * 0.88), a1)
+    return page_img.crop(box)
+
+
+def side_of(token: DimToken, page_w: float, page_h: float) -> str:
+    if token.vertical:
+        return "left" if token.across < page_w * 0.45 else "right"
+    return "top" if token.across < page_h * 0.5 else "bottom"
+
+
+def verify(token: DimToken, strip_path: str, side: str) -> dict:
+    content = [{"type": "text", "text": VERIFY_PROMPT.format(value=token.value, side=side)}]
+    for caption, path in examples():
+        content += [{"type": "text", "text": caption}, image_part(path)]
+    content += [{"type": "text", "text": "The strip to check:"}, image_part(strip_path)]
+    resp = get_client().chat.completions.create(model=model_name(), temperature=0, messages=[{"role": "user", "content": content}])
+    try:
+        out = parse_json(resp.choices[0].message.content)
+    except ValueError:
+        out = {"kind": "other", "evidence": "unparseable reply"}
+    return {"kind": out.get("kind") if out.get("kind") in KINDS else "other", "evidence": out.get("evidence", "")}
+
+
+def find_openings(pdf: str, page: int, floor: str, widths: tuple[int, ...], scratch: str, dpi: int = 200, workers: int = 4) -> list[dict]:
+    tokens = dimension_tokens(pdf, page)
+    whole = render_pages(pdf, [page], scratch, dpi=dpi)[0]
+    img = Image.open(whole)
+    scale = dpi / 72.0
+    page_w, page_h = img.width / scale, img.height / scale
+    jobs = []
+    for value in widths:
+        for t in width_candidates(tokens, value):
+            side = side_of(t, page_w, page_h)
+            path = Path(scratch) / f"cand_{page}_{value}_{int(t.x0)}_{int(t.y0)}.jpg"
+            slice_image(img, t, scale).save(path, quality=90)
+            jobs.append((t, side, str(path)))
+    with ThreadPoolExecutor(workers) as ex:
+        results = list(ex.map(lambda j: verify(j[0], j[2], j[1]), jobs))
+    return [{"floor": floor, "width_mm": t.value, "side": side, "kind": r["kind"], "evidence": r["evidence"], "count": 1}
+            for (t, side, _), r in zip(jobs, results)]
