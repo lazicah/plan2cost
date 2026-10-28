@@ -1,0 +1,5 @@
+{
+  "_note": "Window counts per floor and width, given by the author from the plan6 floor plans (two mirrored flats, so each count is twice the per-flat number). Doors not yet given. The schedule's AW1 total is 22 but 14 + 4 = 18 here; open question.",
+  "ground": {"900": 4, "600": 14},
+  "first": {"900": 16, "600": 4}
+}

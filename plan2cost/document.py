@@ -45,6 +45,16 @@ Use only printed numbers, in millimetres. Do not infer. Reply with JSON only:
 PLAN_OPENINGS_PROMPT = """You are reading floor plans (and elevations, if given) for a quantity surveyor. There is NO door and window schedule,
 so find the openings from the drawing symbols.
 
+Symbol legend (conventional plan symbols):
+- Hinged door: a leaf drawn as a line from the hinge, with a quarter-circle swing arc; the opening is the gap in the wall. Double doors have two arcs.
+- Sliding door or window: two or more offset parallel leaves, often with arrows; no swing arc.
+- Window: a gap in the wall thickness crossed by two or three thin parallel lines (frame and glass), with no arc. Small and high-level
+  windows (bathrooms, stores) look the same but are narrow (about 600mm).
+- Tags: if an opening carries a tag such as D1, W3 or AW2 (often in a circle or box), read the tag and count by tag; the same tag is
+  the same type, so its size repeats. If there are no tags, count each symbol once.
+- Do not count: stair flights, furniture, sanitary fittings, wall hatching, grid bubbles or dimension ticks.
+- Mirrored or repeated units (flats, duplexes) usually repeat their openings; count each unit's openings separately.
+
 How to read them:
 - Door: a gap in a wall with a swing arc, or a leaf line; sliding doors show offset parallel leaves. Window: a thin multi-line
   break in a wall (sill/glazing lines). Other openings: archways or wall gaps with no leaf.
@@ -131,6 +141,20 @@ def extract_plan_openings_tiled(pdf: str, page: int, floor: str, scratch: str, c
             merged["openings"].append(o)
         merged["questions"] += part.get("questions", [])
     return merged
+
+
+def score_windows_by_floor(found: list[dict], truth: dict, tolerance_mm: int = 60) -> dict:
+    """Per floor and width, windows found against the author's counts. Returns {floor: {width: (found, truth)}}."""
+    out = {}
+    for floor, widths in truth.items():
+        if floor.startswith("_"):
+            continue
+        out[floor] = {}
+        for w, want in widths.items():
+            got = sum(int(o.get("count") or 0) for o in found
+                      if o.get("floor") == floor and o.get("kind") == "window" and abs((o.get("width_mm") or -1e9) - int(w)) <= tolerance_mm)
+            out[floor][w] = (got, want)
+    return out
 
 
 def plan_openings_to_openings(data: dict) -> tuple[list[Opening], list[str]]:
