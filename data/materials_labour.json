@@ -108,7 +108,7 @@
   "rebar_length": {
    "name": "Reinforcement bar, 12 m length (mixed sizes)",
    "unit": "length",
-   "rate": 10805
+   "rate": 22363
   }
  },
  "labour": {
@@ -178,6 +178,15 @@
    "rate": 500.0
   }
  },
+ "bar_kg_per_m": {
+  "Y8": 0.395,
+  "Y10": 0.617,
+  "Y12": 0.888,
+  "Y16": 1.579,
+  "Y20": 2.467,
+  "Y25": 3.854
+ },
+ "rebar_price_per_kg": 1650,
  "ratios": {
   "concrete": {
    "cement_bag": 7.0,

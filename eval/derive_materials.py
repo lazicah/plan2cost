@@ -8,6 +8,10 @@ import subprocess
 from pathlib import Path
 
 SIMPLIFIED = "reference/boq/SIMPLIFIED BOQ.pdf"
+# Reinforcement from the nigeriabuildingcost rebar calculator (Enugu 2026): bar weights in kg per metre, and about 1,650 a kg (1,595 to 1,702 by size) for 6 m bars. The simplified bill works out to about 800 a kg,
+# roughly half, and the measured BoQ steel rates (1.32M and 1.70M a tonne) agree with the calculator, so the higher price is used.
+BAR_KG_PER_M = {"Y8": 0.395, "Y10": 0.617, "Y12": 0.888, "Y16": 1.579, "Y20": 2.467, "Y25": 3.854}
+REBAR_PRICE_PER_KG = 1650
 MIX_124 = {"cement_bag": 7.0, "sand_t": 0.74, "granite_t": 1.39}  # per m3 of 1:2:4 concrete
 OUT = Path("data/materials_labour.json")
 SIMPLE_ROW = re.compile(r"^\s*(\d+[a-z]?)\s+(.*?)\s{2,}(\d[\d,]*)\s+(\w[\w²³.]*)\s+([\d,]+\.\d\d)\s+([\d,]+\.\d\d)\s*$")
@@ -94,7 +98,7 @@ def derive() -> dict:
                  "skirting_tile": ("Skirting tile", "no", rate(r"Skirting Tiles", "no")), "pop_cement_bag": ("P.O.P. cement, bag", "bag", rate(r"P\.O\.P Cement", "bag")),
                  "ceiling_hanger_length": ("Hardwood hanger 50 x 50, length", "length", rate(r"Hangers", "len")), "sponge_kg": ("Sponge (ceiling)", "kg", rate(r"Sponge", "kg")),
                  "paint_drum_20l": ("Emulsion or texture paint, 20 litre drum", "drum", rate(r"Emulsion", "drum")), "white_cement_bag": ("White cement for paint base", "bag", rate(r"Screeding Cement", "bag")),
-                 "rebar_length": ("Reinforcement bar, 12 m length (mixed sizes)", "length", round(sum(x["amount"] for x in S if x["item"].startswith("Rebar") and x["unit"].startswith("len")) / lengths))}
+                 "rebar_length": ("Reinforcement bar, 12 m length (mixed sizes)", "length", max(round(sum(x["amount"] for x in S if x["item"].startswith("Rebar") and x["unit"].startswith("len")) / lengths), round(REBAR_PRICE_PER_KG * bending_kg / lengths)))}
     labour = {"casting_per_bag": ("Casting concrete, per bag of cement", "bag", rate(r"Labour.*Casting", "bag")), "iron_bending_per_kg": ("Iron bending", "kg", rate(r"Iron Bending", "kg")),
               "block_laying_foundation_per_block": ("Block laying in the foundation", "no", rate(r"Labour – Blockwork", "blk")), "carpenter_per_m2": ("Carpenter, formwork", "m2", rate(r"Carpenter", "m")), "block_laying_per_block": ("Block laying", "no", rate(r"Labour – Blockwork", "no")),
               "plaster_per_m2": ("Plastering", "m2", rate(r"Wall Plastering", "m")), "floor_tiling_per_m2": ("Floor tiling", "m2", rate(r"Labour – Tiling \(Floor\)", "m")),
@@ -107,7 +111,7 @@ def derive() -> dict:
                      "Casting labour is the bill's 2,500 a bag (17,500 a m3 at 7 bags); the calculator's placing labour is 22,000 a m3.",
             "sources": {"simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)", "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"},
             "materials": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in materials.items()}, "labour": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in labour.items()},
-            "ratios": r, "evidence": evidence}
+            "bar_kg_per_m": BAR_KG_PER_M, "rebar_price_per_kg": REBAR_PRICE_PER_KG, "ratios": r, "evidence": evidence}
 
 
 def main() -> None:

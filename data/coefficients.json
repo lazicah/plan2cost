@@ -126,6 +126,11 @@
    "name": "Cubana Millennium City bill, April 2026, Asaba (author-supplied PDF, kept local; only ratios and rates are stored)",
    "url": "",
    "checked": "parsed; one 5-bedroom duplex of about 571 m2 of floor"
+  },
+  "nbcrebar": {
+   "name": "NigeriaBuildingCost rebar calculator, worked examples for a column, beam, slab and pad (author pasted the pages)",
+   "url": "https://nigeriabuildingcost.ng/rebar-calculator",
+   "checked": "worked examples checked by hand: column 18.7 kg, beam 57.3 kg, slab 145.1 kg"
   }
  },
  "entries": [
@@ -2138,6 +2143,86 @@
    ],
    "confidence": "low",
    "note": "One bill, so no spread."
+  },
+  {
+   "id": "steel_column_worked_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in a 225 x 225 column, 3 m, 4 Y12 and R8 links at 200",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 123,
+   "typical": 126,
+   "high": 130,
+   "sources": [
+    "nbcrebar",
+    "cubana"
+   ],
+   "confidence": "medium",
+   "note": "Calculator worked example 123; the Cubana bill gives 130. Two independent sources within 6%."
+  },
+  {
+   "id": "steel_beam_worked_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in a 225 x 450 beam over 5 m, 3 Y16 bottom, 2 Y12 top, R8 links at 200",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 113,
+   "typical": 114,
+   "high": 115,
+   "sources": [
+    "nbcrebar",
+    "cubana"
+   ],
+   "confidence": "medium",
+   "note": "Calculator worked example 113; the Cubana bill gives 115."
+  },
+  {
+   "id": "steel_slab_worked_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in a 150mm slab, Y12 at 200 and Y10 at 250",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 48,
+   "typical": 50,
+   "high": 53,
+   "sources": [
+    "nbcrebar",
+    "cubana"
+   ],
+   "confidence": "medium",
+   "note": "Calculator 48 (7.3 kg per m2); Cubana 53. A Y12 at 200 mesh both ways is about 10 kg per m2, 67 per m3 (the calculator page's own rule)."
+  },
+  {
+   "id": "steel_pad_12_200_kg_per_pad",
+   "group": "reinforcement",
+   "what": "Reinforcement in a 1.5 x 1.5 m pad, Y12 at 200 both ways",
+   "unit": "kg",
+   "per": "pad",
+   "low": 24,
+   "typical": 24,
+   "high": 24,
+   "sources": [
+    "nbcrebar",
+    "cubana"
+   ],
+   "confidence": "medium",
+   "note": "One worked example; not used in the estimate (column bases cannot be seen on a plan)."
+  },
+  {
+   "id": "rebar_waste_allowance",
+   "group": "reinforcement",
+   "what": "Waste on reinforcement (cutting, laps, breakage)",
+   "unit": "fraction",
+   "per": "steel",
+   "low": 0.05,
+   "typical": 0.075,
+   "high": 0.1,
+   "sources": [
+    "nbcrebar",
+    "cubana"
+   ],
+   "confidence": "medium",
+   "note": "The calculator page says add 5 to 10%. The coefficients above are net weights, before this allowance."
   }
  ]
 }
