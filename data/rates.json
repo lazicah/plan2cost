@@ -1,5 +1,5 @@
 {
-  "_note": "Starter rates (NGN, Owerri, 27 Oct 2026) supplied by the author from their own BoQ. Indicative only; users edit these with their own prices. Keys with no rate stay unpriced.",
+  "_note": "Starter rates (NGN, Owerri, 27 Oct 2026) supplied by the author from their own BoQ. Indicative only; users edit these with their own prices. Keys with no rate stay unpriced. Roof, frame, finishes and sanitary rates added from the rates in the author's own generated BoQ PDF (Owerri, 27 Oct 2026); flat-roof screed and membrane have no rate yet. Edit any of them. Windows are priced at window_base_nr + window_per_m2 x area (a line through the two window prices in that bill, aluminium with burglar-proof grille: 600 x 600 at 28,500 and 1200 x 1200 at 69,000); doors external 80,000 steel and internal 38,000 flush; lintels 9,000 each. Edit any of them.",
   "currency": "NGN",
   "rates": {
     "trench_excavation_strip_m3": 8000,
@@ -23,6 +23,34 @@
     "backfill_around_foundations_m3": 3200,
     "concrete_filling_blockwork_voids_m3": 95250,
     "fdn_wall_render_m2": 4580,
-    "formwork_foundation_sides_m": 1250
+    "formwork_foundation_sides_m": 1250,
+    "frame_columns_concrete_m3": 132000,
+    "frame_beams_concrete_m3": 132000,
+    "suspended_slab_concrete_m3": 132000,
+    "staircase_concrete_m3": 132000,
+    "roof_slab_concrete_m3": 132000,
+    "frame_formwork_soffit_m2": 7000,
+    "frame_formwork_beams_columns_m2": 5000,
+    "frame_steel_t": 1699135,
+    "roof_covering_m2": 27902,
+    "roof_timbers_m": 1611,
+    "roof_fascia_m": 2420,
+    "floor_finish_m2": 6000,
+    "internal_wall_finish_m2": 3560,
+    "internal_wall_paint_m2": 3726,
+    "ceiling_finish_m2": 11841,
+    "skirting_m": 3000,
+    "sanitary_wc_nr": 55000,
+    "sanitary_basin_nr": 32000,
+    "sanitary_shower_nr": 42000,
+    "sanitary_sink_nr": 55000,
+    "sanitary_heater_nr": 26000,
+    "sanitary_trap_nr": 17000,
+    "water_point_nr": 23000,
+    "window_base_nr": 15000,
+    "window_per_m2": 37500,
+    "door_external_nr": 80000,
+    "door_internal_nr": 38000,
+    "lintel_nr": 9000
   }
 }

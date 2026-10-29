@@ -61,8 +61,9 @@ def test_a_quote_that_was_given_must_be_audited_before_the_boq_is_filed():
     from plan2cost.agent.verify import verify_boq
     from plan2cost.kit.progress import Run
 
-    run = Run.new("a.pdf", "x", quote="q.pdf")
-    run.checklist, run.data = [{"id": "C1", "status": "proven"}], {"boq": {}}
+    run = Run.new([{"name": "ground", "file": "g.png", "page": 1}], {}, quote="q.pdf")
+    run.data = {"boq": {}, "floors": {"ground": {}}}
+    run.checklist = [{"id": "C1", "status": "proven"}]
     assert any("audit_quote" in p for p in verify_boq(run))
     run.data["audit"] = {}
     assert verify_boq(run) == []

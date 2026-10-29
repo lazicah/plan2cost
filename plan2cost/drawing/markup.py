@@ -104,3 +104,37 @@ def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool =
         _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p{page}.json")
     return model
+
+def model_for_image(path: str, floor: str, out_dir: str, review: bool = False, on_measured=None) -> DrawingModel:
+    """The same for a plan supplied as an image. The model reads the printed facts (stated scale, overall dimensions) that code cannot, then code measures."""
+    from pathlib import Path
+
+    from plan2cost.drawing.interpret import interpret_image
+    from plan2cost.drawing.model import build_model
+    from plan2cost.facts.page_facts import read_page_facts
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    facts = read_page_facts(path)
+    r = interpret_image(path, facts, keep_walls=True)
+    if "error" in r:
+        raise ValueError(r["error"])
+    r["route"] = "raster"
+    r["confidence"] = "medium" if "printed overall dimensions fit" in r["scale"] and r.get("building") else "low"
+    model = build_model(r, floor, 1, printed_mm=facts.get("horizontal_mm", []) + facts.get("vertical_mm", []))
+    name = f"markup_{floor}_p1.jpg"
+    draw_markup(model, str(out / name), image=path)
+    model.markup = name
+    if on_measured:
+        on_measured(model)
+    if review:
+        _add_review(model, str(out / name))
+    model.save(out / f"drawing_model_{floor}_p1.json")
+    return model
+
+
+def model_for_floor(file: str, page: int, floor: str, out_dir: str, review: bool = False, on_measured=None) -> DrawingModel:
+    """A floor plan given as a PDF page or an image becomes a drawing model."""
+    if file.lower().endswith(".pdf"):
+        return model_for_page(file, page, floor, out_dir, review, on_measured)
+    return model_for_image(file, floor, out_dir, review, on_measured)

@@ -13,6 +13,7 @@ class Opening:
     count: int = 1
     kind: str = "window"  # "door" or "window"
     external: bool = True
+    assumed_height: bool = False  # the height was not on the plan; the standard height was used
 
     @property
     def area_m2(self) -> float:

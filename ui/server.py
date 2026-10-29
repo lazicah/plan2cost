@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from plan2cost.agent import view  # noqa: E402
+from plan2cost.kit import progress  # noqa: E402
 from plan2cost.kit.progress import Run  # noqa: E402
 
 PORT = 8765
@@ -47,14 +48,14 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/api/runs":
             self._json(200, view.list_runs())
         elif re.match(r"^/api/runs/\d{8}-\d{6}/models/[\w.\-]+\.(jpg|json)$", self.path):  # the annotated plans and drawing models of a run
-            f = view.RUNS_DIR / self.path.split("/")[3] / "models" / self.path.split("/")[5]
+            f = progress.RUNS_DIR / self.path.split("/")[3] / "models" / self.path.split("/")[5]
             if f.is_file():
                 self._send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "application/json")
             else:
                 self._json(404, {"error": "no such file"})
         elif re.match(r"^/api/runs/\d{8}-\d{6}/files/[\w.\-]+$", self.path):  # the bills and audits a run wrote
             name = self.path.split("/")[5]
-            f = view.RUNS_DIR / self.path.split("/")[3] / name
+            f = progress.RUNS_DIR / self.path.split("/")[3] / name
             if name in DOWNLOADS and f.is_file():
                 self.send_response(200)
                 self.send_header("Content-Type", DOWNLOADS[name])
@@ -64,7 +65,7 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._json(404, {"error": "no such file"})
         elif re.match(r"^/api/runs/\d{8}-\d{6}/pages/p\d+\.jpg$", self.path):  # page thumbnails
-            f = view.RUNS_DIR / self.path.split("/")[3] / "pages" / self.path.split("/")[5]
+            f = progress.RUNS_DIR / self.path.split("/")[3] / "pages" / self.path.split("/")[5]
             self._send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self._json(404, {"error": "no such file"})
         elif self.path == "/api/log":
             self._json(200, {"tail": "\n".join(LOG.read_text().splitlines()[-25:]) if LOG.exists() else ""})
@@ -91,20 +92,29 @@ class Handler(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
         cmd = [sys.executable, "-m", "plan2cost.agent"]
         if self.path == "/api/start":
-            pdf = Path(body.get("pdf", "")).expanduser()
-            if not pdf.is_file() or pdf.suffix.lower() != ".pdf":
-                return self._json(400, {"error": "pdf must be the path of an existing .pdf file"})
-            cmd += ["--pdf", str(pdf), "--turns", str(int(body.get("turns", 30)))]
-            if body.get("structural"):
-                if not existing_file(body["structural"]):
-                    return self._json(400, {"error": "structural must be the path of an existing .pdf file"})
-                cmd += ["--structural", str(existing_file(body["structural"]))]
+            floors = body.get("floors") or []
+            names = [f.get("name") for f in floors]
+            if not floors or any(not existing_file(f.get("file", "")) for f in floors) or len(set(names)) != len(names) or any(n not in progress.FLOOR_NAMES for n in names):
+                return self._json(400, {"error": "give at least one floor plan, each with a floor name (ground, first, ...) used once"})
+            try:
+                height = float(body.get("storey_height_m"))
+            except (TypeError, ValueError):
+                height = 0.0
+            if not 2.0 <= height <= 6.0:
+                return self._json(400, {"error": "the storey height must be between 2 and 6 metres (floor to floor)"})
+            if body.get("roof_type") not in progress.ROOF_TYPES:
+                return self._json(400, {"error": f"choose a roof type: {', '.join(progress.ROOF_TYPES)}"})
+            cmd += ["--storey-height", str(height), "--roof", body["roof_type"], "--turns", str(int(body.get("turns", 20)))]
+            for f in floors:
+                page = f":{int(f['page'])}" if f.get("page") and str(f["file"]).lower().endswith(".pdf") and int(f["page"]) > 1 else ""
+                cmd += ["--floor", f"{f['name']}={existing_file(f['file'])}{page}"]
+            for flag, key in (("--pitch", "pitch_deg"), ("--overhang", "overhang_m")):
+                if body.get(key) not in (None, ""):
+                    cmd += [flag, str(float(body[key]))]
             if body.get("quote"):
                 if not existing_file(body["quote"]):
                     return self._json(400, {"error": "quote must be the path of an existing file"})
                 cmd += ["--quote", str(existing_file(body["quote"]))]
-            if body.get("objective"):
-                cmd += ["--objective", body["objective"]]
         elif self.path.startswith("/api/runs/") and self.path.endswith("/answer") and view.RUN_ID.match(self.path.split("/")[3]):
             if not body.get("answer"):
                 return self._json(400, {"error": "answer is empty"})

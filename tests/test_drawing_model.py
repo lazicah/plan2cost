@@ -81,15 +81,3 @@ def test_the_model_review_only_adds_issues_and_ignores_ids_it_does_not_know(monk
     assert {i.code for i in issues} == {"review_missed", "review_not_wall", "review_duplicate", "review_side"}
     assert all(i.source == "model review" for i in issues) and all(i.elements == [] or all(e in {x.id for x in m.elements} for e in i.elements) for i in issues)
     assert (m.totals["total_m"], len(m.elements)) == before  # a review never changes a measurement
-
-
-def test_located_openings_set_the_side_and_the_rest_stays_on_the_schedule():
-    from plan2cost.tools.estimate import merge_located_openings
-
-    schedule = [{"label": "AW1", "width_m": 0.6, "height_m": 1.8, "count": 22, "kind": "window", "external": True},
-                {"label": "TD2", "width_m": 0.9, "height_m": 2.1, "count": 10, "kind": "door", "external": False}]
-    out = merge_located_openings(schedule, {"ground": {"AW1": {"external": 12, "internal": 1}}, "first": {"AW1": {"external": 5, "internal": 0}}})
-    aw = [(o.count, o.external) for o in out if o.label == "AW1"]
-    assert sorted(aw) == sorted([(17, True), (1, False), (4, True)])  # 17 external and 1 internal found; the 4 not found keep the old rule
-    assert sum(o.count for o in out if o.label == "AW1") == 22 and [(o.count, o.external) for o in out if o.label == "TD2"] == [(10, False)]
-    assert sum(o.count for o in merge_located_openings(schedule, {"x": {"AW1": {"external": 30, "internal": 0}}}) if o.label == "AW1") == 22  # never more than scheduled

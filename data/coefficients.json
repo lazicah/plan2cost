@@ -1962,6 +1962,81 @@
     "plan9": 1.646
    },
    "note": "Block area as the sheets count it, with openings taken off. From 5 plan(s) of the author's own BOQs sheets; the per-plan values are kept in per_plan."
+  },
+  {
+   "id": "door_height_m",
+   "group": "openings",
+   "what": "Door height when the floor plan does not give one",
+   "unit": "m",
+   "per": "door",
+   "low": 2.1,
+   "typical": 2.1,
+   "high": 2.1,
+   "sources": [
+    "author"
+   ],
+   "confidence": "medium",
+   "note": "Every door in plan 2's schedule is 2100 high."
+  },
+  {
+   "id": "window_height_m",
+   "group": "openings",
+   "what": "Window height when the floor plan does not give one",
+   "unit": "m",
+   "per": "window",
+   "low": 0.6,
+   "typical": 1.2,
+   "high": 1.5,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Plan 2's schedule runs 450 to 1500; 1200 is the common one."
+  },
+  {
+   "id": "lintel_bearing_mm",
+   "group": "openings",
+   "what": "Bearing of a lintel on the wall at each end",
+   "unit": "mm",
+   "per": "lintel end",
+   "low": 150,
+   "typical": 225,
+   "high": 225,
+   "sources": [
+    "calc"
+   ],
+   "confidence": "low",
+   "note": "Not on a floor plan; one block thickness each end is assumed, and flagged."
+  },
+  {
+   "id": "roof_eaves_overhang_m",
+   "group": "roof",
+   "what": "Roof overhang beyond the outer wall face",
+   "unit": "m",
+   "per": "roof edge",
+   "low": 0.3,
+   "typical": 0.45,
+   "high": 0.6,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Plan 2's section prints a 450 fascia; the range around it is not sourced."
+  },
+  {
+   "id": "ring_beam_section_m2",
+   "group": "frame",
+   "what": "Ring beam cross-section, 230 x 450",
+   "unit": "m2",
+   "per": "beam",
+   "low": 0.1035,
+   "typical": 0.1035,
+   "high": 0.1035,
+   "sources": [
+    "nbcgen"
+   ],
+   "confidence": "low",
+   "note": "Used to estimate the ring beam of a single-storey building from its wall girth."
   }
  ]
 }

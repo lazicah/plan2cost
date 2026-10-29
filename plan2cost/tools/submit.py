@@ -3,7 +3,7 @@ import json
 
 from plan2cost.agent.verify import verify_boq
 from plan2cost.kit.progress import Run
-from plan2cost.takeoff.bill import numbered, write_pdf, write_xlsx
+from plan2cost.takeoff.bill import numbered, ranged, write_pdf, write_xlsx
 
 
 def submit_boq(run: Run, summary: str = "") -> dict:
@@ -19,11 +19,14 @@ def submit_boq(run: Run, summary: str = "") -> dict:
     rows = numbered(run.data["boq"].get("items", []))
     (run.dir / "bill.json").write_text(json.dumps(rows, indent=2))  # the issued item numbers, so returned bids can be matched
     cur = run.data["boq"].get("currency", "NGN")
+    files = ["bill_priced.xlsx", "bill_priced.pdf"]
     write_xlsx(run.dir / "bill_priced.xlsx", rows, True, cur, "Bill of quantities", run.id)
-    write_xlsx(run.dir / "bill_unpriced.xlsx", rows, False, cur, "Bill of quantities", run.id)
     write_pdf(run.dir / "bill_priced.pdf", rows, True, cur, "Bill of quantities", run.id)
-    write_pdf(run.dir / "bill_unpriced.pdf", rows, False, cur, "Bill of quantities", run.id)
-    return {"filed": True, "bills": ["bill_priced.xlsx", "bill_unpriced.xlsx", "bill_priced.pdf", "bill_unpriced.pdf"]}
+    if not ranged(rows):  # an unpriced bill for tender only when every quantity was measured
+        write_xlsx(run.dir / "bill_unpriced.xlsx", rows, False, cur, "Bill of quantities", run.id)
+        write_pdf(run.dir / "bill_unpriced.pdf", rows, False, cur, "Bill of quantities", run.id)
+        files += ["bill_unpriced.xlsx", "bill_unpriced.pdf"]
+    return {"filed": True, "bills": files}
 
 
 TOOLS = {

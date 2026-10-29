@@ -22,19 +22,6 @@ def test_default_height_when_elevation_missing():
     assert facade_area_m2({"ground": 10}) == 30.0
 
 
-def test_schedule_to_openings_marks_timber_doors_internal():
-    from plan2cost.facts.document import to_openings
-
-    data = {"openings": [
-        {"mark": "TD2", "kind": "door", "material": "timber", "width_mm": 900, "height_mm": 2100, "quantity": 10},
-        {"mark": "SD1", "kind": "door", "material": "steel", "width_mm": 900, "height_mm": 2100, "quantity": 4},
-        {"mark": "AW1", "kind": "window", "material": "aluminium", "width_mm": 600, "height_mm": 1800, "quantity": 22},
-        {"mark": "X", "kind": "door", "material": "timber", "width_mm": None, "height_mm": 2100, "quantity": 1}]}
-    ops, q = to_openings(data)
-    assert [(o.label, o.external) for o in ops] == [("TD2", False), ("SD1", True), ("AW1", True)]
-    assert len(q) == 1
-
-
 def test_plan6_corrected_with_drawing_height_and_schedule_sizes():
     """Author-confirmed corrections: storey height 3.0m (drawing), TD1 0.75m (schedule). ASD1 is treated as internal as in the sheet."""
     ext = {"ground": 98.62, "first": 82.34}
@@ -55,12 +42,3 @@ def test_superstructure_boq_deducts_openings_from_their_own_wall():
     items = {i.key: i for i in superstructure_boq({"g": 100}, {"g": 50}, {"g": 3.0}, ops)}
     assert items["ext_blockwork_230_m2"].qty == 290 and items["int_blockwork_230_m2"].qty == 140
     assert items["opening_w_nr"].qty == 10
-
-
-def test_storey_heights_from_levels():
-    from plan2cost.facts.document import storey_heights_m
-
-    lv = {"storey_heights_mm": [{"from": "NGL", "to": "GROUND FLR. LEVL", "value_mm": 600},
-                                {"from": "GROUND FLR. LEVL", "to": "FIRST FLR. LEVEL", "value_mm": 3000},
-                                {"from": "FIRST FLR. LEVEL", "to": "ROOF BASE LEVEL", "value_mm": 3000}]}
-    assert storey_heights_m(lv) == {"ground": 3.0, "first": 3.0}

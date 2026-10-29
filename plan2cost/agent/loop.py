@@ -7,8 +7,27 @@ from typing import Callable
 from plan2cost.kit.client import parse_json
 from plan2cost.kit.progress import Run
 from plan2cost.tools import TOOLS
+from plan2cost.tools.records import seed_checklist
 
 SYSTEM = (Path(__file__).parent / "system_instructions.md").read_text()
+
+
+def make_thumbs(run: Run) -> None:
+    """A small picture of each floor plan for the console, made before the first model call so the drawings show while they are read."""
+    import cv2
+
+    from plan2cost.kit.pdf import render_pages
+
+    out = run.dir / "pages"
+    out.mkdir(parents=True, exist_ok=True)
+    for n, f in enumerate(run.floors, 1):
+        try:
+            src = render_pages(f["file"], [int(f.get("page") or 1)], str(out / "tmp"), dpi=60)[0] if f["file"].lower().endswith(".pdf") else f["file"]
+            img = cv2.imread(src)
+            k = 900 / max(img.shape[:2])
+            cv2.imwrite(str(out / f"p{n:02d}.jpg"), cv2.resize(img, None, fx=k, fy=k, interpolation=cv2.INTER_AREA) if k < 1 else img)
+        except Exception:  # a missing thumbnail must never stop a run
+            pass
 
 
 def _system() -> str:
@@ -62,9 +81,14 @@ def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> Non
 
 def run_agent(run: Run, llm: Callable[[list], str] = default_llm, max_turns: int = 30, tools: dict | None = None) -> Run:
     if not run.messages:
+        seed_checklist(run)
+        make_thumbs(run)
+        floors = "\n".join(f"- {f['name']}: {f['file'].split('/')[-1]}" + (f" (page {f['page']})" if f.get("page") else "") for f in run.floors)
+        inp = run.inputs
         run.messages = [{"role": "system", "content": _system()},
-                        {"role": "user", "content": f"Objective: {run.objective}\nThe drawing set is the PDF at: {run.pdf}" + ("\nA structural drawing set is also given: read_foundation_section, read_pad_bases and read_strip_layout must be called before compute_foundation." if run.structural_pdf else "")
-                        + ("\nA contractor quote is also given: after compute_boq call audit_quote, then report its flags in plain words in your summary." if run.quote else "")}]
+                        {"role": "user", "content": f"Objective: {run.objective}\nFloor plans given (lowest first):\n{floors}\nEntered by the user: storey height {inp.get('storey_height_m')} m (floor to floor), "
+                                                    f"roof type {inp.get('roof_type')}" + (f", pitch {inp['pitch_deg']} degrees" if inp.get("pitch_deg") else "") + (f", overhang {inp['overhang_m']} m" if inp.get("overhang_m") else "")
+                                                    + ("\nA contractor quote is also given: after compute_boq call audit_quote, then report its flags in plain words in your summary." if run.quote else "")}]
     start = run.turn
     try:
         while run.status == "running" and run.turn - start < max_turns:

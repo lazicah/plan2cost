@@ -1,9 +1,9 @@
 """What the console shows: a run's turns, derived from its saved messages."""
 import json
 import re
-from pathlib import Path
 
-from plan2cost.kit.progress import RUNS_DIR, Run
+from plan2cost.kit import progress
+from plan2cost.kit.progress import Run
 
 RESULT = "Tool result: "
 RUN_ID = re.compile(r"^\d{8}-\d{6}$")
@@ -42,22 +42,20 @@ def in_flight(run: Run) -> dict | None:
     return {"tool": a.get("tool", ""), "args": a.get("args") or {}, "reason": a.get("reason", "")}
 
 
-# The stages of an estimate, in the order the agent normally does them: (label, the tools that complete it, when it applies)
-STAGES = [("Index the pages", {"index_document"}, "always"), ("Set the checklist", {"set_checklist"}, "always"),
-          ("Schedules, levels, notes", {"read_openings", "read_levels", "read_notes"}, "always"), ("Walls, floor by floor", {"read_wall_girth"}, "always"),
-          ("Doors and windows on the plan", {"locate_openings"}, "always"), ("Rooms and finishes", {"read_rooms"}, "always"), ("Roof", {"read_roof"}, "always"), ("Structural drawing", {"read_foundation_section", "read_pad_bases", "read_strip_layout"}, "structural"),
-          ("Foundation", {"compute_foundation"}, "always"), ("Priced bill", {"compute_boq"}, "always"), ("Quote audit", {"audit_quote"}, "quote"), ("Filed", {"submit_boq"}, "always")]
+# The stages of an estimate: (label, the tools that complete it, when it applies)
+STAGES = [("Read the floor plans", {"read_floor"}, "always"), ("Estimate", {"compute_boq"}, "always"), ("Quote audit", {"audit_quote"}, "quote"), ("Filed", {"submit_boq"}, "always")]
 
 
 def stages(run: Run, done_turns: list[dict], now: dict | None) -> list[dict]:
-    """Progress for the console: each stage is done (a tool of it returned without error), active (the agent is in it) or waiting."""
-    ok = [t["tool"] for t in done_turns if not ({"error", "refused"} & set((t.get("result") or {})) )]
+    """Progress for the console: each stage is done (all it needs returned without error), active (the agent is in it) or waiting."""
+    ok = [t["tool"] for t in done_turns if not ({"error", "refused"} & set((t.get("result") or {})))]
     out = []
     for label, tools, when in STAGES:
-        if (when == "structural" and not run.structural_pdf) or (when == "quote" and not run.quote):
+        if when == "quote" and not run.quote:
             continue
         n = sum(1 for x in ok if x in tools)
-        out.append({"label": label, "done": n >= len(tools) if label == "Structural drawing" else n > 0, "count": n, "active": bool(now and now["tool"] in tools)})
+        need = len(run.floors) if label == "Read the floor plans" else 1
+        out.append({"label": label, "done": n >= need, "count": n, "of": need if need > 1 else None, "active": bool(now and now["tool"] in tools)})
     first_open = next((s for s in out if not s["done"]), None)
     if first_open and not any(s["active"] for s in out) and run.status == "running":
         first_open["active"] = True
@@ -67,42 +65,34 @@ def stages(run: Run, done_turns: list[dict], now: dict | None) -> list[dict]:
 def built(run: Run) -> dict:
     """The components of the estimate that exist so far, for the console's live panel."""
     d = run.data
-    opened = {f: sum(c["external"] + c["internal"] for c in counts.values()) for f, counts in (d.get("located_openings") or {}).items()}
     boq = d.get("boq")
-    return {"walls": {f: {k: m.get(k) for k in ("walls", "total_m", "external_m", "internal_m", "route", "confidence", "markup")} for f, m in (d.get("models") or {}).items()},
-            "openings_found": opened, "rooms": {f: {"rooms": len(rs), "net_floor_area_m2": round(sum(r["area_m2"] or 0 for r in rs if not r["open_space"]), 2)} for f, rs in (d.get("rooms") or {}).items()}, "openings_scheduled": sum(o["count"] for o in d.get("openings", [])), "roof": ({"slope_area_m2": d["roof"].get("working", {}).get("slope_area_m2"), "plan_area_m2": d["roof"]["roof"]["plan_area_m2"], "markup": d["roof"]["markup"]} if d.get("roof") else None), "pads": len(d.get("pads", [])),
-            "strip": ({k: d["strip_layout"][k] for k in ("gross_m", "net_m")} if d.get("strip_layout") else None), "foundation_lines": len(d.get("foundation_items", [])),
-            "boq": ({"lines": len(boq["items"]), "total": boq["total"], "currency": boq["currency"]} if boq else None)}
-
-
-def ensure_thumbs(run: Run) -> None:
-    """Runs made before thumbnails existed get them the first time the console opens them."""
-    if not (run.dir / "pages").is_dir() and run.pdf and Path(run.pdf).is_file():
-        from plan2cost.kit.pdf import page_count, render_pages
-
-        render_pages(run.pdf, list(range(1, page_count(run.pdf) + 1)), str(run.dir / "pages"), dpi=60)
+    return {"floors": {f: {"walls": m.get("walls"), "total_m": m.get("total_m"), "external_m": m.get("external_m"), "internal_m": m.get("internal_m"), "route": m.get("route"),
+                           "confidence": m.get("confidence"), "markup": m.get("markup"), "doors": sum(o["count"] for o in (d.get("floors", {}).get(f, {}).get("openings") or []) if o["kind"] == "door"),
+                           "windows": sum(o["count"] for o in (d.get("floors", {}).get(f, {}).get("openings") or []) if o["kind"] == "window")} for f, m in (d.get("models") or {}).items()},
+            "working": (boq or {}).get("working"),
+            "boq": ({"lines": len(boq["items"]), "total": boq["total"], "low": boq["total_low"], "high": boq["total_high"], "currency": boq["currency"], "estimated_share": boq["estimated_share"]} if boq else None)}
 
 
 def summary(run: Run) -> dict:
-    ensure_thumbs(run)
     done_turns, now = turns(run), in_flight(run)
     d = run.dir
     tender = json.loads((d / "tender_audit.json").read_text()) if (d / "tender_audit.json").exists() else None
     files = [f for f in ("bill_priced.xlsx", "bill_priced.pdf", "bill_unpriced.xlsx", "bill_unpriced.pdf", "boq.json", "tender_audit.json") if (d / f).exists()]
-    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "pages": run.pages, "thumbs": sorted(f.name for f in (d / "pages").glob("p*.jpg")) if (d / "pages").is_dir() else [], "built": built(run), "preview": run.data.get("preview"), "error": run.data.get("error"), "files": files, "tender": tender,
-            "structural": run.structural_pdf, "quote": run.quote, "turn": run.turn, "objective": run.objective, "pdf": run.pdf, "checklist": run.checklist,
-            "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result,
-            "boq": run.data.get("boq"), "models": run.data.get("models", {}), "audit": run.data.get("audit"), "turns": done_turns}
+    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "floors": run.floors, "inputs": run.inputs,
+            "thumbs": sorted(f.name for f in (d / "pages").glob("p*.jpg")) if (d / "pages").is_dir() else [], "built": built(run), "preview": run.data.get("preview"),
+            "error": run.data.get("error"), "files": files, "tender": tender, "quote": run.quote, "turn": run.turn, "objective": run.objective, "checklist": run.checklist,
+            "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result, "boq": run.data.get("boq"), "models": run.data.get("models", {}),
+            "audit": run.data.get("audit"), "turns": done_turns}
 
 
 def list_runs() -> list[dict]:
-    if not RUNS_DIR.exists():
+    if not progress.RUNS_DIR.exists():
         return []
     rows = []
-    for d in sorted((p for p in RUNS_DIR.iterdir() if p.is_dir() and RUN_ID.match(p.name)), reverse=True):
+    for d in sorted((p for p in progress.RUNS_DIR.iterdir() if p.is_dir() and RUN_ID.match(p.name)), reverse=True):
         try:
             r = Run.load(d.name)
-            rows.append({"id": r.id, "status": r.status, "turn": r.turn, "pdf": r.pdf})
+            rows.append({"id": r.id, "status": r.status, "turn": r.turn, "floors": [f["name"] for f in r.floors]})
         except (OSError, ValueError, TypeError):
             continue
     return rows

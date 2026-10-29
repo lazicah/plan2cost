@@ -1,7 +1,7 @@
 """Plan -> BoQ: BESMM4-style items from a take-off, with every assumed input flagged and no invented prices."""
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from plan2cost.takeoff.substructure import (blinding_foundations_m3, disposal_and_backfill, formwork_foundation_sides_m, levelling_compaction_m2,
@@ -28,6 +28,12 @@ class BoqItem:
     rate: float | None = None
     amount: float | None = None
     besmm: str = ""  # BESMM4 item code; empty for the author's own lines that the book does not carry
+    basis: str = "measured"  # "measured" from the plans, or "estimated" from coefficients (then qty is the typical value and qty_low and qty_high the range)
+    qty_low: float | None = None
+    qty_high: float | None = None
+    coef: list = field(default_factory=list)  # ids of the coefficients behind an estimated quantity
+    amount_low: float | None = None
+    amount_high: float | None = None
 
 
 def load_defaults(path: str = "data/defaults.json") -> dict:
@@ -104,7 +110,7 @@ def superstructure_boq(ext_girth: dict[str, float], int_girth: dict[str, float],
     ]
     for o in openings:
         where = "external" if o.external else "internal"
-        items.append(BoqItem(f"opening_{o.label.lower()}_nr", f"{o.label} {o.kind} {int(o.width_m * 1000)} x {int(o.height_m * 1000)}mm; {where}; as schedule", "nr", o.count))
+        items.append(BoqItem(f"opening_{o.label.lower()}_nr", f"{o.label} {o.kind} {int(o.width_m * 1000)} x {int(o.height_m * 1000)}mm; {where}; counted on the plan", "nr", o.count))
     return items
 
 
@@ -140,9 +146,13 @@ def price_boq(items: list[BoqItem], rates: dict) -> dict:
     codes = json.loads(Path("data/besmm_codes.json").read_text())["codes"]
     for i in items:
         i.besmm = codes.get(i.key, "") or (codes["lintel_nr"] if i.key.startswith("lintel_") else "")
-        r = rates["rates"].get(i.key)
+        r = rates["rates"].get(i.key) or i.rate  # a rate set by the take-off (a window by its area) stands when the table has none for the key
         if r:
             i.rate, i.amount = r, round(i.qty * r, 2)
+            lo, hi = (i.qty_low if i.qty_low is not None else i.qty), (i.qty_high if i.qty_high is not None else i.qty)
+            i.amount_low, i.amount_high = round(lo * r, 2), round(hi * r, 2)
         else:
             unpriced.append(i.key)
-    return {"currency": rates["currency"], "total": round(sum(i.amount or 0 for i in items), 2), "unpriced": unpriced}
+    return {"currency": rates["currency"], "total": round(sum(i.amount or 0 for i in items), 2), "total_low": round(sum(i.amount_low or 0 for i in items), 2),
+            "total_high": round(sum(i.amount_high or 0 for i in items), 2), "unpriced": unpriced,
+            "estimated_share": round(sum(i.amount or 0 for i in items if i.basis == "estimated") / max(sum(i.amount or 0 for i in items), 1), 2)}

@@ -1,19 +1,21 @@
 """A run is a folder under workspace/runs/ holding its saved state, so it can pause for a person and resume."""
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 RUNS_DIR = Path("workspace/runs")
 STATUSES = ("running", "needs_input", "paused", "done", "failed")
+ROOF_TYPES = ("gable", "hip", "flat")  # the roof types we hold coefficients for
+FLOOR_NAMES = ("ground", "first", "second", "third", "fourth")
 
 
 @dataclass
 class Run:
     id: str
-    pdf: str
-    objective: str
-    structural_pdf: str | None = None  # the structural drawing set, when there is one
+    objective: str = ""
+    floors: list = field(default_factory=list)  # [{"name": "ground", "file": "plan.pdf", "page": 1}], lowest floor first
+    inputs: dict = field(default_factory=dict)  # what the user enters: storey_height_m, roof_type, pitch_deg, overhang_m
     quote: str | None = None  # a contractor's quote (PDF or image) to audit against the BoQ, when there is one
     status: str = "running"
     turn: int = 0
@@ -21,14 +23,16 @@ class Run:
     checklist: list = field(default_factory=list)
     facts: list = field(default_factory=list)
     assumptions: list = field(default_factory=list)
-    pages: list = field(default_factory=list)
-    data: dict = field(default_factory=dict)  # things tools read from the drawings: openings, levels, girth
+    data: dict = field(default_factory=dict)  # what the tools measured: floors, boq, models
     pending: dict | None = None  # the question a person must answer
     result: dict | None = None
 
     @property
     def dir(self) -> Path:
         return RUNS_DIR / self.id
+
+    def floor(self, name: str) -> dict:
+        return next(f for f in self.floors if f["name"] == name)
 
     def save(self) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -40,9 +44,10 @@ class Run:
             f.write(line.rstrip() + "\n")
 
     @classmethod
-    def new(cls, pdf: str, objective: str, structural_pdf: str | None = None, quote: str | None = None) -> "Run":
-        return cls(id=time.strftime("%Y%m%d-%H%M%S"), pdf=pdf, objective=objective, structural_pdf=structural_pdf, quote=quote)
+    def new(cls, floors: list, inputs: dict, objective: str = "Estimate the cost of this building from its floor plans.", quote: str | None = None) -> "Run":
+        return cls(id=time.strftime("%Y%m%d-%H%M%S"), objective=objective, floors=floors, inputs=inputs, quote=quote)
 
     @classmethod
     def load(cls, run_id: str) -> "Run":
-        return cls(**json.loads((RUNS_DIR / run_id / "run.json").read_text()))
+        d = json.loads((RUNS_DIR / run_id / "run.json").read_text())
+        return cls(**{k: v for k, v in d.items() if k in {f.name for f in fields(cls)}})  # runs saved by an older layout still open
