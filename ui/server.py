@@ -6,6 +6,8 @@ import json
 import re
 import subprocess
 import sys
+import time
+from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -17,7 +19,9 @@ from plan2cost.kit.progress import Run  # noqa: E402
 
 PORT = 8765
 LOG = ROOT / "workspace" / "console.log"  # what the background processes print, so a crashed run can be explained
-DOWNLOADS = {"bill_priced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_unpriced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+UPLOADS = ROOT / "workspace" / "uploads"  # files picked in the console are copied here, then handed to the agent by path
+UPLOAD_TYPES = {".pdf", ".png", ".jpg", ".jpeg", ".xlsx"}
+DOWNLOADS = {"bill_priced.pdf": "application/pdf", "bill_unpriced.pdf": "application/pdf", "bill_priced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_unpriced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
              "boq.json": "application/json", "tender_audit.json": "application/json"}
 
 
@@ -59,6 +63,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(f.read_bytes())
             else:
                 self._json(404, {"error": "no such file"})
+        elif re.match(r"^/api/runs/\d{8}-\d{6}/pages/p\d+\.jpg$", self.path):  # page thumbnails
+            f = view.RUNS_DIR / self.path.split("/")[3] / "pages" / self.path.split("/")[5]
+            self._send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self._json(404, {"error": "no such file"})
         elif self.path == "/api/log":
             self._json(200, {"tail": "\n".join(LOG.read_text().splitlines()[-25:]) if LOG.exists() else ""})
         elif self.path.startswith("/api/runs/") and view.RUN_ID.match(self.path.split("/")[3]):
@@ -69,7 +76,18 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._json(404, {"error": "not found"})
 
+    def _upload(self) -> None:
+        name = re.sub(r"[^\w.\- ]", "_", Path(unquote(self.path.split("name=", 1)[-1])).name)
+        if Path(name).suffix.lower() not in UPLOAD_TYPES:
+            return self._json(400, {"error": f"{Path(name).suffix or 'that file'} is not supported; use PDF, image or Excel"})
+        UPLOADS.mkdir(parents=True, exist_ok=True)
+        dest = UPLOADS / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}"
+        dest.write_bytes(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
+        self._json(200, {"path": str(dest)})
+
     def do_POST(self) -> None:
+        if self.path.startswith("/api/upload?name="):
+            return self._upload()
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
         cmd = [sys.executable, "-m", "plan2cost.agent"]
         if self.path == "/api/start":

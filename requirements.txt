@@ -7,3 +7,4 @@ meta-sam-parser
 pdfplumber
 pillow
 openpyxl
+reportlab

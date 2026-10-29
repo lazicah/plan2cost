@@ -1,6 +1,7 @@
 """What the console shows: a run's turns, derived from its saved messages."""
 import json
 import re
+from pathlib import Path
 
 from plan2cost.kit.progress import RUNS_DIR, Run
 
@@ -63,12 +64,32 @@ def stages(run: Run, done_turns: list[dict], now: dict | None) -> list[dict]:
     return out
 
 
+def built(run: Run) -> dict:
+    """The components of the estimate that exist so far, for the console's live panel."""
+    d = run.data
+    opened = {f: sum(c["external"] + c["internal"] for c in counts.values()) for f, counts in (d.get("located_openings") or {}).items()}
+    boq = d.get("boq")
+    return {"walls": {f: {k: m.get(k) for k in ("walls", "total_m", "external_m", "internal_m", "route", "confidence", "markup")} for f, m in (d.get("models") or {}).items()},
+            "openings_found": opened, "openings_scheduled": sum(o["count"] for o in d.get("openings", [])), "pads": len(d.get("pads", [])),
+            "strip": ({k: d["strip_layout"][k] for k in ("gross_m", "net_m")} if d.get("strip_layout") else None), "foundation_lines": len(d.get("foundation_items", [])),
+            "boq": ({"lines": len(boq["items"]), "total": boq["total"], "currency": boq["currency"]} if boq else None)}
+
+
+def ensure_thumbs(run: Run) -> None:
+    """Runs made before thumbnails existed get them the first time the console opens them."""
+    if not (run.dir / "pages").is_dir() and run.pdf and Path(run.pdf).is_file():
+        from plan2cost.kit.pdf import page_count, render_pages
+
+        render_pages(run.pdf, list(range(1, page_count(run.pdf) + 1)), str(run.dir / "pages"), dpi=60)
+
+
 def summary(run: Run) -> dict:
+    ensure_thumbs(run)
     done_turns, now = turns(run), in_flight(run)
     d = run.dir
     tender = json.loads((d / "tender_audit.json").read_text()) if (d / "tender_audit.json").exists() else None
-    files = [f for f in ("bill_priced.xlsx", "bill_unpriced.xlsx", "boq.json", "tender_audit.json") if (d / f).exists()]
-    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "pages": run.pages, "files": files, "tender": tender,
+    files = [f for f in ("bill_priced.xlsx", "bill_priced.pdf", "bill_unpriced.xlsx", "bill_unpriced.pdf", "boq.json", "tender_audit.json") if (d / f).exists()]
+    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "pages": run.pages, "thumbs": sorted(f.name for f in (d / "pages").glob("p*.jpg")) if (d / "pages").is_dir() else [], "built": built(run), "files": files, "tender": tender,
             "structural": run.structural_pdf, "quote": run.quote, "turn": run.turn, "objective": run.objective, "pdf": run.pdf, "checklist": run.checklist,
             "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result,
             "boq": run.data.get("boq"), "models": run.data.get("models", {}), "audit": run.data.get("audit"), "turns": done_turns}

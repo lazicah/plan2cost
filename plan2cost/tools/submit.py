@@ -3,7 +3,7 @@ import json
 
 from plan2cost.agent.verify import verify_boq
 from plan2cost.kit.progress import Run
-from plan2cost.takeoff.bill import numbered, write_xlsx
+from plan2cost.takeoff.bill import numbered, write_pdf, write_xlsx
 
 
 def submit_boq(run: Run, summary: str = "") -> dict:
@@ -21,7 +21,9 @@ def submit_boq(run: Run, summary: str = "") -> dict:
     cur = run.data["boq"].get("currency", "NGN")
     write_xlsx(run.dir / "bill_priced.xlsx", rows, True, cur, "Bill of quantities", run.id)
     write_xlsx(run.dir / "bill_unpriced.xlsx", rows, False, cur, "Bill of quantities", run.id)
-    return {"filed": True, "bills": ["bill_priced.xlsx", "bill_unpriced.xlsx"]}
+    write_pdf(run.dir / "bill_priced.pdf", rows, True, cur, "Bill of quantities", run.id)
+    write_pdf(run.dir / "bill_unpriced.pdf", rows, False, cur, "Bill of quantities", run.id)
+    return {"filed": True, "bills": ["bill_priced.xlsx", "bill_unpriced.xlsx", "bill_priced.pdf", "bill_unpriced.pdf"]}
 
 
 TOOLS = {

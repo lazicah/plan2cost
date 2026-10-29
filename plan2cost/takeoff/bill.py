@@ -60,3 +60,27 @@ def read_xlsx_bid(path: str) -> dict[str, dict]:
         qty, rate, amount = (float(v) if isinstance(v, (int, float)) else None for v in (row[4], row[5], row[6]))
         out[str(int(row[0]))] = {"description": str(row[2] or ""), "unit": str(row[3] or ""), "qty": qty, "rate": rate, "amount": amount}
     return out
+
+
+def write_pdf(path: str | Path, rows: list[dict], priced: bool, currency: str, title: str, run_id: str) -> None:
+    """The same bill as a PDF for reading and printing. The unpriced PDF has empty rate and amount columns."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    st = getSampleStyleSheet()
+    cell = st["BodyText"].clone("cell", fontSize=8, leading=10)
+    doc = SimpleDocTemplate(str(path), pagesize=landscape(A4), leftMargin=28, rightMargin=28, topMargin=28, bottomMargin=28, title=title)
+    data = [list(HEAD)]
+    total = 0.0
+    for r in rows:
+        amount = r["qty"] * r["rate"] if priced and r["rate"] else None
+        total += amount or 0
+        data.append([r["no"], r["besmm"], Paragraph(r["description"].replace("&", "&amp;").replace("<", "&lt;"), cell), r["unit"], f"{r['qty']:,.2f}",
+                     f"{r['rate']:,.2f}" if priced and r["rate"] else "", f"{amount:,.2f}" if amount else ""])
+    data.append(["", "", Paragraph("<b>Total</b>", cell), "", "", "", f"{total:,.2f}" if priced else ""])
+    table = Table(data, colWidths=[28, 62, 400, 34, 62, 70, 84], repeatRows=1)
+    table.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 8), ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#efece4")),
+                               ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#b9b5aa")), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("ALIGN", (4, 0), (6, -1), "RIGHT")]))
+    doc.build([Paragraph(f"<b>{title}</b> ({'priced' if priced else 'unpriced, for tender'}; {currency})", st["Title"]), Paragraph(NOTE, cell), Spacer(1, 8), table])

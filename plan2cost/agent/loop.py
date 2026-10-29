@@ -26,6 +26,7 @@ def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> Non
     reply = llm(run.messages)
     run.messages.append({"role": "assistant", "content": reply})
     run.turn += 1
+    run.save()  # so the console shows which tool is running while a slow one (a plan read) works
     try:
         action = parse_json(reply)
         name, args = action["tool"], action.get("args") or {}

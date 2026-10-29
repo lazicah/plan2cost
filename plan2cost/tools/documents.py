@@ -1,11 +1,13 @@
 """Tools that read the set as a whole: what each page is, the opening schedule, storey heights and the specification notes. The model reads
 printed text; code checks it."""
+from plan2cost.kit.pdf import page_count, render_pages
 from plan2cost.kit.progress import Run
 
 
 def index_document(run: Run) -> dict:
     from plan2cost.facts.document import classify_pages, index_pages
 
+    render_pages(run.pdf, list(range(1, page_count(run.pdf) + 1)), str(run.dir / "pages"), dpi=60)  # thumbnails for the console, shown while the model classifies
     run.pages = classify_pages(index_pages(run.pdf))
     roles: dict = {}
     for p in run.pages:

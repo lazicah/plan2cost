@@ -36,3 +36,11 @@ def test_three_bids_show_a_rate_far_from_the_middle():
     mk = lambda r: {"1": {"description": "", "unit": "m3", "qty": 20.0, "rate": r, "amount": 20 * r}}
     c = compare_bids(rows, {"a": mk(100), "b": mk(105), "c": mk(200)})
     assert [f["code"] for f in c["peer_flags"]["c"]] == ["peer_rate"] and not c["peer_flags"]["a"]
+
+
+def test_the_pdf_bill_is_written(tmp_path):
+    from plan2cost.takeoff.bill import write_pdf
+
+    write_pdf(tmp_path / "b.pdf", numbered(ITEMS), True, "NGN", "Bill", "r1")
+    write_pdf(tmp_path / "u.pdf", numbered(ITEMS), False, "NGN", "Bill", "r1")
+    assert (tmp_path / "b.pdf").read_bytes().startswith(b"%PDF") and (tmp_path / "u.pdf").stat().st_size > 1000
