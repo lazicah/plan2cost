@@ -43,7 +43,7 @@ def test_block_laying_is_200_a_block_everywhere_and_internal_walls_use_the_leane
     for d in (ext, fdn, inn):
         assert next(v for k, v in d.items() if k.startswith("Labour"))["rate"] == 200
     cement = lambda d: next(v for k, v in d.items() if k.startswith("Cement"))["qty"]
-    assert abs(cement(ext) - 24.5) < 0.01 and abs(cement(inn) - 22.2) < 0.01  # 1:4 against 1:6 mortar
+    assert cement(ext) == 25 and cement(inn) == 23  # 24.5 and 22.2 bags, whole bags: 1:4 against 1:6 mortar
 
 
 def test_a_line_with_no_recipe_is_carried_at_its_boq_rate_and_totals_add_up():
