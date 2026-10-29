@@ -60,7 +60,13 @@ Bonus prizes to aim for: Best Build on Open Weights (Muse Spark Open / Glimmer),
 `vector.py` / `raster_lines.py` give line objects, `vector_walls.py` pairs them into wall bands, `scale.py` finds the scale from printed dimensions,
 `page_facts.py` has the model read the stated scale and overall dimensions. Results and weaknesses: `eval/WALLS.md`. Never tune a constant to one plan.
 
-## Status (Oct 28 night, superseded in part by the section above)
+## Verified drawing model (Oct 29)
+`drawing_model.py` is the register: walls with stable ids (W-001...), a calibration record, evidence labels, issues. `qc.py` holds the checks (overlap,
+dangling lines, free ends, extents against printed dimensions, scale evidence, external convention); none changes a measurement. `markup.py` draws the
+walls on the plan (`model_for_page`, `model_for_image`); `review.py` is the model's advisory review of that image (flags only). The agent's
+`read_wall_girth` builds it, saves open checks as assumptions, and the console shows the annotated plan. Not built yet: openings tied to walls, rooms, stairs.
+
+## Status (Oct 28 night, superseded in part by the sections above)
 Works: page classification and schedule/level/notes reading (both models); wall area and foundation maths reproduce the author's sheets; plan-symbol openings about 86 percent; agent loop, console, Spark Open.
 Not working: wall girth from a plan (model reading about 20 percent off; image detector finds about 74 percent of plan2 wall length), so no trustworthy end-to-end estimate yet. Not built: roof, finishes, services, preliminaries, additions in the BoQ; quote audit; stage photos.
 Next, in order: (1) finish `walls_cv.py` on plan2 (heavy exterior walls, stairs false positives, snap to printed breakpoints), footprint estimate as flagged fallback; (2) one complete plan2 BoQ end to end, compared with the author's own total; (3) quote audit; (4) SAM 3.1 stage-photo demo; (5) README (prior work vs new, AI-assistance disclosure), demo video, submit by Nov 3.

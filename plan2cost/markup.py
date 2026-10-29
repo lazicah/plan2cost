@@ -55,7 +55,18 @@ def draw_markup(model: DrawingModel, out_path: str, pdf: str | None = None, page
     return out_path
 
 
-def model_for_page(pdf: str, page: int, floor: str, out_dir: str) -> DrawingModel:
+def _add_review(model: DrawingModel, markup_path: str) -> None:
+    """Append the model's review of the annotated plan as issues. A failed or empty review never stops the run or changes a measurement."""
+    from plan2cost.drawing_model import Issue
+    from plan2cost.review import review_model
+
+    try:
+        model.issues += review_model(model, markup_path)
+    except Exception as e:  # the model could not be reached or answered badly
+        model.issues.append(Issue("review_skipped", "info", f"The model review of the plan was skipped ({type(e).__name__}).", [], "", "model review"))
+
+
+def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool = False) -> DrawingModel:
     """Interpret one page, build the verified drawing model, save it with its annotated plan, and return it."""
     from pathlib import Path
 
@@ -71,11 +82,13 @@ def model_for_page(pdf: str, page: int, floor: str, out_dir: str) -> DrawingMode
     name = f"markup_{floor}_p{page}.jpg"
     draw_markup(model, str(out / name), pdf=pdf, page=page, image=r.get("_image") if r["route"] == "raster" else None)
     model.markup = name
+    if review:
+        _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p{page}.json")
     return model
 
 
-def model_for_image(path: str, floor: str, out_dir: str, facts: dict | None = None) -> DrawingModel:
+def model_for_image(path: str, floor: str, out_dir: str, facts: dict | None = None, review: bool = False) -> DrawingModel:
     """The same for a plan supplied as an image. `facts` are the printed facts the model read (stated scale, overall dimensions); read now if absent."""
     from pathlib import Path
 
@@ -95,5 +108,7 @@ def model_for_image(path: str, floor: str, out_dir: str, facts: dict | None = No
     name = f"markup_{floor}.jpg"
     draw_markup(model, str(out / name), image=path)
     model.markup = name
+    if review:
+        _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}.json")
     return model

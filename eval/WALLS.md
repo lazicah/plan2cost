@@ -36,3 +36,10 @@ Scale: printed dimensions against the lines they measure (stated scale is only a
 size chosen by the model-read overall dimensions. A raster reading counts only if the walls at its final scale form a building and their extents match
 the printed overall dimensions on both axes. A vector result is rejected (and the page read as raster) if its extents do not match the printed overall
 dimensions. The model reads printed facts and nothing else; code measures every length.
+
+## Drawing model and checks
+Each measured floor is saved as a drawing model (`drawing_model_<floor>_p<page>.json`) with an annotated plan (`markup_<floor>_p<page>.jpg`). Checks that
+code runs on it: overlapping runs (possible double count), runs past the last joint (grid or dimension lines merged into a wall), wall ends that meet
+nothing, building size against the printed overall dimensions, weak scale evidence, and external-versus-outline convention. A model reviews the annotated
+plan as well and can only add questions. Examples: plan 1 (image) is flagged for a missing north wall by both the extents check (11.0 m deep against
+13.5 m printed) and the model review; plan 2's architectural page is flagged for two grid lines merged into walls.

@@ -66,3 +66,19 @@ def test_the_model_round_trips_through_json_and_the_markup_is_written(tmp_path):
     m.calibrations[0].mm_per_unit = 20.0  # 8000mm -> 400 px, 6000mm -> 300 px
     out = draw_markup(m, str(tmp_path / "markup.jpg"), image=str(img))
     assert cv2.imread(out) is not None and run_checks(m, [8000, 6000]) is not None
+
+
+def test_the_model_review_only_adds_issues_and_ignores_ids_it_does_not_know(monkeypatch):
+    import plan2cost.client as client
+    import plan2cost.document as document
+    from plan2cost.review import review_model
+
+    monkeypatch.setattr(client, "image_part", lambda p: {"type": "text", "text": "image"})
+    monkeypatch.setattr(document, "_chat", lambda content: {"missed": [{"where": "north edge", "what": "outer wall has no line"}], "not_walls": [{"id": "002", "why": "furniture"}, {"id": "099", "why": "unknown"}],
+                                                            "duplicates": [{"ids": ["001", "003"]}], "wrong_side": [{"id": "005", "why": "inside"}], "overall": "x"})
+    m = build_model(result_for(box_walls()), "ground", 1)
+    before = (m.totals["total_m"], len(m.elements))
+    issues = review_model(m, "unused.jpg")
+    assert {i.code for i in issues} == {"review_missed", "review_not_wall", "review_duplicate", "review_side"}
+    assert all(i.source == "model review" for i in issues) and all(i.elements == [] or all(e in {x.id for x in m.elements} for e in i.elements) for i in issues)
+    assert (m.totals["total_m"], len(m.elements)) == before  # a review never changes a measurement

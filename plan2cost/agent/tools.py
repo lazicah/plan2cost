@@ -185,7 +185,7 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
 
     models_dir = run.dir / "models"
     try:
-        model = model_for_page(run.pdf, int(page), floor, str(models_dir))
+        model = model_for_page(run.pdf, int(page), floor, str(models_dir), review=True)
     except ValueError as e:  # no route kept its walls: fall back to the plain measurement, without a drawing model
         m = interpret_page(run.pdf, int(page), str(run.dir / "scratch"))
         if m.get("error"):
