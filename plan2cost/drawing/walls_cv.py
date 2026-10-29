@@ -181,14 +181,19 @@ def footprint_area_m2(walls: list[Wall], shape: tuple[int, int], mm_per_px: floa
 
 
 def extents_m(walls: list[Wall]) -> tuple[float, float]:
-    """Overall length (x) and width (y) of the wall layout, in metres, between the outermost joints. A run that overshoots the building (a grid or
-    extension line merged into a wall) makes no joint and cannot inflate it; with too few joints the bounding box of the runs is used."""
-    j = joint_extents_mm(walls)
-    if j:
-        return j[0] / 1000, j[1] / 1000
+    """Overall length (x) and width (y) of the wall layout, in metres: the bounding box of every run. Deliberately strict: a run that overshoots the
+    building (a grid or extension line merged into a wall) makes it too big, and that is how a bad reading is caught against the printed overall
+    dimensions. The building size to report is `building_size_m`."""
     xs = [w.start_mm for w in walls if w.orient == "h"] + [w.end_mm for w in walls if w.orient == "h"] + [w.centre_mm for w in walls if w.orient == "v"]
     ys = [w.start_mm for w in walls if w.orient == "v"] + [w.end_mm for w in walls if w.orient == "v"] + [w.centre_mm for w in walls if w.orient == "h"]
     return (max(xs) - min(xs)) / 1000, (max(ys) - min(ys)) / 1000
+
+
+def building_size_m(walls: list[Wall]) -> tuple[float, float]:
+    """The building's size between its outermost joints (centre lines), which a run overshooting the building cannot inflate. Falls back to the
+    bounding box when there are too few joints."""
+    j = joint_extents_mm(walls)
+    return (j[0] / 1000, j[1] / 1000) if j else extents_m(walls)
 
 
 def external_fractions(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 2500, margin_px: int = 3,

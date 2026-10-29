@@ -69,3 +69,14 @@ Overhead, profit and preliminaries live inside the rates (author's practice), so
 Flags: unpriced or missing items, changed quantity or unit, wrong arithmetic or total, rate against the user's rate (15%), rate far from the other bids (25%, three or more bids),
 added items. Totals are the bid's rates at our issued quantities; a bid with unpriced items is not comparable on total. Thresholds are defaults for a surveyor to set.
 Checked on three synthetic returns made from the plan 2 BoQ; not yet on real bids.
+
+## Finishes, rooms and lintels (BESMM4 1.28, 1.29, 1.13)
+`read_rooms` (facts/rooms.py) has the model copy each room's name and the two internal dimensions printed beside it; a number not in the page's text layer is dropped and
+the room says so, a room without both numbers is kept with its area unknown and asked about. Rooms are rectangles of the two printed numbers. `compute_boq` then adds floor,
+ceiling, internal wall finish, internal paint and skirting (takeoff/finishes.py). Rules from the book (p.232, 236): area net (M1); no deduction for a void of 1.00 m2 or less
+(M3); work internal unless stated external (M5); wall finish height to finished ceiling (M8). An external opening over 1.00 m2 comes off once, an internal one twice (two rooms).
+External render and paint now follow the same 1.00 m2 rule (blockwork still deducts every opening, the author's method). Porches, terraces and balconies are left out until the user
+says they count. Lintels (nr, 1.13.2.2.2) are one per opening, length = opening + bearing each end; the bearing, the finish specs and the skirting height are asked, never assumed.
+Not built: wall tiling to wet rooms (needs the tile height and doors tied to rooms), roof, columns and beams, stairs, services.
+Building length and width (slab, topsoil, fill) come from the outermost joints plus one wall thickness, not the bounding box of the runs: the strict bounding box stays as the
+guard that rejects a vector reading with a grid line merged into a wall (plan 2 page 3), and a test holds both.

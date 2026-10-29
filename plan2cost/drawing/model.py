@@ -5,7 +5,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from plan2cost.drawing.walls_cv import Wall
+from plan2cost.drawing.walls_cv import Wall, building_size_m
 
 # How a fact is known. A printed dimension is read, a length is measured from traced geometry, a classification is inferred from conventions.
 EVIDENCE = ("directly labelled", "geometrically measured", "inferred", "approximate", "unresolved")
@@ -149,9 +149,10 @@ def build_model(result: dict, floor: str, page: int, printed_mm: list | None = N
     by_thickness: dict = {}
     for e in elements:
         by_thickness[int(e.thickness_mm)] = round(by_thickness.get(int(e.thickness_mm), 0) + e.length_m, 2)
+    size = building_size_m(walls)  # between the outermost joints: a run overshooting the building does not inflate it
     model = DrawingModel(page, floor, result.get("route", result.get("source", "")), conf, [calibration], elements,
                          totals={"total_m": round(total, 2), "external_m": round(ext, 2), "internal_m": round(total - ext, 2), "by_thickness_m": by_thickness,
-                                 "length_m": result.get("length_m"), "width_m": result.get("width_m")})
+                                 "length_m": round(size[0], 2), "width_m": round(size[1], 2)})
     from plan2cost.drawing.qc import run_checks
 
     model.issues = run_checks(model, printed_mm if printed_mm is not None else cal.get("printed_overall_mm", []))

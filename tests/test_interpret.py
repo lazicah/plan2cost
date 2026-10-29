@@ -61,3 +61,12 @@ def test_extents_must_match_printed_overall_dimensions():
     assert extents_match_printed(14.03, 11.79, [14250, 12000, 3000, 600])  # outer extents are within a wall thickness of the grid strings
     assert extents_match_printed(11.8, 14.0, [14250, 12000])  # either axis order
     assert not extents_match_printed(30.0, 20.0, [14250, 12000])  # a network of grid lines spans something else
+
+
+def test_building_size_ignores_an_overshooting_run_but_the_strict_extents_still_see_it():
+    from plan2cost.drawing.walls_cv import Wall, building_size_m, extents_m
+
+    box = [Wall("h", 0, 0, 10000, 230), Wall("h", 8000, 0, 10000, 230), Wall("v", 0, 0, 8000, 230), Wall("v", 10000, 0, 8000, 230),
+           Wall("h", -3000, -3000, 13000, 40)]  # a grid line far past the building, merged into a wall
+    assert building_size_m(box[:4]) == (10.0, 8.0) and building_size_m(box) == (10.0, 8.0)
+    assert extents_m(box)[1] > 10.0  # the strict bounding box is inflated, so a vector reading like this is caught against the printed dimensions
