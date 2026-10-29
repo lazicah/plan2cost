@@ -22,7 +22,7 @@ def _joints(walls: list[Wall], tol_mm: float = 150) -> list[tuple[float, float]]
 
 
 def check_double_counting(model: DrawingModel) -> list[Issue]:
-    """Two runs on the same line that overlap are counted twice. Parallel runs closer than a wall thickness are the same wall found twice."""
+    """Two runs on the same line that overlap are counted twice. Parallel runs whose centre lines are closer than a wall thickness are the same wall found twice."""
     out = []
     els = model.walls()
     for i, a in enumerate(els):
@@ -30,7 +30,7 @@ def check_double_counting(model: DrawingModel) -> list[Issue]:
             if a.orient != b.orient:
                 continue
             wa, wb = _wall(a), _wall(b)
-            if abs(wa.centre_mm - wb.centre_mm) > 0.8 * max(a.thickness_mm, b.thickness_mm):
+            if abs(wa.centre_mm - wb.centre_mm) > 1.05 * max(a.thickness_mm, b.thickness_mm):  # centre lines closer than a wall thickness: the faces would overlap, so it is one wall
                 continue
             over = min(wa.end_mm, wb.end_mm) - max(wa.start_mm, wb.start_mm)
             short = min(wa.length_mm, wb.length_mm)

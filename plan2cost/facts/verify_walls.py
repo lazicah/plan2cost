@@ -1,7 +1,7 @@
 """Model-checked walls: the model judges what a picture shows, code does the measuring and the editing. Three checks, each with a closed question about a crop of
 the plan, and an edit only when the model's answer and the geometry agree:
 - a run that overshoots the last joint of the building: the model says whether the stretch is on a wall; if not, code trims the run back to the joint;
-- two runs on one line that overlap: the model says whether it is one wall; if so, code drops the one that lies inside the other;
+- two runs on one line that overlap (centre lines closer than a wall thickness): the same wall found twice, so code drops the one that lies inside the other (geometry, no model call: the model's answer on this was not stable);
 - a place where the model sees a wall with no line on it: code searches the plan there for a wall-like bar whose both ends meet existing walls, and adds it only if found.
 Every edit is logged as an issue marked "model check", so a person can see what changed; a model answer on its own never sets a length."""
 import tempfile
@@ -87,30 +87,22 @@ def trim_overshoots(model: DrawingModel, img, scale: float, ask=_ask) -> list[Is
     return log
 
 
-def merge_duplicates(model: DrawingModel, img, scale: float, ask=_ask) -> list[Issue]:
-    """Pairs flagged as overlapping on one line: if the model says it is one wall and the shorter lies inside the longer, drop the shorter."""
+def merge_duplicates(model: DrawingModel) -> list[Issue]:
+    """Pairs flagged as overlapping on one line (centre lines closer than a wall thickness, so the faces would occupy the same space): the shorter run, when it lies
+    inside the longer, is the same wall found twice and is dropped. This is geometry, so the model is not asked; a pair that only partly overlaps is left as a question."""
     log: list[Issue] = []
     byid = {e.id: e for e in model.walls()}
     for issue in [i for i in model.issues if i.code == "overlap"]:
         a, b = (byid.get(i) for i in issue.elements[:2])
-        if not a or not b or a.id not in byid or b.id not in byid:
+        if not a or not b:
             continue
-        wa, wb = _wall(a), _wall(b)
-        short, long_ = (a, b) if wa.length_mm <= wb.length_mm else (b, a)
+        short, long_ = (a, b) if _wall(a).length_mm <= _wall(b).length_mm else (b, a)
         ws, wl = _wall(short), _wall(long_)
-        inside = min(ws.end_mm, wl.end_mm) - max(ws.start_mm, wl.start_mm)
-        if inside < 0.9 * ws.length_mm:
-            continue  # only part overlaps: leave the question for a person
-        cx, cy = (short.x0_mm + short.x1_mm) / 2, (short.y0_mm + short.y1_mm) / 2
-        box = (cx - 1800, cy - 1800, cx + 1800, cy + 1800)
-        crop = _crop(img, scale, box, [((short.x0_mm, short.y0_mm), (short.x1_mm, short.y1_mm), MAGENTA), ((long_.x0_mm, long_.y0_mm), (long_.x1_mm, long_.y1_mm), CYAN)])
-        if crop is None:
+        if min(ws.end_mm, wl.end_mm) - max(ws.start_mm, wl.start_mm) < 0.9 * ws.length_mm:
             continue
-        r = ask(SAME_WALL.format(a="the magenta line", b="the cyan line"), crop)
-        if r.get("same_wall") is True:
-            byid.pop(short.id)
-            model.elements = [e for e in model.elements if e.id != short.id]
-            log.append(Issue("merged", "info", f"{short.id} dropped as the same wall as {long_.id}: the model saw one wall ({r.get('why', '')}).", [long_.id], "", "model check"))
+        byid.pop(short.id)
+        model.elements = [e for e in model.elements if e.id != short.id]
+        log.append(Issue("merged", "info", f"{short.id} dropped as the same wall as {long_.id}: the two lie on one line, closer than a wall thickness.", [long_.id], "", "code check"))
     return log
 
 
@@ -158,6 +150,14 @@ def _bar(img, scale: float, box_mm: tuple, orient: str):
     return ((x0 + s) / scale, (x0 + e) / scale, (y0 + c) / scale, t / scale)
 
 
+def _extent(model: DrawingModel) -> tuple:
+    """The box the measured walls span, in mm."""
+    ws = [_wall(e) for e in model.walls()]
+    xs = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "h" else (w.centre_mm,))]
+    ys = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "v" else (w.centre_mm,))]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
 def _meets(model: DrawingModel, orient: str, centre: float, end: float, tol: float = 250) -> bool:
     """Does a perpendicular wall cross the line `centre` at position `end` along it?"""
     for e in model.walls():
@@ -190,7 +190,9 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
         to_mm = lambda px, py: ((px * mw / shrink + fx) / mscale, (py * mh / shrink + fy) / mscale)
         (ax, ay), (bx, by) = to_mm(bx0, by0), to_mm(bx1, by1)
         pad = 300
-        found = _bar(img, scale, (ax - pad, ay - pad, bx + pad, by + pad), orient)
+        ex0, ey0, ex1, ey1 = _extent(model)  # search along the whole building, so a wall the model marked in two pieces is found whole (a door gap does not split it)
+        box = (ex0, ay - pad, ex1, by + pad) if orient == "h" else (ax - pad, ey0, bx + pad, ey1)
+        found = _bar(img, scale, box, orient)
         what = m.get("what", "")
         if not found:
             log.append(Issue("missed_not_found", "info", f"The model saw a wall with no line ({what}) but no wall-like bar could be found there.", [], "Look at that place on the plan.", "model check"))
@@ -216,7 +218,7 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
 def verify_walls(model: DrawingModel, img, scale: float, markup_path: str) -> bool:
     """Run the three checks, apply the edits, recompute totals and code checks. Returns True when the walls changed. A failed model call skips that check, never the run."""
     log: list[Issue] = []
-    for step in (lambda: trim_overshoots(model, img, scale), lambda: merge_duplicates(model, img, scale), lambda: add_missed(model, img, scale, markup_path)):
+    for step in (lambda: trim_overshoots(model, img, scale), lambda: merge_duplicates(model), lambda: add_missed(model, img, scale, markup_path)):
         try:
             log += step()
         except Exception as ex:

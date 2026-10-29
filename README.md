@@ -28,7 +28,7 @@ Wall girth (external plus internal) against the author's own surveyed totals, no
 | vector PDF | 6 floors on plans 4, 6, 7 | -9% to +13% (plan 4 ground +1%, plan 7 ground -1%) |
 | raster image | 8 floors on plans 1, 2, 3, 4, 6 | -10% to +31% (most within 10%) |
 
-End to end on plan 2 (two floor images, hip roof, 3.0 m): about 2.5 minutes, gross floor area 350.7 m2 against the author's 353 m2, a Standard-finish estimate of about 87.7M naira (range 74M to 114M). **No total has yet been checked against a surveyed bill for the same plan**, so treat the estimate as a budget, not a bill for tender. The quote audit was tested on a synthetic scanned quote with four planted errors (all four caught) and the tender audit on three synthetic returns, not yet on real ones.
+After the model-checked wall pass, plan 2's ground floor measures 111.7 m against 107.1 surveyed (+4%) and its first floor 121.4 m against 127.6 (-5%); the table above is the plain measurement without that pass. End to end on plan 2 (two floor images, hip roof, 3.0 m): about 2.5 minutes, gross floor area 350.7 m2 against the author's 353 m2, a Standard-finish estimate of about 87.7M naira (range 74M to 114M). **No total has yet been checked against a surveyed bill for the same plan**, so treat the estimate as a budget, not a bill for tender. The quote audit was tested on a synthetic scanned quote with four planted errors (all four caught) and the tender audit on three synthetic returns, not yet on real ones.
 
 ## Known weaknesses
 

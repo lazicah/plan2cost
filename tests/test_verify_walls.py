@@ -22,13 +22,20 @@ def test_an_overshooting_run_is_trimmed_only_when_the_model_says_it_is_not_a_wal
     assert not any(i.code == "dangling" for i in m.issues) and m.totals["total_m"] == 8 + 8 + 6 + 6 + 6 + 8
 
 
-def test_a_run_found_twice_is_dropped_only_when_the_model_says_one_wall():
+def test_a_run_found_twice_is_dropped_when_it_lies_inside_the_other_on_one_line():
     walls = box_walls() + [Wall("h", 40.0, 1000.0, 3000.0, 230.0)]
     m = build_model(result_for(walls, [1, 1, 1, 1, 0, 1]), "ground", 1)
     n = len(m.walls())
-    assert merge_duplicates(m, BLANK, SCALE, ask=lambda p, c: {"same_wall": False}) == [] and len(m.walls()) == n
-    log = merge_duplicates(m, BLANK, SCALE, ask=lambda p, c: {"same_wall": True, "why": "one wall"})
+    log = merge_duplicates(m)
     assert [i.code for i in log] == ["merged"] and len(m.walls()) == n - 1
+    refresh(m)
+    assert not any(i.code == "overlap" for i in m.issues)
+
+
+def test_runs_190_mm_apart_on_230_mm_walls_are_one_wall():
+    walls = box_walls() + [Wall("h", 190.0, 500.0, 4000.0, 150.0)]  # an outer line 190 mm inside the top wall
+    m = build_model(result_for(walls, [1, 1, 1, 1, 0, 1]), "ground", 1)
+    assert any(i.code == "overlap" for i in m.issues)
 
 
 def test_a_missed_partition_is_added_when_a_bar_is_there_and_both_ends_meet_walls(tmp_path):

@@ -40,10 +40,11 @@ dimensions. The model reads printed facts and nothing else; code measures every 
 ## Drawing model and checks
 Each measured floor is saved as a drawing model (`drawing_model_<floor>_p<page>.json`) with an annotated plan (`markup_<floor>_p<page>.jpg`). Checks that
 code runs on it: overlapping runs (possible double count), runs past the last joint (grid or dimension lines merged into a wall), wall ends that meet
-nothing, building size against the printed overall dimensions, weak scale evidence, and external-versus-outline convention. Before that review, a model-checked pass (facts/verify_walls.py) asks closed questions about crops: a run past the last joint is trimmed to the joint when the model
-sees no wall under it; an overlapping pair is merged when the model says one wall; a wall the model sees with no line is added only if code finds a bar there whose both ends meet walls.
-Each edit is logged as a "model check" issue. On plan 2 (images) it trimmed 3 overshoots on the ground floor and 3 on the first (first floor 129.7 to 124.7 m against 127.6 surveyed), and added one 11.0 m hatched partition on the ground floor (116.1 to 121.1 m against 107.1 surveyed: that
-hatched strip is a wall, the author confirmed: cut walls drawn hatched with lighter faces are real; the remaining excess is elsewhere). Three other places the model pointed to were found as bars but did not meet walls at both ends, so were left as questions. The model
+nothing, building size against the printed overall dimensions, weak scale evidence, and external-versus-outline convention. Before that review, a model-checked pass (facts/verify_walls.py) runs: a run past the last joint is trimmed to the joint when the model sees no wall under it (closed question on a crop);
+a pair of runs whose centre lines are closer than a wall thickness is the same wall found twice, and the shorter is dropped (geometry, no model call: the model's answer was not stable); a wall the model sees with no line is added only if code finds a bar
+(solid, or two face lines a wall apart, hatched or not) across the building whose both ends meet walls. Each edit is logged as an issue. On plan 2 (images, full pipeline): ground floor 111.7 m against 107.1 surveyed (+4%; before the pass 116.1),
+first floor 121.4 m against 127.6 (-5%; before 129.7, +2%, which had overshoots and duplicates cancelling missed walls). The author confirmed the hatched ground-floor partition is a wall (lighter faces than the others); it is found and added (11.0 m).
+Still missed on plan 2: walls the model points to where a bar is found but its ends do not both meet walls (left as warnings). The eval table above is from the eval scripts and does not include this pass. The model
 review of the annotated plan after that can only add questions. Examples: plan 1 (image) is flagged for a missing north wall by both the extents check (11.0 m deep against
 13.5 m printed) and the model review; plan 2's architectural page is flagged for two grid lines merged into walls.
 
