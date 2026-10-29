@@ -212,7 +212,7 @@ function render(run) {
   const mat = run.materials ? (() => { const M = run.materials; let g = '';
     return `<section class="card"><h2>Bill of materials and labour</h2>
       <div class="row"><span class="big">${money(M.total)} ${esc(run.boq?.currency || '')}</span><span class="mute">range ${money(M.total_low)} to ${money(M.total_high)}</span></div>
-      <div class="small mute" style="margin-top:4px">Materials and labour for the work above, from the author's own practice (cement bags per m³, planks per m², labour rates). It leaves out preliminaries, overheads, profit and VAT, so it is lower than the bill of quantities.</div>
+      <div class="small mute" style="margin-top:4px">Materials and labour for the work above, from the author's own practice (cement bags per m³, planks per m², labour rates). It leaves out preliminaries, overheads, profit and VAT.</div>
       ${M.sections.map(s => { const head = s.group !== g ? `<div style="margin-top:12px"><b>${esc(s.group)}</b></div>` : ''; g = s.group;
         return `${head}<details><summary><b>BILL No. ${String(s.bill).padStart(2, '0')} — ${esc(s.name)}</b> <span class="mute small">${money(s.amount)}</span></summary>
           <table class="small"><tr><th>Item</th><th>Material / description</th><th class="n">Qty</th><th>Unit</th><th class="n">Rate</th><th class="n">Amount</th></tr>

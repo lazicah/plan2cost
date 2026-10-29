@@ -84,7 +84,7 @@ def _record(run: Run, floor: str, m: dict) -> dict:
     for i in issues:  # open checks travel with the estimate so they cannot be lost at submit
         run.assumptions.append({"name": "_".join(["drawing_check", floor, i.code, *i.elements[:2]]), "value": "open", "basis": f"{i.message} {i.check}".strip()})
     run.data.setdefault("floors", {})[floor] = data
-    run.data.setdefault("models", {})[floor] = {"file": f"models/drawing_model_{floor}_p{page}.json", "markup": f"models/{model.markup}", **model.summary()}
+    run.data.setdefault("models", {})[floor] = {**model.summary(), "file": f"models/drawing_model_{floor}_p{page}.json", "markup": f"models/{model.markup}"}  # the summary has its own bare "markup" name
     item = next((c["id"] for c in run.checklist if f"the {floor} floor" in c["question"]), "")
     for name, v, u in (("ext_girth", data["ext_m"], "m"), ("int_girth", data["int_m"], "m"), ("building_length", data["length_m"], "m"), ("building_width", data["width_m"], "m")):
         add_fact(run, f"{name}_{floor}", v, u, "computed", f"measured from the {floor} floor plan ({model.route} route, {model.confidence} confidence)", item)

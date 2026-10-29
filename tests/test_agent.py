@@ -182,3 +182,18 @@ def test_measured_gaps_are_snapped_to_the_standard_sizes_so_the_bill_has_few_typ
     from plan2cost.tools.drawings import DOOR_WIDTHS_MM, WINDOW_WIDTHS_MM, snap
 
     assert snap(560, DOOR_WIDTHS_MM) == 750 and snap(1120, DOOR_WIDTHS_MM) == 1050 and snap(980, WINDOW_WIDTHS_MM) == 900 and snap(1640, WINDOW_WIDTHS_MM) == 1500
+
+
+def test_the_recorded_model_keeps_the_markup_path_the_console_needs(monkeypatch):
+    from plan2cost.tools import drawings
+
+    class Model:
+        markup, route, confidence = "markup_ground_p1.jpg", "vector", "high"
+        calibrations = [type("C", (), {"basis": "x"})()]
+        walls = lambda self: []  # noqa: E731
+        summary = lambda self: {"markup": "markup_ground_p1.jpg", "walls": 0}  # noqa: E731
+
+    run = new_run()
+    seed_checklist(run)
+    drawings._record(run, "ground", {"data": floor_data("ground"), "model": Model(), "issues": [], "note": "", "page": 1})
+    assert run.data["models"]["ground"]["markup"] == "models/markup_ground_p1.jpg"
