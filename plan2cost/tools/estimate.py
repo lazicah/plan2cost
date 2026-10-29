@@ -1,11 +1,10 @@
 """The estimate: what the floors measured, plus the quantities the plans cannot give, from coefficients as low, typical and high. Every number comes from code."""
-import json
-from pathlib import Path
-
 from plan2cost.kit.progress import ROOF_TYPES, Run
-from plan2cost.takeoff.boq import price_boq
+from plan2cost.takeoff.boq import load_rates, price_boq
 from plan2cost.takeoff.checklist import coverage, statement
+from plan2cost.takeoff.materials import bill_of_materials
 from plan2cost.takeoff.rough import FloorData, estimate
+from plan2cost.takeoff.sections import structure
 from plan2cost.takeoff.walls import Opening
 from plan2cost.tools.records import add_fact, settle
 
@@ -33,19 +32,20 @@ def compute_boq(run: Run) -> dict:
     bad = [f.name for f in floors if f.ext_m <= 0 or f.int_m < 0]
     if bad:
         return {"error": f"Implausible walls on {bad}. Re-read the plan or ask the user for a clearer one."}
-    rates = json.loads(Path("data/rates.json").read_text())
+    rates = load_rates(inputs.get("rate_set"))
     items, assumptions, working = estimate(floors, inputs, rates["rates"])
     for a in assumptions:
         if not any(x["name"] == a["name"] for x in run.assumptions):
             run.assumptions.append(a)
     priced = price_boq(items, rates)
-    run.data["boq"] = {"items": [i.__dict__ for i in items], **priced, "working": working, "inputs": inputs}
+    run.data["boq"] = {"items": [i.__dict__ for i in items], **priced, "working": working, "inputs": inputs, "rates": {k: rates[k] for k in ("set", "label", "borrowed")}, "structure": structure()}
+    run.data["materials"] = bill_of_materials(run.data["boq"]["items"])
     for name, v, u in (("storey_height_m", inputs["storey_height_m"], "m"), ("roof_type", inputs["roof_type"], "")):
         add_fact(run, name, v, u, "user", "entered by the user")
     settle(run, run.checklist[-1]["id"])
     cov = coverage([i.key for i in items], floors=len(floors))
     out = {"lines": len(items), "total": priced["total"], "total_range": [priced["total_low"], priced["total_high"]], "currency": priced["currency"],
-           "estimated_share": priced["estimated_share"], "gross_floor_area_m2": working["gross_floor_area_m2"], "unpriced": priced["unpriced"]}
+           "estimated_share": priced["estimated_share"], "materials_and_labour": run.data["materials"]["total"], "gross_floor_area_m2": working["gross_floor_area_m2"], "unpriced": priced["unpriced"]}
     if cov:
         run.data["boq"]["coverage"] = {k: v for k, v in cov.items() if k != "items"} | {"statement": statement(cov), "items": cov["items"]}
         out["coverage"] = statement(cov)

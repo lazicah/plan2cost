@@ -1,4 +1,4 @@
-from plan2cost.takeoff.boq import foundation_boq, price_boq, strip_inputs
+from plan2cost.takeoff.boq import foundation_boq, load_rates, price_boq, strip_inputs
 from plan2cost.takeoff.foundation import GridLine, PadBase, foundation_takeoff
 
 LINES = [GridLine("all", runs=[(104.835, 1)], deductions=[(35.145, 1)])]
@@ -23,13 +23,13 @@ def test_boq_items_and_pricing_never_invent_rates():
 
 
 
-def test_foundation_extras_priced_and_laterite_left_unpriced():
-    import json
+def test_foundation_extras_priced_and_a_rate_one_set_lacks_is_borrowed_from_the_other():
     from plan2cost.takeoff.boq import foundation_extras
 
     items = foundation_extras([PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B",))], 20, slab_area_m2=200.55, fill_area_m2=184)
-    out = price_boq(items, json.load(open("data/rates.json")))
-    assert out["unpriced"] == ["laterite_m3"]
+    rates = load_rates("owerri")
+    out = price_boq(items, rates)
+    assert out["unpriced"] == [] and "laterite_m3" in rates["borrowed"]  # the Owerri bill has no laterite rate; the Asaba bill does
     assert {i.key for i in items} >= {"column_base_concrete_m3", "rebar_y12_foundations_t", "ground_slab_m3"}
 
 

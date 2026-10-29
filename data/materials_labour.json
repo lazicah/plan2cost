@@ -1,0 +1,261 @@
+{
+ "_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so the ratios are that contractor's practice, not a range: show them as such. The sand figure (about 1.7 t per m3 of concrete) is more than a 1:2:4 mix needs (about 0.7 t): it is how the bill is priced and is worth confirming.",
+ "sources": {
+  "simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)",
+  "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"
+ },
+ "materials": {
+  "cement_bag": {
+   "name": "Cement, 50 kg bag",
+   "unit": "bag",
+   "rate": 12500.0
+  },
+  "sand_t": {
+   "name": "Sharp sand / stone dust",
+   "unit": "tonne",
+   "rate": 10000.0
+  },
+  "granite_t": {
+   "name": "Granite",
+   "unit": "tonne",
+   "rate": 30000.0
+  },
+  "binding_wire_roll": {
+   "name": "Binding wire, 25 kg roll",
+   "unit": "roll",
+   "rate": 34000.0
+  },
+  "plank_1x12": {
+   "name": "Plank 1\" x 12\" x 3.6 m",
+   "unit": "length",
+   "rate": 3500.0
+  },
+  "strut_4x4": {
+   "name": "Timber 4\" x 4\" x 3.6 m",
+   "unit": "length",
+   "rate": 1200.0
+  },
+  "brace_2x2": {
+   "name": "Timber 2\" x 2\" x 3.6 m",
+   "unit": "length",
+   "rate": 1000.0
+  },
+  "nails_bag": {
+   "name": "Nails, various sizes",
+   "unit": "bag",
+   "rate": 36000.0
+  },
+  "block_225": {
+   "name": "225 mm sandcrete block",
+   "unit": "no",
+   "rate": 550.0
+  },
+  "roof_sheet_m2": {
+   "name": "Long-span roofing sheet, 0.55 mm",
+   "unit": "m2",
+   "rate": 15500.0
+  },
+  "roof_felt_m2": {
+   "name": "Roof felt, 2 layers",
+   "unit": "m2",
+   "rate": 11500.0
+  },
+  "roof_nail": {
+   "name": "Galvanised roof nail",
+   "unit": "no",
+   "rate": 300.0
+  },
+  "hardwood_length": {
+   "name": "Hardwood timber, 3.6 m length",
+   "unit": "length",
+   "rate": 2500
+  },
+  "floor_tile_m2": {
+   "name": "Floor tile 450 x 450 porcelain",
+   "unit": "m2",
+   "rate": 7000.0
+  },
+  "skirting_tile": {
+   "name": "Skirting tile",
+   "unit": "no",
+   "rate": 300.0
+  },
+  "pop_cement_bag": {
+   "name": "P.O.P. cement, bag",
+   "unit": "bag",
+   "rate": 13500.0
+  },
+  "ceiling_hanger_length": {
+   "name": "Hardwood hanger 50 x 50, length",
+   "unit": "length",
+   "rate": 1200.0
+  },
+  "sponge_kg": {
+   "name": "Sponge (ceiling)",
+   "unit": "kg",
+   "rate": 4700.0
+  },
+  "paint_drum_20l": {
+   "name": "Emulsion or texture paint, 20 litre drum",
+   "unit": "drum",
+   "rate": 60000.0
+  },
+  "white_cement_bag": {
+   "name": "White cement for paint base",
+   "unit": "bag",
+   "rate": 13500.0
+  },
+  "rebar_length": {
+   "name": "Reinforcement bar, 12 m length (mixed sizes)",
+   "unit": "length",
+   "rate": 10805
+  }
+ },
+ "labour": {
+  "casting_per_bag": {
+   "name": "Casting concrete, per bag of cement",
+   "unit": "bag",
+   "rate": 2500.0
+  },
+  "iron_bending_per_kg": {
+   "name": "Iron bending",
+   "unit": "kg",
+   "rate": 100.0
+  },
+  "block_laying_foundation_per_block": {
+   "name": "Block laying in the foundation",
+   "unit": "no",
+   "rate": 200.0
+  },
+  "carpenter_per_m2": {
+   "name": "Carpenter, formwork",
+   "unit": "m2",
+   "rate": 800.0
+  },
+  "block_laying_per_block": {
+   "name": "Block laying",
+   "unit": "no",
+   "rate": 45.0
+  },
+  "plaster_per_m2": {
+   "name": "Plastering",
+   "unit": "m2",
+   "rate": 3500.0
+  },
+  "floor_tiling_per_m2": {
+   "name": "Floor tiling",
+   "unit": "m2",
+   "rate": 3000.0
+  },
+  "ceiling_per_m2": {
+   "name": "Ceiling work",
+   "unit": "m2",
+   "rate": 4500.0
+  },
+  "painting_per_m2": {
+   "name": "Painting",
+   "unit": "m2",
+   "rate": 800.0
+  },
+  "screeding_for_paint_per_m2": {
+   "name": "Screeding for paint",
+   "unit": "m2",
+   "rate": 4500.0
+  },
+  "carcassing_per_m": {
+   "name": "Roof carcassing",
+   "unit": "m",
+   "rate": 2500.0
+  },
+  "roof_covering_per_m2": {
+   "name": "Fixing roof covering",
+   "unit": "m2",
+   "rate": 500.0
+  },
+  "earthwork_support_per_m2": {
+   "name": "Fixing earthwork support",
+   "unit": "m2",
+   "rate": 500.0
+  }
+ },
+ "ratios": {
+  "concrete": {
+   "cement_bag": 6.55,
+   "sand_t": 1.76,
+   "granite_t": 1.613
+  },
+  "blinding_per_m3": {
+   "cement_bag": 0.19,
+   "sand_t": 1.381
+  },
+  "steel_per_t": {
+   "rebar_length": 73.8,
+   "binding_wire_roll": 0.97
+  },
+  "formwork_per_m2": {
+   "plank_1x12": 0.88,
+   "nails_bag": 0.0133
+  },
+  "block_per_m2": {
+   "block_225": 9.51,
+   "cement_bag": 0.153,
+   "sand_t": 0.0363
+  },
+  "plaster_per_m2": {
+   "cement_bag": 0.0777,
+   "sand_t": 0.0081
+  },
+  "paint_per_m2": {
+   "paint_drum_20l": 0.0142,
+   "white_cement_bag": 0.00375
+  },
+  "floor_tiling_per_m2": {
+   "floor_tile_m2": 1.0,
+   "cement_bag": 0.359,
+   "sand_t": 0.0372
+  },
+  "skirting_per_m": {
+   "skirting_tile": 2.22
+  },
+  "ceiling_per_m2": {
+   "pop_cement_bag": 0.56,
+   "ceiling_hanger_length": 0.697,
+   "binding_wire_roll": 0.0105,
+   "sponge_kg": 0.42
+  },
+  "roof_cover_per_m2": {
+   "roof_sheet_m2": 1.0,
+   "roof_felt_m2": 0.86,
+   "roof_nail": 2.53
+  },
+  "roof_timber_per_m": {
+   "hardwood_length": 0.28
+  },
+  "earthwork_support_per_m2": {
+   "plank_1x12": 0.973,
+   "strut_4x4": 0.549,
+   "brace_2x2": 0.219,
+   "nails_bag": 0.0109
+  }
+ },
+ "evidence": {
+  "cement_bags_per_m3_by_element": {
+   "foundation footing": 6.17,
+   "column bases": 6.19,
+   "ground floor slab": 6.17,
+   "floor beams": 7.15,
+   "floor slabs": 6.88,
+   "staircase": 6.0,
+   "roof beams and slab": 6.0,
+   "columns": 5.93
+  },
+  "cement_bags_per_m3_all": 6.55,
+  "sand_t_per_bag": 0.269,
+  "granite_t_per_bag": 0.246,
+  "kg_steel_per_12m_length": 13.55,
+  "binding_wire_rolls_per_t_steel": 0.97,
+  "planks_per_m2_formwork": 0.876,
+  "blocks_per_m2_wall": 9.51,
+  "plaster_m2": 3218.0
+ }
+}

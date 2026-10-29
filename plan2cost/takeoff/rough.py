@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from plan2cost.takeoff import coefficients as C
 from plan2cost.takeoff.boq import (BoqItem, foundation_boq, foundation_extras, strip_inputs, substructure_extras, superstructure_boq)
+from plan2cost.takeoff.sections import order
 from plan2cost.takeoff.finishes import deductible, lintel_items, whole
 from plan2cost.takeoff.foundation import GridLine, foundation_takeoff
 from plan2cost.takeoff.walls import Opening
@@ -153,6 +154,22 @@ def service_items(floors: list[FloorData]) -> list[BoqItem]:
     return items
 
 
+def electrical_items(floors: list[FloorData]) -> list[BoqItem]:
+    """Cable and points from the floor area, as ranges (the two bills the author supplied differ, so there is a spread). A plan cannot show the wiring, so all of it is estimated."""
+    gfa = sum(f.footprint_m2 for f in floors)
+    items = []
+    for key, desc, unit, coef, whole_n in (("electrical_cable_m", "PVC insulated twin cable drawn in conduit; final circuits", "m", "electrical_cable_m_per_m2_gfa", True),
+                                           ("electrical_socket_nr", "13A switched socket outlet points; complete", "nr", "electrical_socket_per_m2", True),
+                                           ("electrical_switch_nr", "Lighting switch points; complete", "nr", "electrical_switch_per_m2", True),
+                                           ("electrical_light_nr", "Lighting points complete with luminaire", "nr", "electrical_light_per_m2", True),
+                                           ("electrical_ac_nr", "Air-conditioner power points; complete", "nr", "electrical_ac_per_m2", True),
+                                           ("electrical_fan_nr", "Ceiling fan points; complete", "nr", "electrical_fan_per_m2", True),
+                                           ("electrical_tv_nr", "TV and data outlet points; complete", "nr", "electrical_tv_per_m2", True),
+                                           ("electrical_external_light_nr", "External lighting points complete with weatherproof fitting", "nr", "electrical_external_light_per_m2", True)):
+        items.append(_est(key, desc, unit, _rng(coef, gfa), [coef], whole_n))
+    return items
+
+
 def finishes_items(floors: list[FloorData], h: float, openings_by_floor: dict[str, list[Opening]], t_wall: float) -> tuple[list[BoqItem], dict]:
     """Floor, ceiling and inside wall finishes and skirting from the plan dimensions: floor area is the building envelope less the walls; wall faces are the external
     girth plus both faces of the partitions less a thickness at each junction; voids over 1.00 m2 come off (BESMM4 1.28 M3, an internal opening twice)."""
@@ -231,6 +248,7 @@ def estimate(floors: list[FloorData], inputs: dict, rates: dict | None = None) -
     rf, rw = roof_items(floors, inputs)
     items += rf
     items += service_items(floors)
+    items += electrical_items(floors)
     for o in allops:
         if o.assumed_height:
             assumptions.append({"name": f"opening_height_{o.label}", "value": o.height_m, "basis": "no height on the floor plan; the standard height was used"})
@@ -239,4 +257,4 @@ def estimate(floors: list[FloorData], inputs: dict, rates: dict | None = None) -
     assumptions.append({"name": "wall_finish_height", "value": h, "basis": "wall finish height taken as the storey height; BESMM4 measures it to the finished ceiling"})
     working = {"floors": [{"name": f.name, "envelope_m": [round(f.length_m, 2), round(f.width_m, 2)], "footprint_m2": round(f.footprint_m2, 1), "net_area_m2": round(f.net_area_m2, 1),
                            "wet_rooms": f.wet_rooms()} for f in floors], "gross_floor_area_m2": round(sum(f.footprint_m2 for f in floors), 1), **fw, **frw, "roof": rw}
-    return items, assumptions, working
+    return order(items), assumptions, working

@@ -1,0 +1,137 @@
+{
+ "_note": "The order of the bill follows the author's My Duplex bill (BESMM4 elemental format): substructure, then superstructure, then internal finishes, then services (plumbing and electrical), then external works. Keys with a prefix are placed by rule: opening_w* in windows, opening_d* in doors, lintel_* in external walls.",
+ "bills": {
+  "2": "Substructure",
+  "3": "Frame",
+  "4": "Upper floors",
+  "5": "Roof",
+  "6": "Stairs and balustrades",
+  "7": "External walls",
+  "8": "Internal walls and partitions",
+  "9": "Windows",
+  "10": "Doors",
+  "11": "Wall finishes",
+  "12": "Floor finishes",
+  "13": "Ceiling finishes",
+  "14": "Sanitary and water installations",
+  "15": "Electrical installations",
+  "16": "External works"
+ },
+ "groups": [
+  [
+   "SUBSTRUCTURE",
+   [
+    2
+   ]
+  ],
+  [
+   "SUPERSTRUCTURE",
+   [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ]
+  ],
+  [
+   "INTERNAL FINISHES",
+   [
+    11,
+    12,
+    13
+   ]
+  ],
+  [
+   "SERVICES",
+   [
+    14,
+    15
+   ]
+  ],
+  [
+   "EXTERNAL WORKS",
+   [
+    16
+   ]
+  ]
+ ],
+ "keys": {
+  "trench_excavation_strip_m3": 2,
+  "pit_excavation_column_bases_m3": 2,
+  "working_space_m3": 2,
+  "earthwork_support_m2": 2,
+  "strip_footing_concrete_m3": 2,
+  "fdn_blockwork_230_m2": 2,
+  "column_base_concrete_m3": 2,
+  "blinding_on_hardcore_m3": 2,
+  "hardcore_m3": 2,
+  "laterite_m3": 2,
+  "dpm_polythene_m2": 2,
+  "brc_mesh_part1_m2": 2,
+  "ground_slab_m3": 2,
+  "topsoil_strip_m2": 2,
+  "topsoil_disposal_m3": 2,
+  "excavated_surface_treatment_m2": 2,
+  "levelling_compaction_m2": 2,
+  "blinding_foundations_m3": 2,
+  "formwork_foundation_sides_m": 2,
+  "disposal_off_site_m3": 2,
+  "backfill_around_foundations_m3": 2,
+  "concrete_filling_blockwork_voids_m3": 2,
+  "fdn_wall_render_m2": 2,
+  "rebar_y12_foundations_t": 2,
+  "rebar_y8_foundations_t": 2,
+  "formwork_foundation_sides_m2": 2,
+  "frame_columns_concrete_m3": 3,
+  "frame_beams_concrete_m3": 3,
+  "frame_formwork_beams_columns_m2": 3,
+  "frame_steel_t": 3,
+  "suspended_slab_concrete_m3": 4,
+  "frame_formwork_soffit_m2": 4,
+  "roof_covering_m2": 5,
+  "roof_timbers_m": 5,
+  "roof_fascia_m": 5,
+  "roof_slab_concrete_m3": 5,
+  "roof_screed_m2": 5,
+  "roof_membrane_m2": 5,
+  "staircase_concrete_m3": 6,
+  "ext_blockwork_230_m2": 7,
+  "external_wall_render_m2": 7,
+  "external_wall_paint_m2": 7,
+  "lintels_estimated_nr": 7,
+  "int_blockwork_230_m2": 8,
+  "windows_estimated_nr": 9,
+  "doors_estimated_nr": 10,
+  "internal_wall_finish_m2": 11,
+  "internal_wall_paint_m2": 11,
+  "floor_finish_m2": 12,
+  "skirting_m": 12,
+  "ceiling_finish_m2": 13,
+  "sanitary_wc_nr": 14,
+  "sanitary_basin_nr": 14,
+  "sanitary_shower_nr": 14,
+  "sanitary_sink_nr": 14,
+  "sanitary_heater_nr": 14,
+  "sanitary_trap_nr": 14,
+  "water_point_nr": 14,
+  "electrical_cable_m": 15,
+  "electrical_socket_nr": 15,
+  "electrical_switch_nr": 15,
+  "electrical_light_nr": 15,
+  "electrical_ac_nr": 15,
+  "electrical_fan_nr": 15,
+  "electrical_tv_nr": 15,
+  "electrical_external_light_nr": 15
+ },
+ "prefixes": {
+  "opening_w": 9,
+  "opening_d": 10,
+  "lintel_": 7,
+  "rebar_": 2,
+  "formwork_foundation": 2
+ }
+}

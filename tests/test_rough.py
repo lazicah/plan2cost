@@ -1,10 +1,8 @@
-import json
-
-from plan2cost.takeoff.boq import price_boq
+from plan2cost.takeoff.boq import load_rates, price_boq
 from plan2cost.takeoff.rough import FloorData, estimate
 from plan2cost.takeoff.walls import Opening
 
-RATES = json.load(open("data/rates.json"))
+RATES = load_rates("owerri")
 OPS = [Opening("W1200", 1.2, 1.2, 12, "window", True, True), Opening("D900", 0.9, 2.1, 10, "door", False, True), Opening("D1200", 1.2, 2.1, 1, "door", True, True)]
 
 

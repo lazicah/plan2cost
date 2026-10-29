@@ -21,6 +21,7 @@ def main() -> None:
     ap.add_argument("--roof", choices=ROOF_TYPES, help="the roof type")
     ap.add_argument("--pitch", type=float, help="roof pitch in degrees (optional)")
     ap.add_argument("--overhang", type=float, help="roof overhang in metres (optional)")
+    ap.add_argument("--rates", help="rate set: owerri or asaba (see data/rates.json)")
     ap.add_argument("--quote", help="a contractor's quote (PDF or image) to audit against the BoQ")
     ap.add_argument("--resume", help="run id to continue")
     ap.add_argument("--answer", help="your answer, when the run is waiting for you")
@@ -31,7 +32,7 @@ def main() -> None:
     else:
         if not args.floor or not args.storey_height or not args.roof:
             ap.error("give at least one --floor, and --storey-height and --roof")
-        run = run_agent(Run.new([parse_floor(f) for f in args.floor], {"storey_height_m": args.storey_height, "roof_type": args.roof, "pitch_deg": args.pitch, "overhang_m": args.overhang},
+        run = run_agent(Run.new([parse_floor(f) for f in args.floor], {"storey_height_m": args.storey_height, "roof_type": args.roof, "pitch_deg": args.pitch, "overhang_m": args.overhang, "rate_set": args.rates},
                                 quote=args.quote), max_turns=args.turns)
     print(f"run {run.id}: {run.status} after {run.turn} turns  ({run.dir}/trace.md)")
     if run.pending:

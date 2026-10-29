@@ -121,6 +121,11 @@
    "name": "The author's own BOQs sheets for plans 1 to 9 (kept local; ratios only, screened for stale template values)",
    "url": "",
    "checked": "parsed; each ratio keeps its per-plan values"
+  },
+  "cubana": {
+   "name": "Cubana Millennium City bill, April 2026, Asaba (author-supplied PDF, kept local; only ratios and rates are stored)",
+   "url": "",
+   "checked": "parsed; one 5-bedroom duplex of about 571 m2 of floor"
   }
  },
  "entries": [
@@ -919,66 +924,6 @@
    "note": ""
   },
   {
-   "id": "electrical_light_point_m2_per_point",
-   "group": "services",
-   "what": "Floor area per light point",
-   "unit": "m2",
-   "per": "point",
-   "low": 7.4,
-   "typical": 7.4,
-   "high": 7.4,
-   "sources": [
-    "elec"
-   ],
-   "confidence": "low",
-   "note": "Indian and Nepali rules of thumb (1 per 80 sq ft); needs a Nigerian check."
-  },
-  {
-   "id": "electrical_socket_m2_per_point",
-   "group": "services",
-   "what": "Floor area per socket point",
-   "unit": "m2",
-   "per": "point",
-   "low": 5.6,
-   "typical": 5.6,
-   "high": 5.6,
-   "sources": [
-    "elec"
-   ],
-   "confidence": "low",
-   "note": "1 per 60 sq ft."
-  },
-  {
-   "id": "electrical_fan_m2_per_point",
-   "group": "services",
-   "what": "Floor area per fan point",
-   "unit": "m2",
-   "per": "point",
-   "low": 14,
-   "typical": 14,
-   "high": 14,
-   "sources": [
-    "elec"
-   ],
-   "confidence": "low",
-   "note": "1 per 150 sq ft."
-  },
-  {
-   "id": "electrical_power_point_m2_per_point",
-   "group": "services",
-   "what": "Floor area per heavy power or AC point",
-   "unit": "m2",
-   "per": "point",
-   "low": 23,
-   "typical": 23,
-   "high": 23,
-   "sources": [
-    "elec"
-   ],
-   "confidence": "low",
-   "note": "1 per 250 sq ft."
-  },
-  {
    "id": "share_substructure",
    "group": "cost share",
    "what": "Substructure share of construction cost",
@@ -1418,21 +1363,6 @@
    ],
    "confidence": "low",
    "note": "125mm in the generated sample; the other Nigerian sample uses 150 to 175."
-  },
-  {
-   "id": "electrical_cable_m_per_m2_gfa",
-   "group": "services",
-   "what": "Final-circuit cable per m2 of gross floor area",
-   "unit": "m",
-   "per": "m2 of floor",
-   "low": 1.5,
-   "typical": 1.5,
-   "high": 1.5,
-   "sources": [
-    "nbcgen"
-   ],
-   "confidence": "low",
-   "note": "Generated sample: 459 m over 306.2 m2."
   },
   {
    "id": "windows_per_m2_gfa",
@@ -2083,6 +2013,131 @@
     "plan9": 1.646
    },
    "note": "Block area as the sheets count it, with openings taken off. From 5 plan(s) of the author's own BOQs sheets; the per-plan values are kept in per_plan."
+  },
+  {
+   "id": "electrical_cable_m_per_m2_gfa",
+   "group": "services",
+   "what": "Final-circuit cable",
+   "unit": "m",
+   "per": "m2 of floor",
+   "low": 1.26,
+   "typical": 1.38,
+   "high": 1.5,
+   "sources": [
+    "nbcgen",
+    "cubana"
+   ],
+   "confidence": "low",
+   "note": "Two bills: the author's My Duplex bill (306.2 m2) and the Cubana bill (about 571 m2). The cable size differs (2.5 and 6 mm2)."
+  },
+  {
+   "id": "electrical_socket_per_m2",
+   "group": "services",
+   "what": "Socket outlet points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.086,
+   "typical": 0.117,
+   "high": 0.147,
+   "sources": [
+    "nbcgen",
+    "cubana"
+   ],
+   "confidence": "low",
+   "note": "Two bills: the author's My Duplex bill (306.2 m2) and the Cubana bill (about 571 m2)."
+  },
+  {
+   "id": "electrical_switch_per_m2",
+   "group": "services",
+   "what": "Lighting switch points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.04,
+   "typical": 0.068,
+   "high": 0.095,
+   "sources": [
+    "nbcgen",
+    "cubana"
+   ],
+   "confidence": "low",
+   "note": "Two bills: the author's My Duplex bill (306.2 m2) and the Cubana bill (about 571 m2)."
+  },
+  {
+   "id": "electrical_light_per_m2",
+   "group": "services",
+   "what": "Lighting points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.065,
+   "typical": 0.08,
+   "high": 0.096,
+   "sources": [
+    "nbcgen",
+    "cubana"
+   ],
+   "confidence": "low",
+   "note": "Two bills: the author's My Duplex bill (306.2 m2) and the Cubana bill (about 571 m2)."
+  },
+  {
+   "id": "electrical_ac_per_m2",
+   "group": "services",
+   "what": "Air-conditioner power points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.0196,
+   "typical": 0.026,
+   "high": 0.0315,
+   "sources": [
+    "nbcgen",
+    "cubana"
+   ],
+   "confidence": "low",
+   "note": "Two bills: the author's My Duplex bill (306.2 m2) and the Cubana bill (about 571 m2)."
+  },
+  {
+   "id": "electrical_fan_per_m2",
+   "group": "services",
+   "what": "Ceiling fan points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.026,
+   "typical": 0.026,
+   "high": 0.026,
+   "sources": [
+    "nbcgen"
+   ],
+   "confidence": "low",
+   "note": "One bill, so no spread."
+  },
+  {
+   "id": "electrical_tv_per_m2",
+   "group": "services",
+   "what": "TV and data outlet points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.013,
+   "typical": 0.013,
+   "high": 0.013,
+   "sources": [
+    "nbcgen"
+   ],
+   "confidence": "low",
+   "note": "One bill, so no spread."
+  },
+  {
+   "id": "electrical_external_light_per_m2",
+   "group": "services",
+   "what": "External lighting points",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.023,
+   "typical": 0.023,
+   "high": 0.023,
+   "sources": [
+    "nbcgen"
+   ],
+   "confidence": "low",
+   "note": "One bill, so no spread."
   }
  ]
 }

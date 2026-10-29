@@ -34,6 +34,7 @@ class BoqItem:
     coef: list = field(default_factory=list)  # ids of the coefficients behind an estimated quantity
     amount_low: float | None = None
     amount_high: float | None = None
+    bill: int = 0  # the bill it is in (takeoff/sections.py)
 
 
 def load_defaults(path: str = "data/defaults.json") -> dict:
@@ -156,3 +157,19 @@ def price_boq(items: list[BoqItem], rates: dict) -> dict:
     return {"currency": rates["currency"], "total": round(sum(i.amount or 0 for i in items), 2), "total_low": round(sum(i.amount_low or 0 for i in items), 2),
             "total_high": round(sum(i.amount_high or 0 for i in items), 2), "unpriced": unpriced,
             "estimated_share": round(sum(i.amount or 0 for i in items if i.basis == "estimated") / max(sum(i.amount or 0 for i in items), 1), 2)}
+
+
+def load_rates(set_name: str | None = None, path: str = "data/rates.json") -> dict:
+    """The rate table of one set (default: the file's default), with any line it has no rate for taken from another set and listed in `borrowed`, so the console can say so."""
+    d = json.loads(Path(path).read_text())
+    name = set_name if set_name in d["sets"] else d["default_set"]
+    mine = dict(d["sets"][name]["rates"])
+    borrowed = []
+    for other, s in d["sets"].items():
+        if other == name:
+            continue
+        for k, v in s["rates"].items():
+            if k not in mine:
+                mine[k] = v
+                borrowed.append(k)
+    return {"currency": d["currency"], "rates": mine, "set": name, "label": d["sets"][name]["label"], "borrowed": sorted(borrowed), "sets": {k: v["label"] for k, v in d["sets"].items()}}

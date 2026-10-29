@@ -1,7 +1,11 @@
 {
-  "_note": "Starter rates (NGN, Owerri, 27 Oct 2026) supplied by the author from their own BoQ. Indicative only; users edit these with their own prices. Keys with no rate stay unpriced. Roof, frame, finishes and sanitary rates added from the rates in the author's own generated BoQ PDF (Owerri, 27 Oct 2026); flat-roof screed and membrane have no rate yet. Edit any of them. Windows are priced at window_base_nr + window_per_m2 x area (a line through the two window prices in that bill, aluminium with burglar-proof grille: 600 x 600 at 28,500 and 1200 x 1200 at 69,000); doors external 80,000 steel and internal 38,000 flush; lintels 9,000 each. Edit any of them.",
-  "currency": "NGN",
-  "rates": {
+ "currency": "NGN",
+ "default_set": "owerri",
+ "_note": "Rates are the user's: edit any of them. Two sets, each from a bill the author supplied, never scraped. A line a set has no rate for takes the other set's rate and is marked as borrowed. Flat-roof screed and membrane have no rate yet.",
+ "sets": {
+  "owerri": {
+   "label": "Owerri, 27 Oct 2026 (the author's My Duplex bill)",
+   "rates": {
     "trench_excavation_strip_m3": 8000,
     "pit_excavation_column_bases_m3": 8000,
     "strip_footing_concrete_m3": 136250,
@@ -51,6 +55,80 @@
     "window_per_m2": 37500,
     "door_external_nr": 80000,
     "door_internal_nr": 38000,
-    "lintel_nr": 9000
+    "lintel_nr": 9000,
+    "electrical_cable_m": 1200,
+    "electrical_socket_nr": 7000,
+    "electrical_switch_nr": 6500,
+    "electrical_light_nr": 7500,
+    "electrical_ac_nr": 16000,
+    "electrical_fan_nr": 9000,
+    "electrical_tv_nr": 12000,
+    "electrical_external_light_nr": 16000
+   }
+  },
+  "asaba": {
+   "label": "Asaba, April 2026 (Cubana Millennium City bill)",
+   "rates": {
+    "topsoil_strip_m2": 959,
+    "pit_excavation_column_bases_m3": 3750,
+    "trench_excavation_strip_m3": 3750,
+    "working_space_m3": 1200,
+    "earthwork_support_m2": 6471.52,
+    "disposal_off_site_m3": 1750,
+    "topsoil_disposal_m3": 1750,
+    "backfill_around_foundations_m3": 2750,
+    "laterite_m3": 15100,
+    "hardcore_m3": 18240,
+    "excavated_surface_treatment_m2": 1748.53,
+    "blinding_foundations_m3": 26895.24,
+    "blinding_on_hardcore_m3": 26895.24,
+    "strip_footing_concrete_m3": 153950,
+    "column_base_concrete_m3": 153950,
+    "ground_slab_m3": 153950,
+    "concrete_filling_blockwork_voids_m3": 153950,
+    "frame_columns_concrete_m3": 153950,
+    "frame_beams_concrete_m3": 153950,
+    "suspended_slab_concrete_m3": 153950,
+    "staircase_concrete_m3": 153950,
+    "roof_slab_concrete_m3": 153950,
+    "frame_formwork_soffit_m2": 5754.05,
+    "frame_formwork_beams_columns_m2": 5754.05,
+    "frame_steel_t": 1319880,
+    "rebar_y12_foundations_t": 1319880,
+    "rebar_y8_foundations_t": 1319880,
+    "brc_mesh_part1_m2": 1479,
+    "dpm_polythene_m2": 237.82,
+    "fdn_blockwork_230_m2": 13414.24,
+    "ext_blockwork_230_m2": 13414.24,
+    "int_blockwork_230_m2": 13414.24,
+    "fdn_wall_render_m2": 3596,
+    "external_wall_render_m2": 5935.16,
+    "internal_wall_finish_m2": 5935.16,
+    "external_wall_paint_m2": 2227.5,
+    "internal_wall_paint_m2": 2227.5,
+    "floor_finish_m2": 29817.58,
+    "skirting_m": 3429.34,
+    "ceiling_finish_m2": 20166.59,
+    "roof_covering_m2": 16000,
+    "roof_timbers_m": 1640,
+    "sanitary_wc_nr": 250000,
+    "sanitary_basin_nr": 75000,
+    "sanitary_sink_nr": 120000,
+    "sanitary_shower_nr": 70000,
+    "sanitary_heater_nr": 25000,
+    "sanitary_trap_nr": 7000,
+    "door_internal_nr": 125000,
+    "electrical_socket_nr": 8800,
+    "electrical_switch_nr": 6500,
+    "electrical_light_nr": 18000
+   },
+   "notes": {
+    "floor_finish_m2": "600 x 600 porcelain tile 18,067.58 plus 25mm screeded bed 11,750 per m2",
+    "skirting_m": "tile skirting 2,710.14 plus backing 719.20 per m",
+    "roof_timbers_m": "weighted average of the hardwood lines (1,550 to 1,850)",
+    "ceiling_finish_m2": "POP ceiling finish; the hangers and noggins are separate lines in that bill",
+    "external_wall_render_m2": "cement-sand plain rendering; the foundation wall render is 3,596"
+   }
   }
+ }
 }

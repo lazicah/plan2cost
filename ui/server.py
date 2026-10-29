@@ -22,7 +22,7 @@ PORT = 8765
 LOG = ROOT / "workspace" / "console.log"  # what the background processes print, so a crashed run can be explained
 UPLOADS = ROOT / "workspace" / "uploads"  # files picked in the console are copied here, then handed to the agent by path
 UPLOAD_TYPES = {".pdf", ".png", ".jpg", ".jpeg", ".xlsx"}
-DOWNLOADS = {"bill_priced.pdf": "application/pdf", "bill_unpriced.pdf": "application/pdf", "bill_priced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_unpriced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+DOWNLOADS = {"bill_materials_labour.pdf": "application/pdf", "bill_materials_labour.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_priced.pdf": "application/pdf", "bill_unpriced.pdf": "application/pdf", "bill_priced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_unpriced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
              "boq.json": "application/json", "tender_audit.json": "application/json"}
 
 
@@ -109,6 +109,8 @@ class Handler(BaseHTTPRequestHandler):
             for f in floors:
                 page = f":{int(f['page'])}" if f.get("page") and str(f["file"]).lower().endswith(".pdf") and int(f["page"]) > 1 else ""
                 cmd += ["--floor", f"{f['name']}={existing_file(f['file'])}{page}"]
+            if body.get("rate_set"):
+                cmd += ["--rates", str(body["rate_set"])]
             for flag, key in (("--pitch", "pitch_deg"), ("--overhang", "overhang_m")):
                 if body.get(key) not in (None, ""):
                     cmd += [flag, str(float(body[key]))]

@@ -80,11 +80,11 @@ def summary(run: Run) -> dict:
     done_turns, now = turns(run), in_flight(run)
     d = run.dir
     tender = json.loads((d / "tender_audit.json").read_text()) if (d / "tender_audit.json").exists() else None
-    files = [f for f in ("bill_priced.xlsx", "bill_priced.pdf", "bill_unpriced.xlsx", "bill_unpriced.pdf", "boq.json", "tender_audit.json") if (d / f).exists()]
+    files = [f for f in ("bill_priced.xlsx", "bill_priced.pdf", "bill_materials_labour.xlsx", "bill_materials_labour.pdf", "bill_unpriced.xlsx", "bill_unpriced.pdf", "boq.json", "tender_audit.json") if (d / f).exists()]
     return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "floors": run.floors, "inputs": run.inputs,
             "thumbs": sorted(f.name for f in (d / "pages").glob("p*.jpg")) if (d / "pages").is_dir() else [], "built": built(run), "preview": run.data.get("preview"),
             "error": run.data.get("error"), "files": files, "tender": tender, "quote": run.quote, "turn": run.turn, "objective": run.objective, "checklist": run.checklist,
-            "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result, "boq": run.data.get("boq"), "models": run.data.get("models", {}),
+            "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result, "boq": run.data.get("boq"), "materials": run.data.get("materials"), "models": run.data.get("models", {}),
             "audit": run.data.get("audit"), "turns": done_turns}
 
 

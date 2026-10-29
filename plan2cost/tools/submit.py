@@ -3,6 +3,7 @@ import json
 
 from plan2cost.agent.verify import verify_boq
 from plan2cost.kit.progress import Run
+from plan2cost.takeoff import ml_bill
 from plan2cost.takeoff.bill import numbered, ranged, write_pdf, write_xlsx
 
 
@@ -22,6 +23,10 @@ def submit_boq(run: Run, summary: str = "") -> dict:
     files = ["bill_priced.xlsx", "bill_priced.pdf"]
     write_xlsx(run.dir / "bill_priced.xlsx", rows, True, cur, "Bill of quantities", run.id)
     write_pdf(run.dir / "bill_priced.pdf", rows, True, cur, "Bill of quantities", run.id)
+    if run.data.get("materials"):
+        ml_bill.write_xlsx(run.dir / "bill_materials_labour.xlsx", run.data["materials"], cur, "Bill of materials and labour", run.id)
+        ml_bill.write_pdf(run.dir / "bill_materials_labour.pdf", run.data["materials"], cur, "Bill of materials and labour", run.id)
+        files += ["bill_materials_labour.xlsx", "bill_materials_labour.pdf"]
     if not ranged(rows):  # an unpriced bill for tender only when every quantity was measured
         write_xlsx(run.dir / "bill_unpriced.xlsx", rows, False, cur, "Bill of quantities", run.id)
         write_pdf(run.dir / "bill_unpriced.pdf", rows, False, cur, "Bill of quantities", run.id)
