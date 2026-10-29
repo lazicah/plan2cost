@@ -1,8 +1,8 @@
-from plan2cost.interpret import _block_for, scale_from_overall
-from plan2cost.scale import _mode, stated_scale, within_stated
-from plan2cost.vector_walls import Line, axis_lines, drop_centreline_halves, largest_cluster, pair_walls
-from plan2cost.vector import Seg
-from plan2cost.walls_cv import Wall
+from plan2cost.drawing.interpret import _block_for, scale_from_overall
+from plan2cost.drawing.scale import _mode, stated_scale, within_stated
+from plan2cost.drawing.vector_walls import Line, axis_lines, drop_centreline_halves, largest_cluster, pair_walls
+from plan2cost.drawing.vector import Seg
+from plan2cost.drawing.walls_cv import Wall
 
 
 def test_stated_scale_is_read_from_the_title_block_text():
@@ -56,7 +56,7 @@ def test_collinear_pieces_join_into_one_line_and_dashes_are_ignored():
 
 
 def test_extents_must_match_printed_overall_dimensions():
-    from plan2cost.interpret import extents_match_printed
+    from plan2cost.drawing.interpret import extents_match_printed
 
     assert extents_match_printed(14.03, 11.79, [14250, 12000, 3000, 600])  # outer extents are within a wall thickness of the grid strings
     assert extents_match_printed(11.8, 14.0, [14250, 12000])  # either axis order

@@ -1,6 +1,6 @@
 import pytest
 
-from plan2cost import client
+from plan2cost.kit import client
 
 
 def test_profiles_read_their_own_settings(monkeypatch):

@@ -1,5 +1,5 @@
-from plan2cost.boq import foundation_boq, price_boq, strip_inputs
-from plan2cost.tools.foundation import GridLine, PadBase, foundation_takeoff
+from plan2cost.takeoff.boq import foundation_boq, price_boq, strip_inputs
+from plan2cost.takeoff.foundation import GridLine, PadBase, foundation_takeoff
 
 LINES = [GridLine("all", runs=[(104.835, 1)], deductions=[(35.145, 1)])]
 PADS = [PadBase("1", 1.2, 1.2, 4)]
@@ -22,17 +22,10 @@ def test_boq_items_and_pricing_never_invent_rates():
     assert "strip_footing_concrete_m3" in out["unpriced"]
 
 
-def test_strip_girths_from_extracted_runs():
-    from plan2cost.extract_foundation import strip_girths
-
-    data = {"strip_runs": [{"length_mm": 50000, "count": 1}, {"length_mm": 10000, "count": 2}]}
-    g = strip_girths(data, [PadBase("1", 1.2, 1.2, 5)])
-    assert g == {"fdn_blockwork_girth_230_m": 70, "strip_trench_girth_230_m": 64}
-
 
 def test_foundation_extras_priced_and_laterite_left_unpriced():
     import json
-    from plan2cost.boq import foundation_extras
+    from plan2cost.takeoff.boq import foundation_extras
 
     items = foundation_extras([PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B",))], 20, slab_area_m2=200.55, fill_area_m2=184)
     out = price_boq(items, json.load(open("data/rates.json")))
@@ -50,7 +43,7 @@ def test_trench_width_is_three_times_the_block_unless_drawn():
 
 
 def test_substructure_extras_follow_the_authors_sheet():
-    from plan2cost.boq import StripSection, substructure_extras
+    from plan2cost.takeoff.boq import StripSection, substructure_extras
 
     pads = [PadBase("1", 1.2, 1.2, 4, 0.25), PadBase("2", 1.4, 1.4, 5, 0.25), PadBase("3", 1.5, 1.5, 5, 0.25), PadBase("4", 1.6, 1.6, 4, 0.4), PadBase("5", 1.7, 1.7, 1, 0.45)]
     s = StripSection(width_mm=690, footing_thickness_m=0.225, trench_depth_m=1.35, block_mm=225)

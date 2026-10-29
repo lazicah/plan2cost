@@ -1,4 +1,4 @@
-from plan2cost.strip_layout import Run, StripLayout, _coverage
+from plan2cost.drawing.strips import Run, StripLayout, _coverage
 
 
 def test_net_length_is_centre_length_less_the_bases():

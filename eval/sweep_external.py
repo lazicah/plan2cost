@@ -6,11 +6,11 @@ import pickle
 import cv2
 
 from eval.run_vector_walls import CASES
-from plan2cost.interpret import interpret_image
-from plan2cost.measure import vector_scale
-from plan2cost.vector import read_page
-from plan2cost.vector_walls import axis_lines, find_walls_vector
-from plan2cost.walls_cv import external_fractions
+from plan2cost.drawing.interpret import interpret_image
+from plan2cost.drawing.measure import vector_scale
+from plan2cost.drawing.vector import read_page
+from plan2cost.drawing.vector_walls import axis_lines, find_walls_vector
+from plan2cost.drawing.walls_cv import external_fractions
 
 CACHE = "/tmp/ext_cases.pkl"
 

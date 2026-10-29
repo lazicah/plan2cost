@@ -51,3 +51,6 @@ Result against the author's window counts (ground floor: 16 at 600 mm and 4 at 9
 AW4 x2 which the author's per-floor count does not list. Doors are weaker: the plan carries no door tags and several schedule types share one width, so
 12 of 16 doors stay unmatched (they keep the schedule's old external/internal rule in the BoQ). Over-counts are flagged (AW3: 4 found, 2 in the whole
 building's schedule) and the BoQ never deducts more than the schedule has.
+
+## Code layout
+See README.md. Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`; the prompt lives in `agent/system_instructions.md`.

@@ -1,7 +1,7 @@
 import argparse
 
 from plan2cost.agent.loop import resume, run_agent
-from plan2cost.agent.state import Run
+from plan2cost.kit.progress import Run
 
 
 def main() -> None:

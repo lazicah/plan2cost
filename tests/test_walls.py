@@ -1,4 +1,4 @@
-from plan2cost.tools.walls import Opening, blockwork_area_m2, facade_area_m2
+from plan2cost.takeoff.walls import Opening, blockwork_area_m2, facade_area_m2
 
 HEIGHTS = {"ground": 3.3, "first": 3.3}
 
@@ -23,7 +23,7 @@ def test_default_height_when_elevation_missing():
 
 
 def test_schedule_to_openings_marks_timber_doors_internal():
-    from plan2cost.document import to_openings
+    from plan2cost.facts.document import to_openings
 
     data = {"openings": [
         {"mark": "TD2", "kind": "door", "material": "timber", "width_mm": 900, "height_mm": 2100, "quantity": 10},
@@ -49,7 +49,7 @@ def test_plan6_corrected_with_drawing_height_and_schedule_sizes():
 
 
 def test_superstructure_boq_deducts_openings_from_their_own_wall():
-    from plan2cost.boq import superstructure_boq
+    from plan2cost.takeoff.boq import superstructure_boq
 
     ops = [Opening("W", 1.0, 1.0, 10), Opening("D", 1.0, 2.0, 5, "door", False)]
     items = {i.key: i for i in superstructure_boq({"g": 100}, {"g": 50}, {"g": 3.0}, ops)}
@@ -58,7 +58,7 @@ def test_superstructure_boq_deducts_openings_from_their_own_wall():
 
 
 def test_storey_heights_from_levels():
-    from plan2cost.document import storey_heights_m
+    from plan2cost.facts.document import storey_heights_m
 
     lv = {"storey_heights_mm": [{"from": "NGL", "to": "GROUND FLR. LEVL", "value_mm": 600},
                                 {"from": "GROUND FLR. LEVL", "to": "FIRST FLR. LEVEL", "value_mm": 3000},

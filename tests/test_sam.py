@@ -1,4 +1,4 @@
-from plan2cost.sam import parse
+from plan2cost.facts.sam import parse
 
 # One frame of the documented example: two objects on a 320x334 source (Meta Model API docs, "Reading segmentation output").
 LINE = ("<0f>0<|box;x1=211;y1=228;x2=270;y2=254;w=320;h=334|><|mask;x=0;y=0;data=27,60,~!!!!M!0c[0o91w?q1!pIH4pPRVp2B3'7`e.ioeAf6-k/#Xd8%dX9x(|>,"

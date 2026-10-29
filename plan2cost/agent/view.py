@@ -2,7 +2,7 @@
 import json
 import re
 
-from plan2cost.agent.state import RUNS_DIR, Run
+from plan2cost.kit.progress import RUNS_DIR, Run
 
 RESULT = "Tool result: "
 RUN_ID = re.compile(r"^\d{8}-\d{6}$")

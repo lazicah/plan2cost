@@ -3,8 +3,8 @@ import collections
 import json
 import sys
 
-from plan2cost.markup import model_for_page, plan_image, draw_markup
-from plan2cost.openings import locate_openings
+from plan2cost.drawing.markup import model_for_page, plan_image, draw_markup
+from plan2cost.drawing.openings import locate_openings
 
 PDF = "reference/plan6/Detached and Semi Detached WD (1).pdf"
 

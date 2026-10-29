@@ -1,4 +1,4 @@
-from plan2cost.tools.foundation import GridLine, PadBase, StripSection, foundation_takeoff, whole_units
+from plan2cost.takeoff.foundation import GridLine, PadBase, StripSection, foundation_takeoff, whole_units
 
 # Totals from the author's plan2 survey: full runs 104.835m, pad/overlap deductions 35.145m (trench 69.69m).
 LINES = [GridLine("all", runs=[(104.835, 1)], deductions=[(35.145, 1)])]
@@ -32,7 +32,7 @@ def test_whole_units_minimum_one():
 
 
 def test_ground_bed_matches_author_workbook():
-    from plan2cost.tools.foundation import ground_bed_takeoff
+    from plan2cost.takeoff.foundation import ground_bed_takeoff
 
     t = ground_bed_takeoff(200.55, fill_area_m2=184)
     assert (t["ground_slab_m3"], t["brc_mesh_part1_m2"], t["dpm_polythene_m2"]) == (30, 200, 200)
@@ -40,7 +40,7 @@ def test_ground_bed_matches_author_workbook():
 
 
 def test_pad_concrete_and_rebar_from_drawing():
-    from plan2cost.tools.foundation import PadBase, pad_concrete_m3, pad_rebar_kg
+    from plan2cost.takeoff.foundation import PadBase, pad_concrete_m3, pad_rebar_kg
 
     pads = [PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B", "06-Y1202@200c/c B"))]
     assert pad_concrete_m3(pads) == 1  # 1.44 m3

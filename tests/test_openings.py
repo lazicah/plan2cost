@@ -1,6 +1,5 @@
-from plan2cost.drawing_model import build_model
-from plan2cost.openings import candidates, counts_by_mark, dimension_candidates
-from plan2cost.walls_cv import Wall
+from plan2cost.drawing.model import build_model
+from plan2cost.drawing.openings import candidates, counts_by_mark, dimension_candidates
 from tests.test_drawing_model import box_walls, result_for
 
 
@@ -18,8 +17,8 @@ def test_gaps_become_candidates_with_width_and_side_and_end_gaps_are_not_opening
 
 
 def test_a_printed_width_makes_a_candidate_on_the_nearest_wall_of_the_chain_direction(monkeypatch):
-    import plan2cost.dims as dims
-    from plan2cost.dims import DimToken
+    import plan2cost.drawing.dims as dims
+    from plan2cost.drawing.dims import DimToken
 
     m = build_model(result_for(box_walls()), "ground", 1)  # 30 mm per point
     # a horizontal chain 2 m above the top wall (y = -2000 mm), a 1200 dimension centred at x = 3000 mm: points = mm / 30
@@ -31,7 +30,7 @@ def test_a_printed_width_makes_a_candidate_on_the_nearest_wall_of_the_chain_dire
 
 
 def test_counts_by_mark_split_by_the_side_of_the_wall():
-    from plan2cost.drawing_model import Element
+    from plan2cost.drawing.model import Element
 
     m = build_model(result_for(box_walls()), "ground", 1)
     for i, (sub, mark) in enumerate([("external", "W1"), ("external", "W1"), ("internal", "W1"), ("internal", "D2"), ("external", "")]):

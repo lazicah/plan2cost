@@ -1,12 +1,11 @@
 """Draw what the raster route finds: python -m eval.draw_raster_walls <plan> <px> <kind> <out.jpg>  (block size taken as 225 at that ruler)."""
-import json
 import sys
 
 import cv2
 
-from plan2cost.interpret import bin_width
-from plan2cost.raster_lines import vectorise_multi
-from plan2cost.vector_walls import find_walls_vector
+from plan2cost.drawing.interpret import bin_width
+from plan2cost.drawing.raster_lines import vectorise_multi
+from plan2cost.drawing.vector_walls import find_walls_vector
 
 if __name__ == "__main__":
     n, px, kind, out = int(sys.argv[1]), float(sys.argv[2]), sys.argv[3], sys.argv[4]

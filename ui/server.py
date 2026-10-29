@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from plan2cost.agent import view  # noqa: E402
-from plan2cost.agent.state import Run  # noqa: E402
+from plan2cost.kit.progress import Run  # noqa: E402
 
 PORT = 8765
 

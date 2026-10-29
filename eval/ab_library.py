@@ -1,11 +1,10 @@
 """Does the element library improve the crop check? Same candidates on plan 6 ground, the current prompt against one built from reference/element_library.json."""
 import collections
 import json
-import sys
 
-import plan2cost.openings as op
-from plan2cost.drawing_model import DrawingModel
-from plan2cost.markup import plan_image
+import plan2cost.drawing.openings as op
+from plan2cost.drawing.model import DrawingModel
+from plan2cost.drawing.markup import plan_image
 
 PDF = "reference/plan6/Detached and Semi Detached WD (1).pdf"
 USE = ["ARCH-DOOR-HINGED", "ARCH-DOOR-DOUBLE", "ARCH-DOOR-SLIDING", "ARCH-OPENING", "ARCH-WINDOW-CASEMENT", "ARCH-WINDOW-SLIDING", "ARCH-STAIR", "ARCH-COLUMN",
@@ -27,12 +26,12 @@ def library_prompt() -> str:
 
 
 def mapped_verify(path: str) -> dict:
-    from plan2cost.client import image_part
-    from plan2cost.document import _chat
+    from plan2cost.kit.client import image_part
+    from plan2cost.kit.client import chat_json
 
     if not path:
         return {"kind": "not_opening"}
-    r = _chat([{"type": "text", "text": LIB_PROMPT}, image_part(path)])
+    r = chat_json([{"type": "text", "text": LIB_PROMPT}, image_part(path)])
     i = str(r.get("element_id", "NONE"))
     kind = "door" if i.startswith("ARCH-DOOR") else "window" if i.startswith("ARCH-WINDOW") else "opening" if i == "ARCH-OPENING" else "not_opening"
     return {"kind": kind, "tag": r.get("tag"), "element_id": i}

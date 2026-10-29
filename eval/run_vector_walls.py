@@ -2,7 +2,7 @@
 import json
 import sys
 
-from plan2cost.measure import measure_walls_vector
+from plan2cost.drawing.measure import measure_walls_vector
 
 CASES = [("plan4 ground", "reference/plan4/4 BED DUPLEX WITH CIN.pdf", 4, 4, "ground_floor"), ("plan4 first", "reference/plan4/4 BED DUPLEX WITH CIN.pdf", 5, 4, "first_floor"),
          ("plan4 pent", "reference/plan4/4 BED DUPLEX WITH CIN.pdf", 6, 4, "second_floor"),

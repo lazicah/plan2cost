@@ -3,11 +3,11 @@ import sys
 
 import cv2
 
-from plan2cost.measure import vector_scale
-from plan2cost.pdf import render_pages
-from plan2cost.vector import read_page
-from plan2cost.vector_walls import axis_lines, find_walls_vector
-from plan2cost.walls_cv import external_fractions
+from plan2cost.drawing.measure import vector_scale
+from plan2cost.kit.pdf import render_pages
+from plan2cost.drawing.vector import read_page
+from plan2cost.drawing.vector_walls import axis_lines, find_walls_vector
+from plan2cost.drawing.walls_cv import external_fractions
 
 if __name__ == "__main__":
     pdf, page, out = sys.argv[1], int(sys.argv[2]), sys.argv[3]

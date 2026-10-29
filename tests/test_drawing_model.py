@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 
-from plan2cost.drawing_model import DrawingModel, build_model, stable_order
-from plan2cost.markup import draw_markup
-from plan2cost.qc import check_dangling, check_double_counting, check_extents, check_free_ends, run_checks
-from plan2cost.walls_cv import Wall
+from plan2cost.drawing.model import DrawingModel, build_model, stable_order
+from plan2cost.drawing.markup import draw_markup
+from plan2cost.drawing.qc import check_dangling, check_double_counting, check_extents, check_free_ends, run_checks
+from plan2cost.drawing.walls_cv import Wall
 
 
 def box_walls(w=8000.0, d=6000.0, t=230.0):
@@ -69,12 +69,11 @@ def test_the_model_round_trips_through_json_and_the_markup_is_written(tmp_path):
 
 
 def test_the_model_review_only_adds_issues_and_ignores_ids_it_does_not_know(monkeypatch):
-    import plan2cost.client as client
-    import plan2cost.document as document
-    from plan2cost.review import review_model
+    import plan2cost.kit.client as client
+    from plan2cost.facts.review import review_model
 
     monkeypatch.setattr(client, "image_part", lambda p: {"type": "text", "text": "image"})
-    monkeypatch.setattr(document, "_chat", lambda content: {"missed": [{"where": "north edge", "what": "outer wall has no line"}], "not_walls": [{"id": "002", "why": "furniture"}, {"id": "099", "why": "unknown"}],
+    monkeypatch.setattr(client, "chat_json", lambda content: {"missed": [{"where": "north edge", "what": "outer wall has no line"}], "not_walls": [{"id": "002", "why": "furniture"}, {"id": "099", "why": "unknown"}],
                                                             "duplicates": [{"ids": ["001", "003"]}], "wrong_side": [{"id": "005", "why": "inside"}], "overall": "x"})
     m = build_model(result_for(box_walls()), "ground", 1)
     before = (m.totals["total_m"], len(m.elements))
@@ -85,7 +84,7 @@ def test_the_model_review_only_adds_issues_and_ignores_ids_it_does_not_know(monk
 
 
 def test_located_openings_set_the_side_and_the_rest_stays_on_the_schedule():
-    from plan2cost.agent.tools import merge_located_openings
+    from plan2cost.tools.estimate import merge_located_openings
 
     schedule = [{"label": "AW1", "width_m": 0.6, "height_m": 1.8, "count": 22, "kind": "window", "external": True},
                 {"label": "TD2", "width_m": 0.9, "height_m": 2.1, "count": 10, "kind": "door", "external": False}]

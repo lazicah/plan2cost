@@ -1,4 +1,4 @@
-from plan2cost.structural import check_section
+from plan2cost.facts.foundation_section import check_section
 
 PAGE = "675mm. x 225mm. MASS CONCRETE STRIP FOUNDATION BASE 50mm. THICK SANDCRETE BLINDING 150 775 225 50 1200 SECTION A - A"
 

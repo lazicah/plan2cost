@@ -4,8 +4,8 @@ import json
 import os
 import sys
 
-from plan2cost.interpret import interpret_image
-from plan2cost.page_facts import read_page_facts
+from plan2cost.drawing.interpret import interpret_image
+from plan2cost.facts.page_facts import read_page_facts
 
 if __name__ == "__main__":
     plans = [int(a) for a in sys.argv[1:] if a.isdigit()] or [1, 2, 3, 4, 5, 6]

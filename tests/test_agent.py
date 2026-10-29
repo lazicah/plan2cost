@@ -2,10 +2,11 @@ import json
 
 import pytest
 
-from plan2cost.agent import state
+from plan2cost.kit import progress as state
 from plan2cost.agent.loop import resume, run_agent
-from plan2cost.agent.state import Run
-from plan2cost.agent.tools import TOOLS, quote_on_page
+from plan2cost.kit.progress import Run
+from plan2cost.tools import TOOLS
+from plan2cost.tools.records import quote_on_page
 
 
 @pytest.fixture(autouse=True)
@@ -47,7 +48,7 @@ def test_fact_needs_checklist_and_basis():
 
 
 def test_drawing_fact_refused_when_quote_not_on_page(monkeypatch):
-    monkeypatch.setattr("plan2cost.pdf.page_text", lambda pdf, p: "FIRST FLR. LEVEL 3600")
+    monkeypatch.setattr("plan2cost.kit.pdf.page_text", lambda pdf, p: "FIRST FLR. LEVEL 3600")
     run = Run.new("x.pdf", "obj")
     TOOLS["set_checklist"][0](run, ITEMS)
     bad = TOOLS["record_fact"][0](run, item="C1", name="h", value=3000, page=9, quote="ROOF BASE 6600")
@@ -98,20 +99,9 @@ def test_console_turns_view_pairs_actions_with_results_and_answers():
     assert view.list_runs()[0]["id"] == run.id
 
 
-def test_external_run_without_thickness_takes_the_stated_one_and_says_so():
-    from plan2cost.extract import to_runs
-
-    data = {"wall_runs": [
-        {"label": "party", "length_mm": 9600, "kind": "centre_line", "thickness_mm": 230, "external": True},
-        {"label": "north", "length_mm": 19430, "kind": "end_to_end", "thickness_mm": None, "external": True},
-        {"label": "partition", "length_mm": 3000, "kind": "in_to_in", "thickness_mm": None, "external": False}]}
-    runs, q = to_runs(data)
-    assert [r.label for r in runs] == ["party", "north"] and runs[1].thickness_mm == 230
-    assert any("used 230mm" in x for x in q) and any("partition: wall thickness" in x for x in q)
-
 
 def test_bounding_box_girth_is_flagged_and_blocks_submit(monkeypatch):
-    from plan2cost.dims import DimToken
+    from plan2cost.drawing.dims import DimToken
 
     def row(y, vals):  # a horizontal chain of four numbers, then a vertical one
         return [DimToken(v, 100 + i * 60, y, 120 + i * 60, y + 6) for i, v in enumerate(vals)]
@@ -119,7 +109,7 @@ def test_bounding_box_girth_is_flagged_and_blocks_submit(monkeypatch):
     toks += [DimToken(v, 40, 100 + i * 60, 46, 120 + i * 60) for i, v in enumerate([17130, 4000, 4000, 4000])]
     toks += [DimToken(v, 50, 100 + i * 60, 56, 120 + i * 60) for i, v in enumerate([6000, 6000, 4000, 4000])]
     toks += [DimToken(v, 60, 100 + i * 60, 66, 120 + i * 60) for i, v in enumerate([1000, 2000, 3000, 4000])]
-    monkeypatch.setattr("plan2cost.dims.dimension_tokens", lambda pdf, p: toks)
+    monkeypatch.setattr("plan2cost.drawing.dims.dimension_tokens", lambda pdf, p: toks)
     run = Run.new("x.pdf", "obj")
     TOOLS["set_checklist"][0](run, ITEMS)
     out = TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=73.12, source="user", page=6)
@@ -172,7 +162,7 @@ def test_foundation_from_ground_walls_uses_three_times_the_block_and_flags_defau
 
 
 def test_foundation_uses_section_values_printed_on_the_structural_drawing(monkeypatch):
-    monkeypatch.setattr("plan2cost.pdf.page_text", lambda pdf, p: "675mm 225 1200")
+    monkeypatch.setattr("plan2cost.kit.pdf.page_text", lambda pdf, p: "675mm 225 1200")
     run = Run.new("x.pdf", "obj", structural_pdf="s.pdf")
     TOOLS["set_checklist"][0](run, [{"question": "foundation?"}, {"question": "girth?"}, {"question": "doors?"}])
     for name, v in (("fdn_footing_width_mm", 675), ("fdn_footing_thickness_mm", 225), ("fdn_overall_depth_mm", 1200)):

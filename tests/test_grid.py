@@ -1,4 +1,4 @@
-from plan2cost.grid import Grid, GridLine, calibrate
+from plan2cost.drawing.grid import Grid, GridLine, calibrate
 
 
 def grid():
@@ -18,7 +18,7 @@ def test_scale_is_fitted_to_printed_chains_and_refused_when_nothing_matches():
 
 
 def test_bays_snap_to_printed_dimensions_and_flag_the_rest():
-    from plan2cost.grid import snap_bays
+    from plan2cost.drawing.grid import snap_bays
 
     out = snap_bays([("1", "2", 1487.2), ("2", "3", 2781.0), ("3", "4", 777.0)], [1488, 2775, 5000])
     assert out == [("1", "2", 1488, "printed"), ("2", "3", 2775, "printed"), ("3", "4", 777, "scaled")]

@@ -1,4 +1,4 @@
-from plan2cost.checklist import building_type, coverage, how_to_get, statement
+from plan2cost.takeoff.checklist import building_type, coverage, how_to_get, statement
 
 LIST = {"trades": [
     {"id": "substructure", "items": [
@@ -30,7 +30,7 @@ def test_the_building_type_decides_which_items_apply_and_the_source_of_a_quantit
 
 
 def test_a_checklist_that_forgets_trades_is_told_which_and_how_their_quantities_would_be_got():
-    from plan2cost.checklist import trades_missing
+    from plan2cost.takeoff.checklist import trades_missing
 
     out = trades_missing(["What are the foundation depths? strip footing section"], 2, LIST)
     assert [m["trade"] for m in out] == ["electrical"] and out[0]["required_items"] == 2
