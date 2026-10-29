@@ -10,7 +10,7 @@ import numpy as np
 
 from plan2cost.raster_lines import bar_lines, bar_widths, vectorise_multi
 from plan2cost.vector_walls import Line, find_walls_vector
-from plan2cost.walls_cv import external_fractions, extents_m, girth_by_thickness, junctions
+from plan2cost.walls_cv import external_fractions, extents_m, girth_by_thickness, joint_extents_mm, junctions
 
 STANDARD_MM = 225  # the unit the ruler is first read in; the printed overall dimensions then decide the true scale
 BLOCK_SIZES_MM = (100, 150, 200, 225, 230, 300)  # standard wall thicknesses; the dimension fit only chooses among them
@@ -75,21 +75,21 @@ def _run(lines: list[Line], px: float, facts: dict | None, primitive: str = "pai
     walls, info = find_walls_vector(lines, s0, primitive=primitive, min_length_m=25, min_joints=4, dominant_bar=px if primitive == "bar" else None)
     hs, vs = [w for w in walls if w.orient == "h"], [w for w in walls if w.orient == "v"]
     block, err, fitted_s = STANDARD_MM, None, None
+    options = []  # building size by three definitions; a dangling line inflates the raw ends, a split corner shrinks the joints
     if hs and vs:
-        ext_x = max(w.end_mm for w in hs) - min(w.start_mm for w in hs)
-        ext_y = max(w.end_mm for w in vs) - min(w.start_mm for w in vs)
-        vals = [float(v) for v in (facts or {}).get("horizontal_mm", []) + (facts or {}).get("vertical_mm", []) if v]
-        fit = scale_from_overall(ext_x, ext_y, vals) if vals else None
-        if fit:
-            t = _block_for(fit[0], 0.14 if primitive == "bar" else 0.07)
-            if t and t >= 150:  # the dominant wall of a building is not a 100mm partition
-                pass
-            else:
-                t = None
-            if t:
-                block, err = t, fit[1]
-                if primitive == "bar":  # a bar is drawn with its outline, so its width overstates the wall; the dimension fit is the better scale
-                    fitted_s = s0 * fit[0]
+        options.append((max(w.end_mm for w in hs) - min(w.start_mm for w in hs), max(w.end_mm for w in vs) - min(w.start_mm for w in vs)))
+        je = joint_extents_mm(walls)
+        if je:
+            options += [(je[0] + STANDARD_MM, je[1] + STANDARD_MM), je]
+    vals = [float(v) for v in (facts or {}).get("horizontal_mm", []) + (facts or {}).get("vertical_mm", []) if v]
+    fits = [f for f in (scale_from_overall(ex, ey, vals) for ex, ey in options) if f] if vals else []
+    if fits:
+        fit = min(fits, key=lambda f: f[1])
+        t = _block_for(fit[0], 0.14 if primitive == "bar" else 0.07)
+        if t and t >= 150:  # the dominant wall of a building is not a 100mm partition
+            block, err = t, fit[1]
+            if primitive == "bar":  # a bar is drawn with its outline, so its width overstates the wall; the dimension fit is the better scale
+                fitted_s = s0 * fit[0]
     s = fitted_s or block / px
     if block != STANDARD_MM or fitted_s or not walls:
         walls, info = find_walls_vector(lines, s, primitive=primitive, min_length_m=25, min_joints=4, dominant_bar=px if primitive == "bar" else None)

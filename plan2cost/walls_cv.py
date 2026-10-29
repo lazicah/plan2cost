@@ -223,3 +223,17 @@ def junctions(walls: list[Wall], tol_mm: float = 150) -> int:
                     n += 1
                     break
     return n
+
+
+def joint_extents_mm(walls: list[Wall], tol_mm: float = 150) -> tuple[float, float] | None:
+    """Building size from where walls actually meet: the bounding box of the points where a horizontal and a vertical run cross or touch.
+    A dangling line that runs past the building (an extension or grid line merged into a wall) makes no joint, so it cannot inflate this."""
+    pts = []
+    for h in (w for w in walls if w.orient == "h"):
+        for v in (w for w in walls if w.orient == "v"):
+            if h.start_mm - tol_mm <= v.centre_mm <= h.end_mm + tol_mm and v.start_mm - tol_mm <= h.centre_mm <= v.end_mm + tol_mm:
+                pts.append((v.centre_mm, h.centre_mm))
+    if len(pts) < 4:
+        return None
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    return max(xs) - min(xs), max(ys) - min(ys)
