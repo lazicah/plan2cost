@@ -100,7 +100,8 @@ def derive() -> dict:
               "screeding_for_paint_per_m2": ("Screeding for paint", "m2", rate(r"Wall Screeding for Paint", "m")), "carcassing_per_m": ("Roof carcassing", "m", rate(r"Carcassing", "m")),
               "roof_covering_per_m2": ("Fixing roof covering", "m2", rate(r"Labour – Roof Covering", "m")), "earthwork_support_per_m2": ("Fixing earthwork support", "m2", rate(r"Labour for fixing Earthwork", "m"))}
     return {"_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so the ratios are that contractor's practice, not a range: "
-                     "show them as such. The sand figure (about 1.7 t per m3 of concrete) is more than a 1:2:4 mix needs (about 0.7 t): it is how the bill is priced and is worth confirming.",
+                     "show them as such. The sand figure (about 1.76 t per m3 of concrete) is more than a 1:2:4 mix needs (about 0.7 t, and 0.74 t in the nigeriabuildingcost concrete calculator). The sand bulk density of 1.6 t/m3 is confirmed by the nigeriabuildingcost sand calculator; "
+                     "1 m3 of sand plus 10% waste at that density is 1.76 t, which equals the average here, so the bill may use a rule of about 1 m3 of sand per m3 of concrete. Awaiting the author's confirmation.",
             "sources": {"simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)", "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"},
             "materials": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in materials.items()}, "labour": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in labour.items()},
             "ratios": r, "evidence": evidence}
