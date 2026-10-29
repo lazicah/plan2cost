@@ -61,6 +61,7 @@ def draw_markup(model: DrawingModel, out_path: str, pdf: str | None = None, page
     x0, y0, x1, y1 = max(min(xs) - m, 0), max(min(ys) - m, 0), min(max(xs) + m, w), min(max(ys) + m, h)
     crop = img[y0:y1, x0:x1].copy()
     k = max_side / max(crop.shape[:2])
+    model.markup_frame = [x0, y0, min(k, 1.0), scale]
     if k < 1:
         crop = cv2.resize(crop, (int(crop.shape[1] * k), int(crop.shape[0] * k)), interpolation=cv2.INTER_AREA)
     legend = f"{model.floor} floor, page {model.page}: red external, blue internal, orange has an open issue, green openings. Numbers are wall ids (W-nnn)."
@@ -68,6 +69,15 @@ def draw_markup(model: DrawingModel, out_path: str, pdf: str | None = None, page
     cv2.putText(crop, legend, (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (30, 30, 30), 1)
     cv2.imwrite(out_path, crop)
     return out_path
+
+
+def _verify(model: DrawingModel, markup_path: str, pdf: str | None, page: int | None, image: str | None) -> None:
+    """Let the model check the walls (overshoots, duplicates, a wall with no line), apply what code can confirm, and draw the plan again if anything changed."""
+    from plan2cost.facts.verify_walls import verify_walls
+
+    img, scale = plan_image(model, pdf, page, image, 150)
+    if verify_walls(model, img, scale, markup_path):
+        draw_markup(model, markup_path, pdf=pdf, page=page, image=image)
 
 
 def _add_review(model: DrawingModel, markup_path: str) -> None:
@@ -101,6 +111,7 @@ def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool =
     if on_measured:
         on_measured(model)
     if review:
+        _verify(model, str(out / name), pdf, page, r.get("_image") if r["route"] == "raster" else None)
         _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p{page}.json")
     return model
@@ -128,6 +139,7 @@ def model_for_image(path: str, floor: str, out_dir: str, review: bool = False, o
     if on_measured:
         on_measured(model)
     if review:
+        _verify(model, str(out / name), None, None, path)
         _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p1.json")
     return model

@@ -73,6 +73,8 @@ class DrawingModel:
     issues: list = field(default_factory=list)
     totals: dict = field(default_factory=dict)
     markup: str = ""  # file name of the annotated plan, relative to the model file
+    markup_frame: list = field(default_factory=list)  # [x0, y0, shrink, px_per_mm]: how the annotated plan's pixels map back to the page's, to turn a place on the picture into millimetres
+    printed_mm: list = field(default_factory=list)  # the printed overall dimensions the building size is checked against
 
     def walls(self) -> list:
         return [e for e in self.elements if e.category == "wall"]
@@ -144,16 +146,32 @@ def build_model(result: dict, floor: str, page: int, printed_mm: list | None = N
                               annotated_mm=cal.get("printed_overall_mm", []), agreement=cal.get("agree", cal.get("fit_error")),
                               evidence="directly labelled" if strong else "approximate", confidence="high" if strong and conf == "high" else "medium" if strong else "low",
                               detail={k: v for k, v in cal.items() if k not in ("basis", "method", "readings")})
+    size = building_size_m(walls)  # between the outermost joints: a run overshooting the building does not inflate it
+    model = DrawingModel(page, floor, result.get("route", result.get("source", "")), conf, [calibration], elements, totals=compute_totals(elements, size),
+                         printed_mm=printed_mm if printed_mm is not None else cal.get("printed_overall_mm", []))
+    from plan2cost.drawing.qc import run_checks
+
+    model.issues = run_checks(model, model.printed_mm)
+    return model
+
+
+def compute_totals(elements: list, size: tuple) -> dict:
     ext = sum(e.length_m * e.external_share for e in elements)
     total = sum(e.length_m for e in elements)
     by_thickness: dict = {}
     for e in elements:
         by_thickness[int(e.thickness_mm)] = round(by_thickness.get(int(e.thickness_mm), 0) + e.length_m, 2)
-    size = building_size_m(walls)  # between the outermost joints: a run overshooting the building does not inflate it
-    model = DrawingModel(page, floor, result.get("route", result.get("source", "")), conf, [calibration], elements,
-                         totals={"total_m": round(total, 2), "external_m": round(ext, 2), "internal_m": round(total - ext, 2), "by_thickness_m": by_thickness,
-                                 "length_m": round(size[0], 2), "width_m": round(size[1], 2)})
-    from plan2cost.drawing.qc import run_checks
+    return {"total_m": round(total, 2), "external_m": round(ext, 2), "internal_m": round(total - ext, 2), "by_thickness_m": by_thickness, "length_m": round(size[0], 2), "width_m": round(size[1], 2)}
 
-    model.issues = run_checks(model, printed_mm if printed_mm is not None else cal.get("printed_overall_mm", []))
-    return model
+
+def refresh(model: DrawingModel) -> None:
+    """After walls were trimmed, removed or added: the joints, totals and code checks again from the walls as they now are."""
+    from plan2cost.drawing.qc import _wall, run_checks
+
+    els = model.walls()
+    walls = [_wall(e) for e in els]
+    for e, w in zip(els, walls):
+        e.connected = sorted(o.id for o, v in zip(els, walls) if o is not e and touching(w, v))
+        e.length_m = round(w.length_mm / 1000, 3)
+    model.totals = compute_totals(els, building_size_m(walls))
+    model.issues = run_checks(model, model.printed_mm)
