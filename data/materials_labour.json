@@ -1,5 +1,5 @@
 {
- "_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so the ratios are that contractor's practice, not a range: show them as such. The sand figure (about 1.76 t per m3 of concrete) is more than a 1:2:4 mix needs (about 0.7 t, and 0.74 t in the nigeriabuildingcost concrete calculator). The sand bulk density of 1.6 t/m3 is confirmed by the nigeriabuildingcost sand calculator; 1 m3 of sand plus 10% waste at that density is 1.76 t, which equals the average here, so the bill may use a rule of about 1 m3 of sand per m3 of concrete. Awaiting the author's confirmation.",
+ "_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so most ratios are that contractor's practice, not a range. Concrete is the exception: it uses the 1:2:4 mix quantities of the nigeriabuildingcost concrete calculator (7 bags of cement, 0.74 t of sand, 1.39 t of granite per m3, 5% waste), because the bill's sand (1.76 t per m3, about 1 m3 of sand plus 10% waste at 1.6 t/m3) and granite (1.61 t) are well above a mix; the bill's own figures are kept under evidence. Sand bulk density 1.6 t/m3 is confirmed by that site's sand calculator. Casting labour is the bill's 2,500 a bag (17,500 a m3 at 7 bags); the calculator's placing labour is 22,000 a m3.",
  "sources": {
   "simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)",
   "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"
@@ -180,9 +180,9 @@
  },
  "ratios": {
   "concrete": {
-   "cement_bag": 6.55,
-   "sand_t": 1.76,
-   "granite_t": 1.613
+   "cement_bag": 7.0,
+   "sand_t": 0.74,
+   "granite_t": 1.39
   },
   "blinding_per_m3": {
    "cement_bag": 0.19,
@@ -239,6 +239,13 @@
   }
  },
  "evidence": {
+  "mix_124_used": {
+   "cement_bag": 7.0,
+   "sand_t": 0.74,
+   "granite_t": 1.39
+  },
+  "bill_sand_t_per_m3": 1.76,
+  "bill_granite_t_per_m3": 1.61,
   "cement_bags_per_m3_by_element": {
    "foundation footing": 6.17,
    "column bases": 6.19,

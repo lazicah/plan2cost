@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 SIMPLIFIED = "reference/boq/SIMPLIFIED BOQ.pdf"
+MIX_124 = {"cement_bag": 7.0, "sand_t": 0.74, "granite_t": 1.39}  # per m3 of 1:2:4 concrete
 OUT = Path("data/materials_labour.json")
 SIMPLE_ROW = re.compile(r"^\s*(\d+[a-z]?)\s+(.*?)\s{2,}(\d[\d,]*)\s+(\w[\w²³.]*)\s+([\d,]+\.\d\d)\s+([\d,]+\.\d\d)\s*$")
 num = lambda s: float(s.replace(",", ""))  # noqa: E731
@@ -61,11 +62,12 @@ def derive() -> dict:
     blocks, block_m2 = s(r"Sandcrete Blocks", "no"), 144 + 616 + 584 + 60
     mortar_cement, mortar_sand = s(r"Cement.*(Mortar|Blockwork)", "bag"), s(r"Stone Dust / Sand|Sand for Blockwork", "ton", sub="BLOCKWORK|PARAPET|COLUMNS & BLOCKWORK")
     plaster_m2 = s(r"Wall Plastering", "m")
-    evidence = {"cement_bags_per_m3_by_element": cement_per_m3, "cement_bags_per_m3_all": typical, "sand_t_per_bag": round(sand_per_bag, 3), "granite_t_per_bag": round(granite_per_bag, 3),
+    evidence = {"mix_124_used": MIX_124, "bill_sand_t_per_m3": round(typical * sand_per_bag, 2), "bill_granite_t_per_m3": round(typical * granite_per_bag, 2), "cement_bags_per_m3_by_element": cement_per_m3, "cement_bags_per_m3_all": typical, "sand_t_per_bag": round(sand_per_bag, 3), "granite_t_per_bag": round(granite_per_bag, 3),
                 "kg_steel_per_12m_length": round(bending_kg / lengths, 2), "binding_wire_rolls_per_t_steel": round(s(r"Binding Wire", "roll") / bending_kg * 1000, 2),
                 "planks_per_m2_formwork": round(planks / form_m2, 3), "blocks_per_m2_wall": round(blocks / block_m2, 2), "plaster_m2": plaster_m2}
     r = {
-        "concrete": {"cement_bag": typical, "sand_t": round(typical * sand_per_bag, 3), "granite_t": round(typical * granite_per_bag, 3)},
+        # 1:2:4 per the nigeriabuildingcost concrete mix calculator (5% waste, dry-volume factor 1.54): the author chose it over the bill's own sand and granite, which are well above a mix
+        "concrete": {"cement_bag": MIX_124["cement_bag"], "sand_t": MIX_124["sand_t"], "granite_t": MIX_124["granite_t"]},
         "blinding_per_m3": {"cement_bag": round(s(r"^Cement", "bag", r"^BLINDING") / 21, 3), "sand_t": round(s(r"Sand|Stone Dust", "ton", r"^BLINDING") / 21, 3)},  # 21 m3 of grade 15 blinding in the Cubana bill
         "steel_per_t": {"rebar_length": round(1000 / (bending_kg / lengths), 1), "binding_wire_roll": evidence["binding_wire_rolls_per_t_steel"]},
         "formwork_per_m2": {"plank_1x12": round(planks / form_m2, 2), "nails_bag": round(s(r"^Nail", "bag", nsub="EARTHWORK SUPPORT") / form_m2, 4)},
@@ -99,9 +101,10 @@ def derive() -> dict:
               "ceiling_per_m2": ("Ceiling work", "m2", rate(r"Labour – Ceiling", "m")), "painting_per_m2": ("Painting", "m2", rate(r"Labour – Painting", "m")),
               "screeding_for_paint_per_m2": ("Screeding for paint", "m2", rate(r"Wall Screeding for Paint", "m")), "carcassing_per_m": ("Roof carcassing", "m", rate(r"Carcassing", "m")),
               "roof_covering_per_m2": ("Fixing roof covering", "m2", rate(r"Labour – Roof Covering", "m")), "earthwork_support_per_m2": ("Fixing earthwork support", "m2", rate(r"Labour for fixing Earthwork", "m"))}
-    return {"_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so the ratios are that contractor's practice, not a range: "
-                     "show them as such. The sand figure (about 1.76 t per m3 of concrete) is more than a 1:2:4 mix needs (about 0.7 t, and 0.74 t in the nigeriabuildingcost concrete calculator). The sand bulk density of 1.6 t/m3 is confirmed by the nigeriabuildingcost sand calculator; "
-                     "1 m3 of sand plus 10% waste at that density is 1.76 t, which equals the average here, so the bill may use a rule of about 1 m3 of sand per m3 of concrete. Awaiting the author's confirmation.",
+    return {"_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so most ratios are that contractor's practice, not a range. "
+                     "Concrete is the exception: it uses the 1:2:4 mix quantities of the nigeriabuildingcost concrete calculator (7 bags of cement, 0.74 t of sand, 1.39 t of granite per m3, 5% waste), because the bill's sand (1.76 t per m3, about 1 m3 of "
+                     "sand plus 10% waste at 1.6 t/m3) and granite (1.61 t) are well above a mix; the bill's own figures are kept under evidence. Sand bulk density 1.6 t/m3 is confirmed by that site's sand calculator. "
+                     "Casting labour is the bill's 2,500 a bag (17,500 a m3 at 7 bags); the calculator's placing labour is 22,000 a m3.",
             "sources": {"simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)", "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"},
             "materials": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in materials.items()}, "labour": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in labour.items()},
             "ratios": r, "evidence": evidence}

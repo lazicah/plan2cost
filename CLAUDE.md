@@ -100,7 +100,7 @@ roof, stairs, external walls, internal walls, windows, doors: bills 3 to 10), IN
 with a subtotal per bill and a summary in Excel, PDF and the console. Electrical lines are all estimated from floor area (two bills, so a spread; fans, TV and external lights come from one bill and have none).
 The bill of materials and labour (takeoff/materials.py, ml_bill.py) turns each BoQ line into cement bags, sand and granite tonnes, 12 m bar lengths, planks, blocks, tiles, felt and the labour,
 like the author's SIMPLIFIED BOQ. Recipes are data/materials_labour.json from `python -m eval.derive_materials`, which pairs SIMPLIFIED BOQ.pdf (materials) with the Cubana bill (measured
-quantities) for the same Asaba duplex: cement 6.55 bags per m3 (5.9 to 7.2 across elements; foundation, bases and ground slab all 6.2), sand 1.76 t and granite 1.61 t per m3, 12 m bars 13.5 kg each,
+quantities) for the same Asaba duplex: concrete is the 1:2:4 mix of the nigeriabuildingcost calculator (7 bags of cement, 0.74 t of sand, 1.39 t of granite per m3, 5% waste; the bill itself gives 6.2 to 7.2 bags, 1.76 t of sand and 1.61 t of granite, kept as evidence), 12 m bars 13.5 kg each,
 0.88 planks and 1/75 bag of nails per m2 of formwork, 9.5 blocks and 0.15 bag of cement per m2 of wall, labour from the simplified bill (casting 2,500 a bag, bending 100 a kg, block laying 45, 200 in the
-foundation, plastering 3,500 a m2). One building, so these are that contractor's practice, not a range. The sand quantity is about 2.4 times what a 1:2:4 mix needs: it is how that bill is priced, worth confirming.
+foundation, plastering 3,500 a m2). One building, so apart from concrete these are that contractor's practice, not a range.
 Lines with no recipe (windows, doors, fittings, excavation, electrical) are carried at their BoQ rate.
