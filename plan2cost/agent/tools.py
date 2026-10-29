@@ -290,6 +290,17 @@ def read_strip_layout(run: Run) -> dict:
             "not_measured": f"{len(layout.floating_base_types)} base(s) off the grid (types {layout.floating_base_types}) and the strips serving them" if layout.floating_base_types else None}
 
 
+def find_besmm_item(run: Run, query: str) -> dict:
+    """Find BESMM4 items (code, wording, unit) in the master bill. Use it to choose the items that apply to this project and to word them;
+    not everything in the bill is measured for every project, and conditional items should be confirmed with the user."""
+    from plan2cost.besmm_items import find, path
+
+    if not path():
+        return {"error": "The BESMM4 master bill is not available here (set P2C_BESMM_XLSX). Say in the basis that the item was not checked."}
+    hits = find(query)
+    return {"query": query, "items": hits} if hits else {"query": query, "items": [], "note": "No item carries all the words; try fewer or different words."}
+
+
 def lookup_besmm(run: Run, query: str) -> dict:
     """Find what the BESMM4 rule book says about something to be measured (unit, what is included or deducted, what the item description must
     state). Returns page numbers and excerpts for you to read; say which page your rule comes from when you record a fact based on it."""
@@ -394,6 +405,7 @@ TOOLS = {
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
     "read_foundation_section": (read_foundation_section, "no args: foundation cross-section (footing, blinding, slab, filling, overall depth) from the structural drawing, when one is given"),
+    "find_besmm_item": (find_besmm_item, "query: words from the item wanted, e.g. 'sides of foundations'; returns BESMM4 codes, wording and units"),
     "lookup_besmm": (lookup_besmm, "query: what to look up in the BESMM4 book, e.g. 'remove topsoil'; returns pages and excerpts"),
     "read_strip_layout": (read_strip_layout, "no args: strip footing girth from the structural foundation layout; call after read_pad_bases, before compute_foundation"),
     "read_pad_bases": (read_pad_bases, "no args: column base types (size, thickness, number) from the structural drawing, when one is given"),

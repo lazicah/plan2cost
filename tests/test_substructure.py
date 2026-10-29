@@ -1,6 +1,6 @@
 from plan2cost.tools.foundation import PadBase
 from plan2cost.tools.substructure import (FoundationColumn, blinding_foundations_m3, columns_in_foundation, disposal_and_backfill,
-                                          formwork_foundation_sides_m2, levelling_compaction_m2, topsoil_strip_m2, void_filling_m3)
+                                          formwork_foundation_sides_m, formwork_foundation_sides_m2, levelling_compaction_m2, topsoil_strip_m2, void_filling_m3)
 
 # The author's plan2 sheet: base thicknesses 0.25, 0.25, 0.25, 0.4 (type 4) and 0.45 (type 5) as he used them.
 PADS = [PadBase("1", 1.2, 1.2, 4, 0.25), PadBase("2", 1.4, 1.4, 5, 0.25), PadBase("3", 1.5, 1.5, 5, 0.25), PadBase("4", 1.6, 1.6, 4, 0.4),
@@ -33,3 +33,7 @@ def test_void_filling_scales_with_block_thickness():
     assert void_filling_m3(89, 225) == 10.26
     assert void_filling_m3(100, 150) == 7.69
     assert void_filling_m3(100, 100) == 5.12
+
+
+def test_base_formwork_in_metres_is_the_perimeter_of_the_bases():
+    assert formwork_foundation_sides_m(PADS) == 110  # 4x4.8 + 5x5.6 + 5x6.0 + 4x6.4 + 6.8 = 109.6

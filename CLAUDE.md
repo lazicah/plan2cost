@@ -49,6 +49,12 @@ Bonus prizes to aim for: Best Build on Open Weights (Muse Spark Open / Glimmer),
 - Trench width is three times the block thickness unless the drawing prints it; with no foundation layout the ground floor plan stands in.
 - Score girth against totals only (the author's sheets merge identical runs).
 
+## BESMM4 (rule source)
+- `reference/rules/BESMM4 PDF.pdf` (the book) and `Detailed BOQ Description BESMM4.xlsx` (master bill: every measurable item with code, wording, unit). Both are the NIQS's text: kept in `reference/`, never committed.
+- Agent tools `lookup_besmm` (rule pages) and `find_besmm_item` (codes). `data/besmm_codes.json` maps our BoQ keys to codes; `data/besmm_check.json` records the rule check per line. Lines with no code are the author's own (working space, anti-termite, levelling); keep them optional and ask.
+- Not every item applies to every project: pick the relevant ones, and ask the user about conditional ones (earthwork support only when specified).
+- The author's sheet constants can be one-off choices (the 0.95 on topsoil); check the book and ask before treating a sheet value as a rule.
+
 ## Status (Oct 28 night)
 Works: page classification and schedule/level/notes reading (both models); wall area and foundation maths reproduce the author's sheets; plan-symbol openings about 86 percent; agent loop, console, Spark Open.
 Not working: wall girth from a plan (model reading about 20 percent off; image detector finds about 74 percent of plan2 wall length), so no trustworthy end-to-end estimate yet. Not built: roof, finishes, services, preliminaries, additions in the BoQ; quote audit; stage photos.

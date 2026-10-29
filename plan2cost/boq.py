@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
-from plan2cost.tools.substructure import (blinding_foundations_m3, disposal_and_backfill, formwork_foundation_sides_m2, levelling_compaction_m2,
+from plan2cost.tools.substructure import (blinding_foundations_m3, disposal_and_backfill, formwork_foundation_sides_m, levelling_compaction_m2,
                                           topsoil_strip_m2, void_filling_m3)
 from plan2cost.tools.walls import Opening, blockwork_area_m2
 from plan2cost.tools.foundation import PadBase, StripSection, ground_bed_takeoff, pad_concrete_m3, pad_rebar_kg, whole_units
@@ -26,6 +26,7 @@ class BoqItem:
     qty: float
     rate: float | None = None
     amount: float | None = None
+    besmm: str = ""  # BESMM4 item code; empty for the author's own lines that the book does not carry
 
 
 def load_defaults(path: str = "data/defaults.json") -> dict:
@@ -122,7 +123,7 @@ def substructure_extras(t: dict, s: StripSection, pads: list[PadBase], trench_gi
         ("excavated_surface_treatment_m2", "Anti-termite treatment applied to excavated surfaces", "m2", int(math.ceil(t["earthwork_support_m2"]))),
         ("levelling_compaction_m2", "Level and compact the bottom of excavations", "m2", levelling_compaction_m2(trench_girth_m, width, pads)),
         ("blinding_foundations_m3", "Plain in situ concrete (1:3:6); blinding 50mm thick under strip footings and 100mm under column bases; poured against earth", "m3", blind),
-        ("formwork_foundation_sides_m2", "Formwork to sides of column bases; plain vertical; height 250-500mm", "m2", formwork_foundation_sides_m2(pads)),
+        ("formwork_foundation_sides_m", f"Formwork to sides of column bases; plain; {max((int(p.thickness_m * 1000) for p in pads), default=250)}mm wide", "m", formwork_foundation_sides_m(pads)),
         ("disposal_off_site_m3", "Excavated material; off site; transported away from excavation and deposited in spoil heaps", "m3", db["disposal_off_site_m3"]),
         ("backfill_around_foundations_m3", "Filling to excavations; selected excavated material; compacted around foundations", "m3", db["backfill_around_foundations_m3"]),
         ("concrete_filling_blockwork_voids_m3", "Plain in situ concrete, grade 15; mass concrete filling the voids in sandcrete blockwork", "m3", void_filling_m3(fdn_block, s.block_mm)),
@@ -134,7 +135,9 @@ def substructure_extras(t: dict, s: StripSection, pads: list[PadBase], trench_gi
 def price_boq(items: list[BoqItem], rates: dict) -> dict:
     """Price with user-supplied rates. A missing or zero rate leaves the line unpriced; it is never guessed."""
     unpriced = []
+    codes = json.loads(Path("data/besmm_codes.json").read_text())["codes"]
     for i in items:
+        i.besmm = codes.get(i.key, "")
         r = rates["rates"].get(i.key)
         if r:
             i.rate, i.amount = r, round(i.qty * r, 2)

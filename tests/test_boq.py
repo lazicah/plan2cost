@@ -59,6 +59,6 @@ def test_substructure_extras_follow_the_authors_sheet():
     got = {i.key: i.qty for i in substructure_extras(t, s, pads, 70, 19.1, 10.5, {"column_base_concrete_m3": 12, "column_concrete_m3": 2.61})}
     # the author's 226 came from a manual 0.95 he chose at the time, not a rule, so it is not reproduced; the 400/450mm bases are the sheet before the author corrected them to 250
     assert got["topsoil_strip_m2"] == 238 and got["excavated_surface_treatment_m2"] == 300 and got["levelling_compaction_m2"] == 89
-    assert got["blinding_foundations_m3"] == 7 and got["formwork_foundation_sides_m2"] == 33
+    assert got["blinding_foundations_m3"] == 7 and got["formwork_foundation_sides_m"] == 110  # metres of base sides (BESMM4 1.11.6.13.1)
     assert got["topsoil_disposal_m3"] == 36  # 238 m2 x 0.15m, whole units
     assert (got["disposal_off_site_m3"], got["backfill_around_foundations_m3"]) == (53, 53)

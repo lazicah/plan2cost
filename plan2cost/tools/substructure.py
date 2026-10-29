@@ -46,6 +46,12 @@ def formwork_foundation_sides_m2(pads: list[PadBase]) -> int:
     return whole_units(sum(2 * (p.length_m + p.width_m) * p.thickness_m * p.count for p in pads))
 
 
+def formwork_foundation_sides_m(pads: list[PadBase]) -> int:
+    """BESMM4 1.11.6.13.1: sides of foundations and bases up to 500mm high are measured in metres, width (height of the side) stated.
+    Column bases only; the strip footing is cast against the trench sides."""
+    return whole_units(sum(2 * (p.length_m + p.width_m) * p.count for p in pads))
+
+
 def disposal_and_backfill(excavation_m3: float, blockwork_girth_m: float, blockwork_height_m: float, block_mm: int, blinding_m3: float,
                           footing_m3: float, bases_m3: float, columns_m3: float) -> dict:
     """Disposal is what the permanent works below ground displace; backfill is the excavation less that disposal."""

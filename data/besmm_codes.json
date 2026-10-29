@@ -1,0 +1,33 @@
+{
+ "_note": "BESMM4 item code for each of our BoQ keys (codes from the NIQS master bill). Keys not listed are not BESMM4 items: working_space_m3, excavated_surface_treatment_m2 (anti-termite), levelling_compaction_m2 are the author's own lines.",
+ "codes": {
+  "topsoil_strip_m2": "1.5.1.5.2",
+  "topsoil_disposal_m3": "1.5.3.9.2",
+  "trench_excavation_strip_m3": "1.5.2.6.2",
+  "pit_excavation_column_bases_m3": "1.5.2.6.2",
+  "earthwork_support_m2": "1.5.2.8.1",
+  "disposal_off_site_m3": "1.5.3.9.2",
+  "backfill_around_foundations_m3": "1.5.4.11.2",
+  "hardcore_m3": "1.5.4.12.2",
+  "laterite_m3": "1.5.4.12.2",
+  "dpm_polythene_m2": "1.5.5.16.5",
+  "strip_footing_concrete_m3": "1.11.2.2.2",
+  "blinding_foundations_m3": "1.11.2.2.1",
+  "column_base_concrete_m3": "1.11.2.2.2",
+  "ground_slab_m3": "1.11.2.2.2",
+  "concrete_filling_blockwork_voids_m3": "1.11.1.1.1",
+  "formwork_foundation_sides_m": "1.11.6.13.1",
+  "formwork_column_sides_m2": "1.11.6.20.1",
+  "formwork_slab_edges_m": "1.11.6.14.1",
+  "brc_mesh_ground_slab_m2": "1.11.8.1.37.2",
+  "ext_blockwork_230_m2": "1.14.1.2.1.3",
+  "int_blockwork_230_m2": "1.14.1.2.1.3",
+  "fdn_blockwork_230_m2": "1.14.1.2.1.3",
+  "external_wall_render_m2": "1.28.1.7.2",
+  "fdn_wall_render_m2": "1.28.1.7.2",
+  "external_wall_paint_m2": "1.29.1.1.2",
+  "rebar_y12_foundations_t": "1.11.8.1.34.1",
+  "blinding_on_hardcore_m3": "1.11.2.2.1",
+  "brc_mesh_part1_m2": "1.11.8.1.37.2"
+ }
+}

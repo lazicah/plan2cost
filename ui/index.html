@@ -90,10 +90,10 @@ function render(run) {
       <span class="pill ${f.confidence === 'high' ? 'proven' : f.confidence === 'medium' ? 'assumed' : 'escalated'}">${esc(f.confidence || '')}</span></td>
       <td class="small mute">${f.page ? 'p.' + esc(f.page) + ' ' : ''}${esc(f.verified || f.basis || '')}</td></tr>`).join('');
   const boq = run.boq ? `<section class="card"><h2>Bill of quantities</h2><table>
-      <tr><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>
-      ${run.boq.items.map(i => `<tr><td>${esc(i.description)}</td><td>${esc(i.unit)}</td><td class="n">${money(i.qty)}</td>
+      <tr><th>BESMM4</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Amount</th></tr>
+      ${run.boq.items.map(i => `<tr><td class="small mute">${esc(i.besmm || "own line")}</td><td>${esc(i.description)}</td><td>${esc(i.unit)}</td><td class="n">${money(i.qty)}</td>
         <td class="n">${i.rate ? money(i.rate) : '<span class="assumed">no rate</span>'}</td><td class="n">${i.amount ? money(i.amount) : ''}</td></tr>`).join('')}
-      <tr><td colspan="4"><b>Total (priced lines)</b></td><td class="n"><b>${money(run.boq.total)} ${esc(run.boq.currency)}</b></td></tr></table>
+      <tr><td colspan="5"><b>Total (priced lines)</b></td><td class="n"><b>${money(run.boq.total)} ${esc(run.boq.currency)}</b></td></tr></table>
       ${run.boq.unpriced?.length ? `<p class="small assumed">Unpriced, add a rate to include: ${run.boq.unpriced.map(esc).join(', ')}</p>` : ''}
       ${run.assumptions.length ? `<p class="small mute">Assumptions: ${run.assumptions.map(a => esc(a.name) + ' = ' + esc(a.value) + ' (' + esc(a.basis) + ')').join('; ')}</p>` : ''}</section>` : '';
   $('#main').innerHTML = `<section class="card row"><span class="pill ${run.status}">${esc(run.status.replace('_', ' '))}</span>

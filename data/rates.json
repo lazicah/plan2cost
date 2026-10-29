@@ -22,6 +22,7 @@
     "formwork_foundation_sides_m2": 5000,
     "backfill_around_foundations_m3": 3200,
     "concrete_filling_blockwork_voids_m3": 95250,
-    "fdn_wall_render_m2": 4580
+    "fdn_wall_render_m2": 4580,
+    "formwork_foundation_sides_m": 1250
   }
 }
