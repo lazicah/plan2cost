@@ -32,13 +32,13 @@ def compute_boq(run: Run) -> dict:
     bad = [f.name for f in floors if f.ext_m <= 0 or f.int_m < 0]
     if bad:
         return {"error": f"Implausible walls on {bad}. Re-read the plan or ask the user for a clearer one."}
-    rates = load_rates(inputs.get("rate_set"))
+    rates = load_rates()
     items, assumptions, working = estimate(floors, inputs, rates["rates"])
     for a in assumptions:
         if not any(x["name"] == a["name"] for x in run.assumptions):
             run.assumptions.append(a)
     priced = price_boq(items, rates)
-    run.data["boq"] = {"items": [i.__dict__ for i in items], **priced, "working": working, "inputs": inputs, "rates": {k: rates[k] for k in ("set", "label", "borrowed")}, "structure": structure()}
+    run.data["boq"] = {"items": [i.__dict__ for i in items], **priced, "working": working, "inputs": inputs, "rates": {"label": rates["label"]}, "structure": structure()}
     run.data["materials"] = bill_of_materials(run.data["boq"]["items"])
     for name, v, u in (("storey_height_m", inputs["storey_height_m"], "m"), ("roof_type", inputs["roof_type"], "")):
         add_fact(run, name, v, u, "user", "entered by the user")

@@ -23,13 +23,14 @@ def test_boq_items_and_pricing_never_invent_rates():
 
 
 
-def test_foundation_extras_priced_and_a_rate_one_set_lacks_is_borrowed_from_the_other():
+def test_foundation_extras_are_all_priced_and_a_rate_in_both_bills_takes_the_higher():
     from plan2cost.takeoff.boq import foundation_extras
 
     items = foundation_extras([PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B",))], 20, slab_area_m2=200.55, fill_area_m2=184)
-    rates = load_rates("owerri")
+    rates = load_rates()
     out = price_boq(items, rates)
-    assert out["unpriced"] == [] and "laterite_m3" in rates["borrowed"]  # the Owerri bill has no laterite rate; the Asaba bill does
+    assert out["unpriced"] == [] and rates["source"]["laterite_m3"] == "Asaba only"  # only the Asaba bill has a laterite rate
+    assert rates["rates"]["frame_steel_t"] == 1699135 and rates["source"]["frame_steel_t"].startswith("both")  # Owerri 1,699,135 against Asaba 1,319,880
     assert {i.key for i in items} >= {"column_base_concrete_m3", "rebar_y12_foundations_t", "ground_slab_m3"}
 
 

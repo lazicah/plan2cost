@@ -159,17 +159,7 @@ def price_boq(items: list[BoqItem], rates: dict) -> dict:
             "estimated_share": round(sum(i.amount or 0 for i in items if i.basis == "estimated") / max(sum(i.amount or 0 for i in items), 1), 2)}
 
 
-def load_rates(set_name: str | None = None, path: str = "data/rates.json") -> dict:
-    """The rate table of one set (default: the file's default), with any line it has no rate for taken from another set and listed in `borrowed`, so the console can say so."""
+def load_rates(path: str = "data/rates.json") -> dict:
+    """The one rate table (the higher of the Owerri and Asaba rates where both bills have one), and where each rate came from."""
     d = json.loads(Path(path).read_text())
-    name = set_name if set_name in d["sets"] else d["default_set"]
-    mine = dict(d["sets"][name]["rates"])
-    borrowed = []
-    for other, s in d["sets"].items():
-        if other == name:
-            continue
-        for k, v in s["rates"].items():
-            if k not in mine:
-                mine[k] = v
-                borrowed.append(k)
-    return {"currency": d["currency"], "rates": mine, "set": name, "label": d["sets"][name]["label"], "borrowed": sorted(borrowed), "sets": {k: v["label"] for k, v in d["sets"].items()}}
+    return {"currency": d["currency"], "rates": dict(d["rates"]), "source": d.get("source", {}), "label": "the higher of the Owerri and Asaba rates"}

@@ -21,7 +21,7 @@ def audit_quote(run: Run) -> dict:
     for i in run.data["boq"]["items"]:  # one BoQ key can carry several lines (an opening type on both sides of the wall): the quote prices the total
         it = items.setdefault(i["key"], {"description": i["description"], "unit": i["unit"], "qty": 0})
         it["qty"] = round(it["qty"] + i["qty"], 3)
-    rates = dict(load_rates(run.inputs.get("rate_set"))["rates"])
+    rates = dict(load_rates()["rates"])
     rates.update({i["key"]: i["rate"] for i in run.data["boq"]["items"] if i.get("rate")})
     q = read_quote(run.quote, str(run.dir / "scratch"))
     if not q["lines"]:
@@ -35,7 +35,7 @@ def audit_quote(run: Run) -> dict:
 
 
 def _rates(run: Run) -> dict:
-    rates = dict(load_rates(run.inputs.get("rate_set"))["rates"])
+    rates = dict(load_rates()["rates"])
     rates.update({i["key"]: i["rate"] for i in run.data["boq"]["items"] if i.get("rate")})
     return rates
 

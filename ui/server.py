@@ -109,8 +109,6 @@ class Handler(BaseHTTPRequestHandler):
             for f in floors:
                 page = f":{int(f['page'])}" if f.get("page") and str(f["file"]).lower().endswith(".pdf") and int(f["page"]) > 1 else ""
                 cmd += ["--floor", f"{f['name']}={existing_file(f['file'])}{page}"]
-            if body.get("rate_set"):
-                cmd += ["--rates", str(body["rate_set"])]
             for flag, key in (("--pitch", "pitch_deg"), ("--overhang", "overhang_m")):
                 if body.get(key) not in (None, ""):
                     cmd += [flag, str(float(body[key]))]

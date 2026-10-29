@@ -2,7 +2,7 @@ from plan2cost.takeoff.boq import load_rates, price_boq
 from plan2cost.takeoff.rough import FloorData, estimate
 from plan2cost.takeoff.walls import Opening
 
-RATES = load_rates("owerri")
+RATES = load_rates()
 OPS = [Opening("W1200", 1.2, 1.2, 12, "window", True, True), Opening("D900", 0.9, 2.1, 10, "door", False, True), Opening("D1200", 1.2, 2.1, 1, "door", True, True)]
 
 
@@ -62,7 +62,7 @@ def test_a_single_storey_building_gets_a_ring_beam_and_no_slab_or_stairs():
 def test_wet_rooms_set_the_sanitary_fittings_and_openings_are_priced_from_their_size():
     by, _, _, _ = run_estimate([ground(), first()])
     assert by["sanitary_wc_nr"].qty == 4 and by["sanitary_sink_nr"].qty == 1
-    assert by["opening_w1200_nr"].rate == 69000 and by["opening_d1200_nr"].rate == 80000 and by["opening_d900_nr"].rate == 38000
+    assert by["opening_w1200_nr"].rate == 69000 and by["opening_d1200_nr"].rate == 80000 and by["opening_d900_nr"].rate == 125000  # internal door: the Asaba rate is the higher
 
 
 def test_no_column_base_lines_appear_when_the_plans_cannot_show_column_bases():

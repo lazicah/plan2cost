@@ -84,7 +84,7 @@ const money = n => n == null ? '' : Number(n).toLocaleString(undefined, {maximum
 const NAMES = ['ground', 'first', 'second', 'third', 'fourth'];
 let current = null, lastKey = '', mode = 'run';
 let formFloors = [{name: 'ground', file: null}];
-let formRoof = '', formQuote = null, formRate = 'owerri';
+let formRoof = '', formQuote = null;
 
 async function api(path, body) {
   const r = await fetch(path, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {});
@@ -116,9 +116,6 @@ function renderForm() {
     <div class="help"><b>Storey height</b> is the distance from the top of one floor to the top of the floor above it (floor to floor). It is <b>not</b> the ceiling height, which is lower by the thickness of the slab and the ceiling. If you are not sure, 3.0 m is typical for a house.</div>
     <label class="f">3. Roof type</label>
     <div class="roofs">${ROOFS.map(([k, name, text]) => `<label class="roofcard ${formRoof === k ? 'on' : ''}"><input type="radio" name="roof" value="${k}" ${formRoof === k ? 'checked' : ''}>${ROOF_SVG[k]}<b>${name}</b><span>${text}</span></label>`).join('')}</div>
-    <label class="f">4. Rates</label>
-    <select id="rateset"><option value="owerri" ${formRate === 'owerri' ? 'selected' : ''}>Owerri, 27 Oct 2026 (your duplex bill)</option><option value="asaba" ${formRate === 'asaba' ? 'selected' : ''}>Asaba, April 2026 (Cubana bill)</option></select>
-    <span class="small mute">Rates are yours to edit in data/rates.json. A line the chosen set has no rate for uses the other set's and is marked ✱.</span>
     <details style="margin-top:12px"><summary class="small mute">More (optional): roof pitch, overhang and a contractor quote to check</summary>
       <div class="row" style="margin-top:8px"><span class="small">Roof pitch</span><input id="pitch" type="number" min="5" max="60" style="width:90px" placeholder="auto"> <span class="small">degrees</span>
       <span class="small" style="margin-left:12px">Overhang</span><input id="overhang" type="number" step="0.05" min="0" max="2" style="width:90px" placeholder="auto"> <span class="small">m</span></div>
@@ -130,7 +127,6 @@ function renderForm() {
   document.querySelectorAll('.rm').forEach(el => el.onclick = e => { formFloors.splice(+e.target.dataset.i, 1); renderForm(); });
   const add = $('#addfloor'); if (add) add.onclick = () => { const used = formFloors.map(f => f.name); formFloors.push({name: NAMES.find(n => !used.includes(n)), file: null}); renderForm(); };
   document.querySelectorAll('input[name=roof]').forEach(el => el.onchange = e => { formRoof = e.target.value; document.querySelectorAll('.roofcard').forEach(c => c.classList.toggle('on', c.querySelector('input').checked)); });
-  $('#rateset').onchange = e => { formRate = e.target.value; };
   $('#quote').onchange = e => { formQuote = e.target.files[0] || null; renderForm(); };
   $('#go').onclick = start;
 }
@@ -144,7 +140,7 @@ async function start() {
   try {
     const floors = [];
     for (const f of formFloors) { const r = await upload(f.file); if (r.error) return msg(r.error); floors.push({name: f.name, file: r.path, page: f.page || 1}); }
-    const body = {floors, storey_height_m: height, roof_type: formRoof, pitch_deg: $('#pitch').value, overhang_m: $('#overhang').value, rate_set: $('#rateset').value};
+    const body = {floors, storey_height_m: height, roof_type: formRoof, pitch_deg: $('#pitch').value, overhang_m: $('#overhang').value};
     if (formQuote) { const r = await upload(formQuote); if (r.error) return msg(r.error); body.quote = r.path; }
     const r = await api('/api/start', body);
     if (r.error) return msg(r.error);
@@ -192,18 +188,17 @@ function render(run) {
   const checklist = run.checklist.map(c => `<tr><td>${esc(c.id)}</td><td>${esc(c.question)}</td><td><span class="pill ${c.status}">${esc(c.status)}</span></td></tr>`).join('');
   const facts = run.facts.map(f => `<tr><td>${esc(f.name)}</td><td class="n">${esc(f.value)} ${esc(f.unit)}</td><td><span class="pill ${f.source === 'assumed' ? 'assumed' : f.source === 'user' ? 'proven' : 'open'}">${esc(f.source)}</span></td><td class="small mute">${esc(f.basis || '')}</td></tr>`).join('');
   const gallery = run.thumbs.length ? `<section class="card"><h2>The floor plans</h2><div class="thumbs">${run.thumbs.map((f, i) => `<a class="thumb ${run.floors[i] && run.floors[i].name === nowFloor ? 'active' : ''}" href="/api/runs/${run.id}/pages/${f}" target="_blank"><img src="/api/runs/${run.id}/pages/${f}" alt="floor ${i + 1}">${esc(run.floors[i] ? run.floors[i].name : '')}</a>`).join('')}</div></section>` : '';
-  const borrowed = new Set((run.boq?.rates?.borrowed) || []);
   const bills = (B) => { const S = B.structure, out = []; let g = '';
     for (const n of [...new Set(B.items.map(i => i.bill))].sort((a, b) => a - b)) { const grp = (S.groups.find(x => x[1].includes(n)) || ['OTHER'])[0];
       out.push({n, name: S.bills[n] || 'Other items', group: grp, first: grp !== g, items: B.items.filter(i => i.bill === n)}); g = grp; } return out; };
   const boq = run.boq ? (() => { const B = run.boq, parts = bills(B); const sub = items => items.reduce((a, i) => a + (i.amount || 0), 0);
     return `<section class="card"><h2>Bill of quantities (budget estimate)</h2>
       <div class="row"><span class="big">${money(B.total)} ${esc(B.currency)}</span><span class="mute">range ${money(B.total_low)} to ${money(B.total_high)}</span><span class="small">${Math.round(B.estimated_share * 100)}% of the cost is estimated from coefficients</span></div>
-      <div class="small mute" style="margin-top:4px">Rates: ${esc(B.rates?.label || '')}. ${borrowed.size ? `<span class="assumed">✱ ${[...borrowed].filter(k => B.items.some(i => i.key === k)).length} lines use a rate from the other rate set.</span>` : ''}</div>
+      <div class="small mute" style="margin-top:4px">Rates: ${esc(B.rates?.label || '')}. Edit them in data/rates.json.</div>
       <table style="margin-top:10px"><tr><th>BESMM4</th><th>Description</th><th>Basis</th><th>Unit</th><th class="n">Qty</th><th class="n">Range</th><th class="n">Rate</th><th class="n">Amount</th></tr>
       ${parts.map(b => `${b.first ? `<tr><td colspan="8" style="background:var(--chip)"><b>${esc(b.group)}</b></td></tr>` : ''}<tr><td colspan="8"><b>BILL No. ${String(b.n).padStart(2, '0')} — ${esc(b.name.toUpperCase())}</b></td></tr>
         ${b.items.map(i => `<tr><td class="small mute">${esc(i.besmm || '')}</td><td>${esc(i.description)}</td><td><span class="tag ${esc(i.basis)}">${esc(i.basis)}</span></td><td>${esc(i.unit)}</td><td class="n">${money(i.qty)}</td>
-          <td class="n small mute">${i.basis === 'estimated' ? money(i.qty_low) + ' to ' + money(i.qty_high) : ''}</td><td class="n">${i.rate ? money(i.rate) + (borrowed.has(i.key) ? ' <span class="assumed" title="rate from the other rate set">✱</span>' : '') : '<span class="assumed">no rate</span>'}</td><td class="n">${i.amount ? money(i.amount) : ''}</td></tr>`).join('')}
+          <td class="n small mute">${i.basis === 'estimated' ? money(i.qty_low) + ' to ' + money(i.qty_high) : ''}</td><td class="n">${i.rate ? money(i.rate) : '<span class="assumed">no rate</span>'}</td><td class="n">${i.amount ? money(i.amount) : ''}</td></tr>`).join('')}
         <tr style="background:var(--chip)"><td colspan="7" class="small">Bill No. ${String(b.n).padStart(2, '0')} — ${esc(b.name)} carried to summary</td><td class="n"><b>${money(sub(b.items))}</b></td></tr>`).join('')}
       <tr><td colspan="7"><b>Total (priced lines)</b></td><td class="n"><b>${money(B.total)}</b></td></tr></table>
       ${B.coverage ? `<p class="small"><b>Coverage.</b> ${esc(B.coverage.statement)}</p>` : ''}
@@ -250,7 +245,7 @@ async function tick() {
   if (key !== lastKey) { if (document.activeElement?.id !== 'ans') render(run); lastKey = key; }
 }
 $('#runs').onchange = e => { current = e.target.value; mode = 'run'; lastKey = ''; tick(); };
-$('#newbtn').onclick = () => { mode = 'form'; formFloors = [{name: 'ground', file: null}]; formRoof = ''; formQuote = null; formRate = 'owerri'; renderForm(); };
+$('#newbtn').onclick = () => { mode = 'form'; formFloors = [{name: 'ground', file: null}]; formRoof = ''; formQuote = null; renderForm(); };
 async function showLog() { if ($('#logbox').open) $('#log').textContent = (await api('/api/log')).tail || '(empty)'; }
 tick(); setInterval(tick, 2000); setInterval(showLog, 3000);
 </script>
