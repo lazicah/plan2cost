@@ -1,0 +1,159 @@
+{
+ "_note": "BESMM4 check of the substructure lines (Oct 29). status: checked = our unit and method follow the rule book; differs = the author's sheet does something the book does not; conditional = only when specified; ask = the book text is ambiguous or silent, ask the author. 'pdf pN' is the page of reference/rules/BESMM4 PDF.pdf (book page = pdf page minus 15).",
+ "items": [
+  {
+   "key": "topsoil_strip_m2",
+   "status": "checked",
+   "rule": "m2, depth stated (Excavating and filling, site preparation, item 2)",
+   "where": "pdf p135 / book p120",
+   "note": "Description said 'for preservation'; changed to plain removal with depth."
+  },
+  {
+   "key": "topsoil_disposal_m3",
+   "status": "checked",
+   "rule": "disposal of excavated material off site, m3 (item 9.2); retaining topsoil on site would be item 10.1",
+   "where": "pdf p140",
+   "note": "Area x 0.15 (author's sheet method)."
+  },
+  {
+   "key": "trench_excavation_strip_m3",
+   "status": "checked",
+   "rule": "foundation excavation, m3, maximum depth stated, commencing level stated (M12)",
+   "where": "pdf p136-137",
+   "note": "Quantities are bulk before excavating (M5)."
+  },
+  {
+   "key": "pit_excavation_column_bases_m3",
+   "status": "checked",
+   "rule": "same rule as trench (foundation excavation)",
+   "where": "pdf p137",
+   "note": ""
+  },
+  {
+   "key": "working_space_m3",
+   "status": "differs",
+   "rule": "M5: no allowance is made for working space or earthwork support; working space is only information to state (S3)",
+   "where": "pdf p132, p131",
+   "note": "Author's sheet measures it as an item. Keep as his convention, flagged, or move to the description."
+  },
+  {
+   "key": "earthwork_support_m2",
+   "status": "conditional",
+   "rule": "m2, maximum depth stated; measured only where the contract documents specify it or the administrator instructs (M18)",
+   "where": "pdf p139",
+   "note": "Include only when support is specified."
+  },
+  {
+   "key": "excavated_surface_treatment_m2",
+   "status": "ask",
+   "rule": "not found as a building-works item; BESMM4 M4 mentions levelling, grading, trimming and compacting of excavated surfaces",
+   "where": "pdf p131",
+   "note": "Anti-termite treatment and levelling are the author's items; ask how he wants them billed."
+  },
+  {
+   "key": "levelling_compaction_m2",
+   "status": "ask",
+   "rule": "M4 (levelling, trimming, compacting surfaces exposed by excavation) read as part of the excavation rules",
+   "where": "pdf p131",
+   "note": "Wording ambiguous; confirm with the author."
+  },
+  {
+   "key": "disposal_off_site_m3",
+   "status": "checked",
+   "rule": "excavated material off site, m3 (item 9.2)",
+   "where": "pdf p140",
+   "note": ""
+  },
+  {
+   "key": "backfill_around_foundations_m3",
+   "status": "checked",
+   "rule": "filling from excavated material: m2 with thickness if <=500mm, m3 if thicker; compaction included (C13)",
+   "where": "pdf p141",
+   "note": "Bulk quantity is the net void to be filled (M5)."
+  },
+  {
+   "key": "hardcore_m3",
+   "status": "checked",
+   "rule": "imported filling, beds over 50mm up to 500mm, m3, finished thickness stated",
+   "where": "pdf p142",
+   "note": ""
+  },
+  {
+   "key": "laterite_m3",
+   "status": "checked",
+   "rule": "filling, m3, thickness stated",
+   "where": "pdf p141-142",
+   "note": ""
+  },
+  {
+   "key": "dpm_polythene_m2",
+   "status": "checked",
+   "rule": "damp proof membrane, m2, over 500mm wide, thickness or gauge stated",
+   "where": "pdf p143",
+   "note": ""
+  },
+  {
+   "key": "strip_footing_concrete_m3",
+   "status": "checked",
+   "rule": "horizontal work includes foundations: plain, thickness class (<=300), state 'poured against earth' (C7, second division)",
+   "where": "pdf p163",
+   "note": "Mass concrete (item 1) is for trench filling; a 225 strip is horizontal work. Volume net (C6)."
+  },
+  {
+   "key": "blinding_foundations_m3",
+   "status": "checked",
+   "rule": "horizontal work, in blinding, m3",
+   "where": "pdf p163",
+   "note": ""
+  },
+  {
+   "key": "column_base_concrete_m3",
+   "status": "checked",
+   "rule": "horizontal work includes column bases; reinforced",
+   "where": "pdf p163",
+   "note": ""
+  },
+  {
+   "key": "concrete_filling_blockwork_voids_m3",
+   "status": "checked",
+   "rule": "mass concrete, in filling voids, m3",
+   "where": "pdf p162",
+   "note": ""
+  },
+  {
+   "key": "ground_slab_m3",
+   "status": "checked",
+   "rule": "horizontal work (beds, slabs), thickness class stated",
+   "where": "pdf p163",
+   "note": ""
+  },
+  {
+   "key": "formwork_foundation_sides_m2",
+   "status": "ask",
+   "rule": "sides of foundations and bases: up to 500mm high stated by width, the unit column reads m; over 500mm high m2",
+   "where": "pdf p166",
+   "note": "Table layout is ambiguous. The author's sheet bills m2 for bases and m for slab edges. Confirm."
+  },
+  {
+   "key": "formwork_column_sides_m2",
+   "status": "ask",
+   "rule": "sides of isolated columns: unit column ambiguous (nr stated / m2)",
+   "where": "pdf p167",
+   "note": "Confirm with the author."
+  },
+  {
+   "key": "rebar_column_bases_12mm_kg",
+   "status": "checked",
+   "rule": "reinforcement is measured in tonnes by nominal size, straight / bent / links",
+   "where": "pdf p170",
+   "note": "Bill in t, not kg."
+  },
+  {
+   "key": "brc_mesh_ground_slab_m2",
+   "status": "checked",
+   "rule": "mesh, m2, fabric reference, minimum laps stated; voids up to 1 m2 not deducted; laps included (M14, C23)",
+   "where": "pdf p171",
+   "note": ""
+  }
+ ]
+}

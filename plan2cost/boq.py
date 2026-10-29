@@ -117,7 +117,7 @@ def substructure_extras(t: dict, s: StripSection, pads: list[PadBase], trench_gi
                                t["strip_footing_concrete_m3"], extras.get("column_base_concrete_m3", 0), extras.get("column_concrete_m3", 0))
     fdn_block = t[f"fdn_blockwork_{s.block_mm}_m2"]
     rows = [
-        ("topsoil_strip_m2", "Excavate topsoil for preservation; average depth 150mm", "m2", top),
+        ("topsoil_strip_m2", "Remove topsoil; average depth 150mm", "m2", top),
         ("topsoil_disposal_m3", "Topsoil excavated as above; off site; transported away and deposited in spoil heaps", "m3", whole_units(top * s.topsoil_m)),
         ("excavated_surface_treatment_m2", "Anti-termite treatment applied to excavated surfaces", "m2", int(math.ceil(t["earthwork_support_m2"]))),
         ("levelling_compaction_m2", "Level and compact the bottom of excavations", "m2", levelling_compaction_m2(trench_girth_m, width, pads)),
