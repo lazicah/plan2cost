@@ -23,9 +23,7 @@ def external_finish_area(facade_m2: float, openings: list[Opening]) -> int:
     return whole(facade_m2 - sum(o.area_m2 for o in deductible([o for o in openings if o.external])))
 
 
-def lintels(openings: list[Opening], bearing_mm: float) -> list[tuple[str, float, int]]:
-    """Precast lintels over openings (BESMM4 1.13.2.2.2, number, dimensioned description): one per opening, as long as the opening plus a bearing at each end."""
-    return [(o.label, round(o.width_m + 2 * bearing_mm / 1000, 2), o.count) for o in openings]
+
 
 
 def lintel_items(openings: list[Opening], bearing_mm: float | None) -> tuple[list, list[str]]:

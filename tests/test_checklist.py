@@ -27,12 +27,3 @@ def test_the_building_type_decides_which_items_apply_and_the_source_of_a_quantit
     assert c["required"] == 1  # only the wiring item applies to a bungalow
     assert how_to_get(LIST["trades"][0]["items"][2]).startswith("derive")
     assert "ask the user" in how_to_get(LIST["trades"][1]["items"][1]) and how_to_get(LIST["trades"][0]["items"][0]) == "read from the plan+section"
-
-
-def test_a_checklist_that_forgets_trades_is_told_which_and_how_their_quantities_would_be_got():
-    from plan2cost.takeoff.checklist import trades_missing
-
-    out = trades_missing(["What are the foundation depths? strip footing section"], 2, LIST)
-    assert [m["trade"] for m in out] == ["electrical"] and out[0]["required_items"] == 2
-    assert any("electrical layout or plan" in f for f in out[0]["from"]) and any("ask the user" in f for f in out[0]["from"])
-    assert trades_missing(["foundation depths", "electrical points on the layout"], 2, LIST) == []

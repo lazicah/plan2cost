@@ -74,26 +74,3 @@ def statement(cov: dict) -> str:
     return s
 
 
-TRADE_WORDS = {"substructure": ("foundation", "substructure", "excavat", "footing", "hardcore"), "superstructure": ("wall", "block", "column", "beam", "lintel", "slab", "stair"),
-               "roofing_ceiling": ("roof", "ceiling", "rafter", "truss"), "finishes": ("finish", "plaster", "paint", "tile", "floor"), "doors_windows": ("door", "window", "opening"),
-               "electrical": ("electric", "socket", "light", "wiring"), "plumbing_drainage": ("plumb", "drain", "sanitary", "toilet", "septic", "water"),
-               "external_works": ("external works", "fence", "gate", "borehole", "generator")}
-
-
-def trades_missing(questions: list[str], floors_hint: int = 2, checklist: dict | None = None) -> list[dict]:
-    """The trades the agent's checklist does not mention at all, each with how its required items would be got (from a drawing, derived, or by asking).
-    A trade left out is not an error: the estimate then says it is not covered. This only makes sure it is a decision, not an oversight."""
-    checklist = checklist or load()
-    if not checklist:
-        return []
-    text = " ".join(questions).lower()
-    out = []
-    btype = building_type(floors_hint)
-    for t in checklist["trades"]:
-        words = TRADE_WORDS.get(t["id"])
-        if not words or any(w in text for w in words):
-            continue
-        req = [i for i in t["items"] if i["required"] and btype in i["applies_to"]]
-        if req:
-            out.append({"trade": t["id"], "required_items": len(req), "from": sorted({how_to_get(i) for i in req})})
-    return out

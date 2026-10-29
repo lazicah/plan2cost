@@ -53,30 +53,3 @@ def chains(tokens: list[DimToken], min_tokens: int = 4, tolerance_pts: float = 3
         if len(cur) >= min_tokens:
             out.append(cur)
     return out
-
-
-def outer_chain_tokens(tokens: list[DimToken], layers: int = 3) -> list[DimToken]:
-    """Tokens on the outermost `layers` chains on each side of the drawing (top, bottom, left, right): the chains that carry
-    the opening widths and wall pieces around the building (the author's '3-layer dimension lines')."""
-    found = chains(tokens)
-    keep: list[DimToken] = []
-    for vertical in (False, True):
-        cs = sorted((c for c in found if c[0].vertical == vertical), key=lambda c: c[0].across)
-        if not cs:
-            continue
-        mid = (cs[0][0].across + cs[-1][0].across) / 2
-        low = [c for c in cs if c[0].across <= mid][:layers]
-        high = [c for c in cs if c[0].across > mid][-layers:]
-        keep += [t for c in low + high for t in c]
-    return keep
-
-
-def bbox_perimeter_m(tokens: list[DimToken]) -> float | None:
-    """The perimeter of the plain rectangle implied by the largest horizontal and largest vertical printed dimensions on the sheet
-    (the overall dimensions, which often sit on short chains of their own). A building with recesses or terraces has more wall than
-    this, so a girth equal to it is suspect."""
-    horiz = [t.value for t in tokens if not t.vertical and t.value >= 3000]
-    vert = [t.value for t in tokens if t.vertical and t.value >= 3000]
-    if not horiz or not vert:
-        return None
-    return 2 * (max(horiz) + max(vert)) / 1000

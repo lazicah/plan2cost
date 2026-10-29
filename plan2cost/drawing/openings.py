@@ -210,10 +210,3 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
     return issues
 
 
-def counts_by_mark(model: DrawingModel) -> dict:
-    """{mark: {"external": n, "internal": n}} for the openings tied to a schedule type; what the BoQ deducts."""
-    out: dict = {}
-    for o in model.openings():
-        if o.mark:
-            out.setdefault(o.mark, {"external": 0, "internal": 0})[o.subtype] += 1
-    return out

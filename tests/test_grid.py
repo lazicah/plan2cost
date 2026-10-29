@@ -15,10 +15,3 @@ def test_scale_is_fitted_to_printed_chains_and_refused_when_nothing_matches():
     g = calibrate(grid(), [1800, 3600, 3000, 9600])
     assert round(g.mm_per_pt, 1) == 35.3 and "bays match" in g.scale_basis
     assert calibrate(grid(), [111, 222]).mm_per_pt is None
-
-
-def test_bays_snap_to_printed_dimensions_and_flag_the_rest():
-    from plan2cost.drawing.grid import snap_bays
-
-    out = snap_bays([("1", "2", 1487.2), ("2", "3", 2781.0), ("3", "4", 777.0)], [1488, 2775, 5000])
-    assert out == [("1", "2", 1488, "printed"), ("2", "3", 2775, "printed"), ("3", "4", 777, "scaled")]

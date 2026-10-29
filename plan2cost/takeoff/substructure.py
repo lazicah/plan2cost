@@ -2,7 +2,6 @@
 foundation, formwork, disposal and backfill, void filling and foundation wall finishes. Formulas follow the author's method (each one
 reproduces his plan2 sheet, see tests). Deterministic: inputs come from the drawings, never from the model's arithmetic."""
 import math
-from dataclasses import dataclass
 
 from plan2cost.takeoff.foundation import PadBase, whole_units
 
@@ -11,13 +10,6 @@ def roundup(x: float) -> int:
     return int(math.ceil(round(x, 6)))
 
 
-@dataclass
-class FoundationColumn:
-    """A column from its base to the ground floor level: section in metres and the number of columns of this size."""
-    width_m: float
-    depth_m: float
-    count: int
-    height_m: float = 1.5
 
 
 def topsoil_strip_m2(length_m: float, width_m: float, working_space_m: float = 0.6, factor: float = 1.0) -> int:
@@ -34,11 +26,6 @@ def levelling_compaction_m2(trench_girth_m: float, trench_width_m: float, pads: 
 def blinding_foundations_m3(trench_girth_m: float, trench_width_m: float, pads: list[PadBase], strip_mm: float = 50, base_mm: float = 100) -> int:
     """50mm under the strip, 100mm under the column bases."""
     return roundup(trench_girth_m * trench_width_m * strip_mm / 1000 + sum(p.length_m * p.width_m * base_mm / 1000 * p.count for p in pads))
-
-
-def columns_in_foundation(cols: list[FoundationColumn]) -> dict:
-    return {"column_concrete_m3": round(sum(c.width_m * c.depth_m * c.height_m * c.count for c in cols), 2),
-            "formwork_column_sides_m2": whole_units(sum((c.width_m + c.depth_m) * 2 * c.height_m * c.count for c in cols))}
 
 
 def formwork_foundation_sides_m(pads: list[PadBase]) -> int:

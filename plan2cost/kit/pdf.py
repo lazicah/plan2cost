@@ -1,5 +1,4 @@
 """Render PDF pages to images with poppler (pdftoppm). Rendered pages are scratch files, never committed."""
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -35,13 +34,3 @@ def page_text(pdf: str, page: int) -> str:
     """Text layer of one page (empty for scanned pages); used as a hint beside the image, never instead of the model."""
     exe = pdftoppm().replace("pdftoppm", "pdftotext")
     return subprocess.run([exe, "-f", str(page), "-l", str(page), "-layout", pdf, "-"], capture_output=True, text=True).stdout
-
-
-def title_block_text(pdf: str, page: int) -> str:
-    """Text in the bottom-right corner, where drawing sets carry the drawing title and number. Empty if there is none."""
-    info = subprocess.run([pdftoppm().replace("pdftoppm", "pdfinfo"), "-f", str(page), "-l", str(page), pdf], capture_output=True, text=True).stdout
-    m = re.search(r"Page\s+\d*\s*size:\s+([\d.]+) x ([\d.]+)", info)
-    w, h = (float(m.group(1)), float(m.group(2))) if m else (1190.0, 842.0)
-    exe = pdftoppm().replace("pdftoppm", "pdftotext")
-    args = [exe, "-f", str(page), "-l", str(page), "-x", str(int(w * 0.9)), "-y", str(int(h * 0.82)), "-W", str(int(w * 0.1)), "-H", str(int(h * 0.15)), "-layout", pdf, "-"]
-    return re.sub(r"\s+", " ", subprocess.run(args, capture_output=True, text=True).stdout).strip()

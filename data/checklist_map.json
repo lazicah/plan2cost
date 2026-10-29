@@ -1,5 +1,5 @@
 {
- "_note": "Which of the reference checklist items (reference/trades_checklist.json, ids only here) our BoQ lines cover. covered: a BoQ line gives the quantity in the item's own unit; partial: we measure the underlying quantity (an area or volume) but the item is a material count, labour or a different unit that needs a coefficient the author has not confirmed. Anything not listed is not built.",
+ "_note": "Which of the reference checklist items (reference/trades_checklist.json, ids only here) our BoQ lines cover. covered: a BoQ line gives the quantity in the item's own unit (measured or estimated); partial: the quantity exists but the item is a material count, labour or a different unit that needs a coefficient not yet confirmed. Anything not listed is not built.",
  "items": {
   "SUB-01": {
    "status": "covered",
@@ -67,13 +67,6 @@
     "brc_mesh_part1_m2"
    ],
    "missing": "sheets from the mesh area"
-  },
-  "SUB-16": {
-   "status": "partial",
-   "keys": [
-    "rebar_y12_foundations_t"
-   ],
-   "missing": "strip footing bars; column base bars are measured, in tonnes not lengths"
   },
   "SUB-18": {
    "status": "covered",
@@ -170,33 +163,124 @@
    "status": "covered",
    "prefix": "lintel_"
   },
+  "SUP-06": {
+   "status": "covered",
+   "keys": [
+    "frame_columns_concrete_m3"
+   ]
+  },
+  "SUP-07": {
+   "status": "covered",
+   "keys": [
+    "frame_beams_concrete_m3"
+   ]
+  },
+  "SUP-08": {
+   "status": "covered",
+   "keys": [
+    "frame_formwork_beams_columns_m2"
+   ]
+  },
+  "SUP-09": {
+   "status": "partial",
+   "keys": [
+    "frame_steel_t"
+   ],
+   "missing": "bar lengths; the steel is estimated in tonnes"
+  },
+  "SUP-11": {
+   "status": "covered",
+   "keys": [
+    "suspended_slab_concrete_m3"
+   ]
+  },
+  "SUP-12": {
+   "status": "covered",
+   "keys": [
+    "frame_formwork_soffit_m2"
+   ]
+  },
+  "SUP-13": {
+   "status": "partial",
+   "keys": [
+    "frame_steel_t"
+   ],
+   "missing": "bar lengths; the steel is estimated in tonnes"
+  },
+  "SUP-14": {
+   "status": "partial",
+   "keys": [
+    "staircase_concrete_m3"
+   ],
+   "missing": "finishes and balustrade; the concrete is estimated per storey"
+  },
+  "ROF-01": {
+   "status": "partial",
+   "keys": [
+    "roof_timbers_m"
+   ],
+   "missing": "split of rafters, purlins and struts and the stock lengths; the metres are estimated together"
+  },
+  "ROF-02": {
+   "status": "partial",
+   "keys": [
+    "roof_timbers_m"
+   ],
+   "missing": "split of rafters, purlins and struts and the stock lengths; the metres are estimated together"
+  },
   "ROF-05": {
    "status": "covered",
    "keys": [
     "roof_covering_m2"
    ]
   },
-  "ROF-01": {
-   "status": "partial",
+  "ROF-08": {
+   "status": "covered",
    "keys": [
-    "roof_rafters_m"
-   ],
-   "missing": "stock lengths and the hardwood species; the metres are measured"
+    "roof_fascia_m"
+   ]
   },
-  "ROF-02": {
-   "status": "partial",
+  "PLU-01": {
+   "status": "covered",
    "keys": [
-    "roof_purlins_m"
-   ],
-   "missing": "stock lengths; the purlin spacing is asked"
+    "water_point_nr"
+   ]
   },
-  "ROF-06": {
-   "status": "partial",
+  "PLU-02": {
+   "status": "covered",
    "keys": [
-    "roof_ridge_m",
-    "roof_hips_m"
-   ],
-   "missing": "nails and ridge caps as an allowance; ridge and hip lengths are measured"
+    "sanitary_wc_nr"
+   ]
+  },
+  "PLU-03": {
+   "status": "covered",
+   "keys": [
+    "sanitary_basin_nr"
+   ]
+  },
+  "PLU-04": {
+   "status": "covered",
+   "keys": [
+    "sanitary_shower_nr"
+   ]
+  },
+  "PLU-05": {
+   "status": "covered",
+   "keys": [
+    "sanitary_sink_nr"
+   ]
+  },
+  "PLU-06": {
+   "status": "covered",
+   "keys": [
+    "sanitary_heater_nr"
+   ]
+  },
+  "PLU-07": {
+   "status": "covered",
+   "keys": [
+    "sanitary_trap_nr"
+   ]
   }
  }
 }

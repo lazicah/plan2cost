@@ -44,13 +44,17 @@ nothing, building size against the printed overall dimensions, weak scale eviden
 plan as well and can only add questions. Examples: plan 1 (image) is flagged for a missing north wall by both the extents check (11.0 m deep against
 13.5 m printed) and the model review; plan 2's architectural page is flagged for two grid lines merged into walls.
 
-## Openings tied to walls (plan 6 ground floor, raster route)
-Candidates: stretches of a wall where both faces are broken (46) plus printed dimensions equal to a schedule width. The model looks at a crop of each
-candidate (door, window, bare opening, not an opening) and reads its tag; tags in the text layer are used first and each tag belongs to one gap only.
-Result against the author's window counts (ground floor: 16 at 600 mm and 4 at 900 mm): 12 found at 600 mm (AW1) and 5 at 900 mm (AW2), plus AW3 x4 and
-AW4 x2 which the author's per-floor count does not list. Doors are weaker: the plan carries no door tags and several schedule types share one width, so
-12 of 16 doors stay unmatched (they keep the schedule's old external/internal rule in the BoQ). Over-counts are flagged (AW3: 4 found, 2 in the whole
-building's schedule) and the BoQ never deducts more than the schedule has.
+## The product flow (floor plans only)
+Input: one floor plan per floor (PDF or image), the storey height (floor to floor, not ceiling height) and the roof type (gable, hip or flat, the types we hold coefficients for),
+optionally a pitch and an overhang. Nothing else is asked. `read_floor` measures a floor by code (walls, outer building size from the outermost joints plus a wall thickness,
+doors and windows tied to their walls, room names for wet rooms); the model reads only printed facts (scale, overall dimensions, room names) and looks at crops to say what a gap in
+a wall is. `compute_boq` (takeoff/rough.py) measures what plans show (blockwork, external and internal finishes by BESMM4 1.28 M3, lintels, strip foundation from the ground walls,
+sanitary fittings from wet rooms, doors and windows) and estimates the rest from data/coefficients.json as low, typical and high (frame, suspended slab, stairs, steel, roof). Every
+BoQ line is marked measured or estimated, with the coefficient ids behind an estimate. Column bases cannot be seen on a plan and are not included (an assumption says so). Floor area is
+the building envelope less the walls; a flood-filled outline leaks where walls are missing, so it is not used. The roof-plan, section, structural and schedule readers were removed;
+they are in git history (commit 647ba51 and earlier). A budget estimate is not a bill for tender, so the unpriced bill is made only when every line is measured.
+Openings: candidates are gaps where both wall faces are broken; the model checks each crop (door, window, opening, not an opening) and reads its tag; width is measured, height is a
+flagged standard (coefficients door_height_m, window_height_m). Plan 6 ground floor against the author's window counts: 12 of 16 found at 600 mm, doors weaker.
 
 ## Code layout
 See README.md. Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`; the prompt lives in `agent/system_instructions.md`.
@@ -69,29 +73,6 @@ Overhead, profit and preliminaries live inside the rates (author's practice), so
 Flags: unpriced or missing items, changed quantity or unit, wrong arithmetic or total, rate against the user's rate (15%), rate far from the other bids (25%, three or more bids),
 added items. Totals are the bid's rates at our issued quantities; a bid with unpriced items is not comparable on total. Thresholds are defaults for a surveyor to set.
 Checked on three synthetic returns made from the plan 2 BoQ; not yet on real bids.
-
-## Finishes, rooms and lintels (BESMM4 1.28, 1.29, 1.13)
-`read_rooms` (facts/rooms.py) has the model copy each room's name and the two internal dimensions printed beside it; a number not in the page's text layer is dropped and
-the room says so, a room without both numbers is kept with its area unknown and asked about. Rooms are rectangles of the two printed numbers. `compute_boq` then adds floor,
-ceiling, internal wall finish, internal paint and skirting (takeoff/finishes.py). Rules from the book (p.232, 236): area net (M1); no deduction for a void of 1.00 m2 or less
-(M3); work internal unless stated external (M5); wall finish height to finished ceiling (M8). An external opening over 1.00 m2 comes off once, an internal one twice (two rooms).
-External render and paint now follow the same 1.00 m2 rule (blockwork still deducts every opening, the author's method). Porches, terraces and balconies are left out until the user
-says they count. Lintels (nr, 1.13.2.2.2) are one per opening, length = opening + bearing each end; the bearing, the finish specs and the skirting height are asked, never assumed.
-Not built: wall tiling to wet rooms (needs the tile height and doors tied to rooms), roof, columns and beams, stairs, services.
-Building length and width (slab, topsoil, fill) come from the outermost joints plus one wall thickness, not the bounding box of the runs: the strict bounding box stays as the
-guard that rejects a vector reading with a grid line merged into a wall (plan 2 page 3), and a test holds both.
-
-## Roof (BESMM4 1.17 and 1.16)
-`read_roof` measures a vector roof plan (drawing/roof.py): the heaviest stroke weight is the roof skeleton; the outline is filled for the plan area; the scale is fixed
-only when the outline matches printed overall dimensions on both axes (plan 2: 12370 x 20185 against the outline, axes agree to 0.01%; the sheet was plotted at about
-1:125, not the stated 1:100, so the stated scale is only a bound). Edges with the outdoors on one side are eaves, interior axis lines ridges, interior 45-degree lines hips
-or valleys: the roof is cut into planes, each plane slopes down toward the eave it touches, and a diagonal is a hip when both planes beside it slope away, a valley when
-both slope toward it. The pitch is the printed rise (apex level less eaves level, read from the text layer by facts/roof_spec.py) over the plan's run from the main ridge
-to its eave; all planes share it, so a hip not at 45 degrees is flagged. Lines (takeoff/roof.py): covering on the slope in m2 with the pitch stated, eaves, ridges, hips and
-valleys in m (true lengths), rafters and purlins as slope area over the printed spacing, wall plates as the top floor's external girth. Not measured and asked: purlin
-spacing when not printed, the number of trusses and tie beams, a fascia board or gutter. Weak spot: a raised or sunk area that touches no eave of its own (plan 2's central
-diamond) makes the hip/valley split uncertain there; it is warned, and the annotated roof plan is saved for a person to check. Total roof area does not depend on that split.
-Raster roof plans are not measured: the agent asks for the pitch and says the roof is not measured.
 
 ## Coefficients for a rough estimate (data/coefficients.json, takeoff/coefficients.py)
 Author's direction (Oct 29): not detailed roof members or bar-by-bar reinforcement for now. When a client has only a floor plan, estimate material and cost from rules of
