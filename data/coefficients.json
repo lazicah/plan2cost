@@ -1,0 +1,1232 @@
+{
+ "_note": "Constants for estimating the quantity of material from a floor plan alone (a rough estimate when there is no detailed drawing). Every entry is a range, never one number: use typical for a point estimate and show low to high. Values come from published rules of thumb and are NOT checked against the author's own bills yet (see CLAUDE.md). Cost shares and benchmarks are sanity checks on a total, never rates. Rates stay the user's.",
+ "collected": "2026-10-29",
+ "sources": {
+  "wce": {
+   "name": "We Civil Engineers: quantity of steel per m3",
+   "url": "https://wecivilengineers.com/quantity-of-steel-per-m%C2%B3/",
+   "checked": "fetched"
+  },
+  "soc": {
+   "name": "Steel On Call: thumb rule for steel",
+   "url": "https://steeloncall.com/blog/thumb-rule-for-steel",
+   "checked": "search summary"
+  },
+  "rg": {
+   "name": "ResearchGate table: steel per m3 of concrete",
+   "url": "https://www.researchgate.net/figure/Weights-and-percentages-of-steel-reinforcement-per-cubic-meter-of-concrete_tbl1_344079010",
+   "checked": "search summary"
+  },
+  "prova": {
+   "name": "Prova Surveying (UK): reinforcement estimates",
+   "url": "http://www.provauk.com/reinforcement-estimates.html",
+   "checked": "search summary"
+  },
+  "struct": {
+   "name": "Structville: mortar for laying blocks (Nigeria)",
+   "url": "https://structville.com/2018/08/how-to-calculate-the-quantity-of-mortar-for-laying-blocks.html",
+   "checked": "fetched"
+  },
+  "ebasic": {
+   "name": "Engineering Basic: cement and sand for laying blocks",
+   "url": "https://engineeringbasic.com/how-to-calculate-the-total-bags-of-cement-and-tons-of-sand-for-laying-blocks/",
+   "checked": "search summary"
+  },
+  "nbcmix": {
+   "name": "NigeriaBuildingCost: concrete mix calculator",
+   "url": "https://nigeriabuildingcost.ng/concrete-mix-calculator",
+   "checked": "search summary (its own figures disagree)"
+  },
+  "nbcboq": {
+   "name": "NigeriaBuildingCost: duplex bill of quantities",
+   "url": "https://nigeriabuildingcost.ng/blog/bill-of-quantities-duplex-nigeria",
+   "checked": "fetched"
+  },
+  "nbcroof": {
+   "name": "NigeriaBuildingCost: roofing calculator",
+   "url": "https://nigeriabuildingcost.ng/roofing-calculator",
+   "checked": "fetched (partial)"
+  },
+  "enorm": {
+   "name": "Enormous Buildings: 3-bedroom house in Nigeria",
+   "url": "https://enormousbuildings.com/cost-to-build/nigeria/3-bedroom-house",
+   "checked": "fetched"
+  },
+  "prioni": {
+   "name": "Prioni: cost of building a house in Nigeria",
+   "url": "https://www.prioni.com.ng/cost-of-building-a-house-in-nigeria/",
+   "checked": "search summary"
+  },
+  "godsp": {
+   "name": "Godspromise Aluminium Roofing: sheet guide",
+   "url": "https://www.godspromisealuminiumroofing.com/blog/aluminum-roofing-sheet-price-per-sqm-nigeria",
+   "checked": "search summary"
+  },
+  "fabcom": {
+   "name": "Fabcom: roofing sheets in Nigeria",
+   "url": "https://fabcom.com.ng/roofing-sheets-in-nigeria-types-prices-durability/",
+   "checked": "search summary"
+  },
+  "isco": {
+   "name": "ISCodeHub: 15mm plaster rate analysis (CPWD data, India)",
+   "url": "https://www.iscodehub.com/rate-analysis/plaster-15mm-rate-analysis",
+   "checked": "search summary"
+  },
+  "paint": {
+   "name": "Homebuilding.co.uk: how much paint do I need",
+   "url": "https://www.homebuilding.co.uk/advice/how-much-paint-do-I-need",
+   "checked": "search summary"
+  },
+  "civsir": {
+   "name": "Civil Sir: staircase concrete quantity",
+   "url": "https://civilsir.com/concrete-quantity-calculation-for-staircase-and-its-formula/",
+   "checked": "search summary"
+  },
+  "tbc": {
+   "name": "TryBuildCalc: staircase concrete and steel",
+   "url": "https://trybuildcalc.com/calculators/staircase-concrete-calculator",
+   "checked": "search summary"
+  },
+  "cep": {
+   "name": "Civil engineering calculators: steel quantity",
+   "url": "https://www.civil-engineering-calculators.com/Quantity-estimator/Steel-Quantity-Calculator",
+   "checked": "search summary"
+  },
+  "elec": {
+   "name": "Indian and Nepali wiring estimators (several pages)",
+   "url": "https://app.gharnaksa.com/tools/electrical-wiring-cost-calculator",
+   "checked": "search summary; exact page for each figure not confirmed"
+  },
+  "tiles": {
+   "name": "General tiling guides (several pages)",
+   "url": "",
+   "checked": "search summary; no single authoritative source"
+  },
+  "author": {
+   "name": "Author's own notes (pasted into the session, origin not recorded)",
+   "url": "",
+   "checked": "author supplied"
+  },
+  "calc": {
+   "name": "Arithmetic from stated inputs",
+   "url": "",
+   "checked": "computed here"
+  }
+ },
+ "entries": [
+  {
+   "id": "mix_124_cement_bags_per_m3",
+   "group": "concrete",
+   "what": "Cement in 1:2:4 structural concrete",
+   "unit": "bag (50 kg)",
+   "per": "m3 of concrete",
+   "low": 6.3,
+   "typical": 7.0,
+   "high": 8.0,
+   "sources": [
+    "nbcmix",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": "Low end is 317 kg with the 1.54 dry-volume factor; Nigerian calculators give 7 to 8. Cost guides that leave out the 1.54 factor understate cement."
+  },
+  {
+   "id": "mix_124_sand_m3_per_m3",
+   "group": "concrete",
+   "what": "Sharp sand in 1:2:4",
+   "unit": "m3",
+   "per": "m3 of concrete",
+   "low": 0.44,
+   "typical": 0.47,
+   "high": 0.51,
+   "sources": [
+    "nbcmix",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "mix_124_granite_m3_per_m3",
+   "group": "concrete",
+   "what": "Granite (19mm) in 1:2:4",
+   "unit": "m3",
+   "per": "m3 of concrete",
+   "low": 0.88,
+   "typical": 0.95,
+   "high": 1.03,
+   "sources": [
+    "nbcmix",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "mix_124_sand_t_per_m3",
+   "group": "concrete",
+   "what": "Sharp sand in 1:2:4, by weight",
+   "unit": "tonne",
+   "per": "m3 of concrete",
+   "low": 0.7,
+   "typical": 0.72,
+   "high": 0.74,
+   "sources": [
+    "nbcmix",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": "Needs a bulk density; 1.6 t/m3 for sand."
+  },
+  {
+   "id": "mix_124_granite_t_per_m3",
+   "group": "concrete",
+   "what": "Granite in 1:2:4, by weight",
+   "unit": "tonne",
+   "per": "m3 of concrete",
+   "low": 1.32,
+   "typical": 1.36,
+   "high": 1.39,
+   "sources": [
+    "nbcmix",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": "Needs a bulk density; 1.5 t/m3 for granite. The same calculator also prints a volume table that does not match its tonnes."
+  },
+  {
+   "id": "mix_136_cement_bags_per_m3",
+   "group": "concrete",
+   "what": "Cement in 1:3:6 (blinding, mass concrete)",
+   "unit": "bag (50 kg)",
+   "per": "m3 of concrete",
+   "low": 4.4,
+   "typical": 5.0,
+   "high": 5.5,
+   "sources": [
+    "nbcmix"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "blocks_per_m2_450x225",
+   "group": "blockwork",
+   "what": "450 x 225 mm blocks per m2 of wall face",
+   "unit": "nr",
+   "per": "m2 of wall",
+   "low": 9.87,
+   "typical": 10,
+   "high": 10,
+   "sources": [
+    "struct",
+    "author"
+   ],
+   "confidence": "high",
+   "note": "The author also uses 10 per m2 for void filling."
+  },
+  {
+   "id": "block_mortar_m3_per_m2_225mm",
+   "group": "blockwork",
+   "what": "Mortar bed and joints, 225mm (9 inch) hollow block wall",
+   "unit": "m3",
+   "per": "m2 of wall",
+   "low": 0.026,
+   "typical": 0.028,
+   "high": 0.03,
+   "sources": [
+    "struct",
+    "ebasic"
+   ],
+   "confidence": "medium",
+   "note": "No source found for 150mm blocks; do not scale 225mm by thickness for mortar without a source."
+  },
+  {
+   "id": "mortar_16_cement_bags_per_m3",
+   "group": "blockwork",
+   "what": "Cement in 1:6 mortar (with 1.54 factor)",
+   "unit": "bag (50 kg)",
+   "per": "m3 of mortar",
+   "low": 6.33,
+   "typical": 6.33,
+   "high": 6.33,
+   "sources": [
+    "struct"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "mortar_16_sand_t_per_m3",
+   "group": "blockwork",
+   "what": "Sand in 1:6 mortar (with 1.54 factor)",
+   "unit": "tonne",
+   "per": "m3 of mortar",
+   "low": 2.11,
+   "typical": 2.11,
+   "high": 2.11,
+   "sources": [
+    "struct"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "block_wall_cement_bags_per_m2_225mm",
+   "group": "blockwork",
+   "what": "Cement for laying 225mm blocks",
+   "unit": "bag (50 kg)",
+   "per": "m2 of wall",
+   "low": 0.165,
+   "typical": 0.19,
+   "high": 0.19,
+   "sources": [
+    "struct",
+    "ebasic",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": "About 52 blocks per bag."
+  },
+  {
+   "id": "block_wall_sand_t_per_m2_225mm",
+   "group": "blockwork",
+   "what": "Sand for laying 225mm blocks",
+   "unit": "tonne",
+   "per": "m2 of wall",
+   "low": 0.055,
+   "typical": 0.063,
+   "high": 0.063,
+   "sources": [
+    "struct",
+    "ebasic",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": "About 157 blocks per tonne."
+  },
+  {
+   "id": "blocks_per_building_3bed_bungalow",
+   "group": "blockwork",
+   "what": "Blocks for a 3-bedroom bungalow",
+   "unit": "nr",
+   "per": "building",
+   "low": 2500,
+   "typical": 3250,
+   "high": 4000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied range; whole building including partitions, 6 or 9 inch."
+  },
+  {
+   "id": "blocks_per_building_4bed_bungalow",
+   "group": "blockwork",
+   "what": "Blocks for a 4-bedroom bungalow",
+   "unit": "nr",
+   "per": "building",
+   "low": 3500,
+   "typical": 4500,
+   "high": 5500,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "blocks_per_building_3bed_duplex",
+   "group": "blockwork",
+   "what": "Blocks for a 3-bedroom duplex",
+   "unit": "nr",
+   "per": "building",
+   "low": 6200,
+   "typical": 6700,
+   "high": 7200,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "blocks_per_building_4bed_duplex",
+   "group": "blockwork",
+   "what": "Blocks for a 4-bedroom duplex",
+   "unit": "nr",
+   "per": "building",
+   "low": 5500,
+   "typical": 7250,
+   "high": 9000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Depends on partitions and fence walls."
+  },
+  {
+   "id": "blocks_per_building_5bed_duplex",
+   "group": "blockwork",
+   "what": "Blocks for a 5-bedroom duplex",
+   "unit": "nr",
+   "per": "building",
+   "low": 7500,
+   "typical": 8000,
+   "high": 9000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author gave 7,500 to 8,000 and more; the high end here is a placeholder."
+  },
+  {
+   "id": "steel_footing_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in footings",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 40,
+   "typical": 75,
+   "high": 100,
+   "sources": [
+    "wce",
+    "soc",
+    "rg"
+   ],
+   "confidence": "medium",
+   "note": "Sources 39 to 100; 75 is the most common figure."
+  },
+  {
+   "id": "steel_slab_on_ground_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in slab on grade",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 50,
+   "typical": 65,
+   "high": 80,
+   "sources": [
+    "soc",
+    "rg",
+    "wce"
+   ],
+   "confidence": "medium",
+   "note": "Fabric mesh is usually measured separately in m2."
+  },
+  {
+   "id": "steel_slab_suspended_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in suspended slab",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 80,
+   "typical": 100,
+   "high": 120,
+   "sources": [
+    "soc",
+    "wce",
+    "rg"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "steel_beam_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in beams and ring beams",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 80,
+   "typical": 120,
+   "high": 200,
+   "sources": [
+    "wce",
+    "soc",
+    "rg"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "steel_column_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in columns",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 100,
+   "typical": 160,
+   "high": 250,
+   "sources": [
+    "wce",
+    "soc",
+    "prova"
+   ],
+   "confidence": "medium",
+   "note": "One UK source gives much more (200 to 450); the practical range for houses is lower."
+  },
+  {
+   "id": "steel_staircase_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in a concrete staircase",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 50,
+   "typical": 85,
+   "high": 160,
+   "sources": [
+    "cep",
+    "tbc",
+    "nbcboq"
+   ],
+   "confidence": "low",
+   "note": "Sources disagree widely; the Nigerian sample is 180 kg in 3.5 m3 (51 kg/m3)."
+  },
+  {
+   "id": "steel_residential_overall_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement across a whole residential frame",
+   "unit": "kg",
+   "per": "m3 of concrete",
+   "low": 90,
+   "typical": 105,
+   "high": 120,
+   "sources": [
+    "wce",
+    "rg"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "binding_wire_kg_per_tonne_steel",
+   "group": "reinforcement",
+   "what": "Binding wire",
+   "unit": "kg",
+   "per": "tonne of reinforcement",
+   "low": 12,
+   "typical": 12,
+   "high": 12,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied, no second source."
+  },
+  {
+   "id": "steel_suspended_slab_bottom_y12_kg_per_m2",
+   "group": "reinforcement",
+   "what": "Bottom Y12 bars in a suspended slab of a duplex",
+   "unit": "kg",
+   "per": "m2 of slab",
+   "low": 12.5,
+   "typical": 12.5,
+   "high": 12.5,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Top bars add 20 to 30% of this weight and Y10 distribution bars 10 to 15%, so the whole slab is about 17 kg/m2, which agrees with 175mm x 80 to 120 kg/m3 (14 to 21)."
+  },
+  {
+   "id": "steel_top_bars_share_of_bottom",
+   "group": "reinforcement",
+   "what": "Top (hogging) bars as a share of the bottom Y12 weight",
+   "unit": "fraction",
+   "per": "bottom steel",
+   "low": 0.2,
+   "typical": 0.25,
+   "high": 0.3,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "steel_distribution_share_of_bottom",
+   "group": "reinforcement",
+   "what": "Y10 distribution bars as a share of the bottom Y12 weight",
+   "unit": "fraction",
+   "per": "bottom steel",
+   "low": 0.1,
+   "typical": 0.125,
+   "high": 0.15,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "steel_per_m2_floor_rc_house",
+   "group": "reinforcement",
+   "what": "Reinforcement per m2 of built-up floor, low-rise RC house",
+   "unit": "kg",
+   "per": "m2 of floor",
+   "low": 38,
+   "typical": 48,
+   "high": 59,
+   "sources": [
+    "soc"
+   ],
+   "confidence": "low",
+   "note": "South Asian contractor blogs (3.5 to 5.5 kg per sq ft); not Nigerian."
+  },
+  {
+   "id": "suspended_slab_thickness_mm",
+   "group": "frame",
+   "what": "Suspended residential slab thickness",
+   "unit": "mm",
+   "per": "slab",
+   "low": 150,
+   "typical": 175,
+   "high": 175,
+   "sources": [
+    "nbcboq"
+   ],
+   "confidence": "medium",
+   "note": ""
+  },
+  {
+   "id": "suspended_slab_concrete_m3_per_m2",
+   "group": "frame",
+   "what": "Concrete in a 175mm suspended slab",
+   "unit": "m3",
+   "per": "m2 of slab",
+   "low": 0.15,
+   "typical": 0.175,
+   "high": 0.175,
+   "sources": [
+    "nbcboq",
+    "calc"
+   ],
+   "confidence": "medium",
+   "note": "Sample: 18.4 m3 for 105 m2."
+  },
+  {
+   "id": "suspended_slab_soffit_formwork_m2_per_m2",
+   "group": "frame",
+   "what": "Soffit formwork under a suspended slab",
+   "unit": "m2",
+   "per": "m2 of slab",
+   "low": 1.0,
+   "typical": 1.0,
+   "high": 1.0,
+   "sources": [
+    "nbcboq"
+   ],
+   "confidence": "high",
+   "note": ""
+  },
+  {
+   "id": "frame_concrete_m3_per_m2_floor",
+   "group": "frame",
+   "what": "Columns and ring beams per m2 of floor (one sample duplex)",
+   "unit": "m3",
+   "per": "m2 of floor",
+   "low": 0.09,
+   "typical": 0.105,
+   "high": 0.12,
+   "sources": [
+    "nbcboq",
+    "calc"
+   ],
+   "confidence": "low",
+   "note": "Single sample: ground floor 13 m3 and first floor about 10 m3 over about 105 m2 each."
+  },
+  {
+   "id": "frame_formwork_m2_per_m3",
+   "group": "frame",
+   "what": "Formwork to columns and beams",
+   "unit": "m2",
+   "per": "m3 of concrete",
+   "low": 6.5,
+   "typical": 6.5,
+   "high": 6.5,
+   "sources": [
+    "nbcboq",
+    "calc"
+   ],
+   "confidence": "low",
+   "note": "Single sample: 85 m2 for 13 m3."
+  },
+  {
+   "id": "staircase_concrete_m3_per_flight",
+   "group": "stairs",
+   "what": "Concrete in a residential staircase",
+   "unit": "m3",
+   "per": "staircase",
+   "low": 1.5,
+   "typical": 3.0,
+   "high": 3.5,
+   "sources": [
+    "nbcboq",
+    "tbc"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "staircase_steel_kg_per_flight",
+   "group": "stairs",
+   "what": "Reinforcement in a residential staircase",
+   "unit": "kg",
+   "per": "staircase",
+   "low": 120,
+   "typical": 180,
+   "high": 200,
+   "sources": [
+    "nbcboq",
+    "civsir"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "roof_pitch_bungalow_deg",
+   "group": "roof",
+   "what": "Common roof pitch, bungalow",
+   "unit": "degree",
+   "per": "roof",
+   "low": 25,
+   "typical": 25,
+   "high": 25,
+   "sources": [
+    "nbcroof"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "roof_pitch_duplex_deg",
+   "group": "roof",
+   "what": "Common roof pitch, duplex",
+   "unit": "degree",
+   "per": "roof",
+   "low": 30,
+   "typical": 32,
+   "high": 35,
+   "sources": [
+    "nbcroof"
+   ],
+   "confidence": "low",
+   "note": "Plan 2 measured 33 degrees from its printed levels."
+  },
+  {
+   "id": "roof_complex_hip_factor",
+   "group": "roof",
+   "what": "Extra area for hips and valleys on a complex roof, on top of the slope factor",
+   "unit": "factor",
+   "per": "roof",
+   "low": 1.0,
+   "typical": 1.0,
+   "high": 1.25,
+   "sources": [
+    "nbcroof"
+   ],
+   "confidence": "low",
+   "note": "The calculator implies up to 1.25. Plan 2's measured roof needs none: slope area over plan area was 1.20 from the pitch alone."
+  },
+  {
+   "id": "roof_sheet_waste",
+   "group": "roof",
+   "what": "Waste on long-span roofing sheet",
+   "unit": "fraction",
+   "per": "sheet area",
+   "low": 0.1,
+   "typical": 0.12,
+   "high": 0.12,
+   "sources": [
+    "godsp"
+   ],
+   "confidence": "low",
+   "note": "Vendor guide; 10% for stone-coated tiles."
+  },
+  {
+   "id": "roof_longspan_m2_per_linear_m",
+   "group": "roof",
+   "what": "Cover per linear metre of long-span sheet",
+   "unit": "m2",
+   "per": "linear metre",
+   "low": 0.75,
+   "typical": 0.8,
+   "high": 0.84,
+   "sources": [
+    "fabcom"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "roof_framing_m_per_m2_roof",
+   "group": "roof",
+   "what": "All roof timber or steel framing (rafters, purlins, bracing) per m2 of roof",
+   "unit": "m",
+   "per": "m2 of roof",
+   "low": 3.5,
+   "typical": 3.5,
+   "high": 3.5,
+   "sources": [
+    "nbcroof"
+   ],
+   "confidence": "low",
+   "note": "A calculator default, not confirmed by any second source. Do not use for timber quantities until checked against a roof set."
+  },
+  {
+   "id": "roof_covers_share_of_total_floor_duplex",
+   "group": "roof",
+   "what": "Share of the total floor area (all storeys) that a duplex roof covers in plan",
+   "unit": "fraction",
+   "per": "total floor area",
+   "low": 0.5,
+   "typical": 0.5,
+   "high": 0.5,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author: the roof covers the upper floor footprint, about half the total plan."
+  },
+  {
+   "id": "plaster_cement_kg_per_m2_15mm_14",
+   "group": "finishes",
+   "what": "Cement in 15mm plaster, 1:4",
+   "unit": "kg",
+   "per": "m2",
+   "low": 5.75,
+   "typical": 6.0,
+   "high": 6.25,
+   "sources": [
+    "isco"
+   ],
+   "confidence": "medium",
+   "note": "From CPWD (India) and SNI (Indonesia) standards, close to each other."
+  },
+  {
+   "id": "plaster_sand_m3_per_m2_15mm",
+   "group": "finishes",
+   "what": "Sand in 15mm plaster",
+   "unit": "m3",
+   "per": "m2",
+   "low": 0.016,
+   "typical": 0.02,
+   "high": 0.024,
+   "sources": [
+    "isco"
+   ],
+   "confidence": "medium",
+   "note": "Add about 20% for bulking."
+  },
+  {
+   "id": "paint_coverage_m2_per_litre_per_coat",
+   "group": "finishes",
+   "what": "Emulsion paint coverage per coat",
+   "unit": "m2",
+   "per": "litre",
+   "low": 10,
+   "typical": 12,
+   "high": 14,
+   "sources": [
+    "paint"
+   ],
+   "confidence": "low",
+   "note": "UK retail figures. New or porous plaster takes up to 30% more, so use the low end on fresh walls."
+  },
+  {
+   "id": "paint_waste",
+   "group": "finishes",
+   "what": "Waste and touch-up allowance on paint",
+   "unit": "fraction",
+   "per": "paint",
+   "low": 0.1,
+   "typical": 0.1,
+   "high": 0.1,
+   "sources": [
+    "paint"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "tile_waste_straight_lay",
+   "group": "finishes",
+   "what": "Waste on floor tiles, straight lay",
+   "unit": "fraction",
+   "per": "tile area",
+   "low": 0.05,
+   "typical": 0.1,
+   "high": 0.1,
+   "sources": [
+    "tiles"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "tile_waste_large_format_or_diagonal",
+   "group": "finishes",
+   "what": "Waste on large-format or diagonal tiles",
+   "unit": "fraction",
+   "per": "tile area",
+   "low": 0.12,
+   "typical": 0.15,
+   "high": 0.15,
+   "sources": [
+    "tiles"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "tiles_per_m2_400x400",
+   "group": "finishes",
+   "what": "400 x 400mm tiles with 3mm joints",
+   "unit": "nr",
+   "per": "m2",
+   "low": 6.16,
+   "typical": 6.16,
+   "high": 6.16,
+   "sources": [
+    "calc"
+   ],
+   "confidence": "high",
+   "note": ""
+  },
+  {
+   "id": "tiles_per_m2_600x600",
+   "group": "finishes",
+   "what": "600 x 600mm tiles with 3mm joints",
+   "unit": "nr",
+   "per": "m2",
+   "low": 2.75,
+   "typical": 2.75,
+   "high": 2.75,
+   "sources": [
+    "calc"
+   ],
+   "confidence": "high",
+   "note": ""
+  },
+  {
+   "id": "electrical_light_point_m2_per_point",
+   "group": "services",
+   "what": "Floor area per light point",
+   "unit": "m2",
+   "per": "point",
+   "low": 7.4,
+   "typical": 7.4,
+   "high": 7.4,
+   "sources": [
+    "elec"
+   ],
+   "confidence": "low",
+   "note": "Indian and Nepali rules of thumb (1 per 80 sq ft); needs a Nigerian check."
+  },
+  {
+   "id": "electrical_socket_m2_per_point",
+   "group": "services",
+   "what": "Floor area per socket point",
+   "unit": "m2",
+   "per": "point",
+   "low": 5.6,
+   "typical": 5.6,
+   "high": 5.6,
+   "sources": [
+    "elec"
+   ],
+   "confidence": "low",
+   "note": "1 per 60 sq ft."
+  },
+  {
+   "id": "electrical_fan_m2_per_point",
+   "group": "services",
+   "what": "Floor area per fan point",
+   "unit": "m2",
+   "per": "point",
+   "low": 14,
+   "typical": 14,
+   "high": 14,
+   "sources": [
+    "elec"
+   ],
+   "confidence": "low",
+   "note": "1 per 150 sq ft."
+  },
+  {
+   "id": "electrical_power_point_m2_per_point",
+   "group": "services",
+   "what": "Floor area per heavy power or AC point",
+   "unit": "m2",
+   "per": "point",
+   "low": 23,
+   "typical": 23,
+   "high": 23,
+   "sources": [
+    "elec"
+   ],
+   "confidence": "low",
+   "note": "1 per 250 sq ft."
+  },
+  {
+   "id": "share_substructure",
+   "group": "cost share",
+   "what": "Substructure share of construction cost",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.15,
+   "typical": 0.15,
+   "high": 0.3,
+   "sources": [
+    "enorm"
+   ],
+   "confidence": "low",
+   "note": "Concept-stage split for a 150 m2 single-storey house. A calculator gives 30% for foundations."
+  },
+  {
+   "id": "share_walling_superstructure",
+   "group": "cost share",
+   "what": "Walling and superstructure",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.2,
+   "typical": 0.22,
+   "high": 0.3,
+   "sources": [
+    "enorm",
+    "prioni"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "share_roofing",
+   "group": "cost share",
+   "what": "Roofing",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.1,
+   "typical": 0.14,
+   "high": 0.18,
+   "sources": [
+    "enorm",
+    "prioni"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "share_internal_finishes",
+   "group": "cost share",
+   "what": "Internal finishes",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.18,
+   "typical": 0.18,
+   "high": 0.4,
+   "sources": [
+    "enorm",
+    "prioni"
+   ],
+   "confidence": "low",
+   "note": "The top of the range is a source that also counts doors, windows and fittings as finishes."
+  },
+  {
+   "id": "share_joinery_doors_windows",
+   "group": "cost share",
+   "what": "Doors, windows and joinery",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.09,
+   "typical": 0.09,
+   "high": 0.09,
+   "sources": [
+    "enorm"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "share_services",
+   "group": "cost share",
+   "what": "Plumbing and electrical",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.08,
+   "typical": 0.14,
+   "high": 0.15,
+   "sources": [
+    "enorm",
+    "prioni"
+   ],
+   "confidence": "low",
+   "note": "Electrical alone 8 to 12% in one source."
+  },
+  {
+   "id": "share_external_works_prelims",
+   "group": "cost share",
+   "what": "External works and preliminaries",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.08,
+   "typical": 0.08,
+   "high": 0.08,
+   "sources": [
+    "enorm"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "duplex_cost_over_bungalow_per_m2",
+   "group": "cost share",
+   "what": "Cost per m2 of a duplex over a bungalow",
+   "unit": "fraction",
+   "per": "per m2",
+   "low": 0.4,
+   "typical": 0.5,
+   "high": 0.6,
+   "sources": [
+    "nbcboq"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "labour_share",
+   "group": "cost share",
+   "what": "Labour as a share of residential construction cost",
+   "unit": "fraction",
+   "per": "total",
+   "low": 0.25,
+   "typical": 0.3,
+   "high": 0.35,
+   "sources": [
+    "prioni"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "professional_fees_share",
+   "group": "cost share",
+   "what": "Professional fees",
+   "unit": "fraction",
+   "per": "construction value",
+   "low": 0.08,
+   "typical": 0.1,
+   "high": 0.12,
+   "sources": [
+    "nbcboq"
+   ],
+   "confidence": "low",
+   "note": ""
+  },
+  {
+   "id": "contingency_share",
+   "group": "cost share",
+   "what": "Recommended contingency",
+   "unit": "fraction",
+   "per": "construction value",
+   "low": 0.15,
+   "typical": 0.15,
+   "high": 0.15,
+   "sources": [
+    "nbcboq"
+   ],
+   "confidence": "low",
+   "note": "Many Nigerian bills use 5% (the author's own bill does); both are conventions, not quantities."
+  },
+  {
+   "id": "benchmark_cost_per_m2_economy",
+   "group": "benchmark",
+   "what": "All-in cost per m2, economy finish",
+   "unit": "NGN",
+   "per": "m2",
+   "low": 80000,
+   "typical": 165000,
+   "high": 250000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied; a sanity check on a total, never a rate."
+  },
+  {
+   "id": "benchmark_cost_per_m2_standard",
+   "group": "benchmark",
+   "what": "All-in cost per m2, standard finish",
+   "unit": "NGN",
+   "per": "m2",
+   "low": 130000,
+   "typical": 240000,
+   "high": 350000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied; a sanity check on a total, never a rate."
+  },
+  {
+   "id": "benchmark_cost_per_m2_luxury",
+   "group": "benchmark",
+   "what": "All-in cost per m2, luxury finish",
+   "unit": "NGN",
+   "per": "m2",
+   "low": 400000,
+   "typical": 500000,
+   "high": 600000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "High end open-ended in the source. Author-supplied; a sanity check on a total, never a rate."
+  },
+  {
+   "id": "benchmark_lagos_premium",
+   "group": "benchmark",
+   "what": "Lagos over other regions",
+   "unit": "fraction",
+   "per": "cost",
+   "low": 0.1,
+   "typical": 0.175,
+   "high": 0.25,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied; a sanity check on a total, never a rate."
+  },
+  {
+   "id": "benchmark_suspended_slab_cost_duplex",
+   "group": "benchmark",
+   "what": "Suspended first-floor slab, concrete and steel, whole duplex",
+   "unit": "NGN",
+   "per": "slab",
+   "low": 3500000,
+   "typical": 5750000,
+   "high": 8000000,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied; a sanity check on a total, never a rate."
+  },
+  {
+   "id": "benchmark_staircase_cost",
+   "group": "benchmark",
+   "what": "Reinforced concrete staircase",
+   "unit": "NGN",
+   "per": "staircase",
+   "low": 600000,
+   "typical": 1300000,
+   "high": 2000000,
+   "sources": [
+    "author",
+    "nbcboq"
+   ],
+   "confidence": "low",
+   "note": "Author-supplied; a sanity check on a total, never a rate."
+  }
+ ]
+}

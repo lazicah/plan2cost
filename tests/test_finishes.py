@@ -1,4 +1,4 @@
-from plan2cost.facts.rooms import Room, to_rooms
+from plan2cost.facts.rooms import to_rooms
 from plan2cost.takeoff.finishes import deductible, external_finish_area, finishes_boq, floor_finishes, lintel_items
 from plan2cost.takeoff.walls import Opening
 

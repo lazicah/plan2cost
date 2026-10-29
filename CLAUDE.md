@@ -92,3 +92,13 @@ valleys in m (true lengths), rafters and purlins as slope area over the printed 
 spacing when not printed, the number of trusses and tie beams, a fascia board or gutter. Weak spot: a raised or sunk area that touches no eave of its own (plan 2's central
 diamond) makes the hip/valley split uncertain there; it is warned, and the annotated roof plan is saved for a person to check. Total roof area does not depend on that split.
 Raster roof plans are not measured: the agent asks for the pitch and says the roof is not measured.
+
+## Coefficients for a rough estimate (data/coefficients.json, takeoff/coefficients.py)
+Author's direction (Oct 29): not detailed roof members or bar-by-bar reinforcement for now. When a client has only a floor plan, estimate material and cost from rules of
+thumb: per m2 of roof, per m3 of beam, per storey. 72 entries, each a low, typical and high range with sources and a confidence; groups: concrete mixes, blockwork, reinforcement,
+frame and slabs, stairs, roof, finishes, services, cost shares, price benchmarks. Prices and cost shares are sanity checks on a total, never rates (rates stay the user's). Sources
+are web guides (7 fetched and read, the rest from search summaries, marked) plus the author's pasted notes. NOT yet checked against the author's own bills: the "Bill" sheets in
+the plan workbooks are stale from other jobs (plan 2's bill lists 19 windows of 1800x2100 that plan 2 does not have, and a 40 m3 ground slab against its own sheet's 200.55 m2),
+so no ratio is derived from them until the author says which bill belongs to which plan and its floor area. `coefficients.problems()` must stay empty (tested).
+Known conflicts in the sources: cement per m3 of 1:2:4 runs 6.3 to 8; steel in columns 100 to 450 kg/m3; staircase steel 51 to 160 kg/m3; roof framing 3.5 m per m2 of roof is one
+calculator's default with no second source (an actual roof set will differ a lot); no source found for mortar to 150mm blocks.
