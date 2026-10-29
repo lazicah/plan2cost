@@ -175,17 +175,19 @@ def read_levels(run: Run) -> dict:
 
 
 def read_wall_girth(run: Run, page: int, floor: str) -> dict:
-    """Wall girth for one floor from a floor-plan page, measured: scale and grid from the PDF, walls from the page image, external and
-    internal split by what is outdoors. Approximate (record it as source "computed"); if the page has no readable grid it says so and
-    for an upper floor use assume_floor_like_ground."""
-    from plan2cost.measure import measure_walls
+    """Wall girth for one floor from a floor-plan page, measured by code: vector line work is read exactly, a raster page is read through the
+    image route (the model reads the printed overall dimensions to fix the scale). The result says which route was used and how far to trust it
+    (confidence high, medium or low); external is the walls with outdoors on one side, which can differ from an outline-only convention.
+    Record it as source "computed". For an upper floor use assume_floor_like_ground when the plan cannot be read."""
+    from plan2cost.interpret import interpret_page
 
-    m = measure_walls(run.pdf, int(page))
+    m = interpret_page(run.pdf, int(page), str(run.dir / "scratch"))
     if m.get("error"):
         return m
     return {"floor": floor, "ext_girth_m": float(m["external_m"]), "int_girth_m": float(m["internal_m"]), "walls": m["walls"],
             "junction_ends": m["junction_ends"], "building_length_m": float(m["length_m"]), "building_width_m": float(m["width_m"]),
-            "scale": m["scale"], "note": "approximate: measured from the image; typically within about 10 percent on clean CAD plans"}
+            "route": m["route"], "confidence": m["confidence"], "scale": m["scale"], "notes": m.get("notes", []),
+            "note": "approximate; the external and internal split depends on what counts as outdoors, so treat it as medium confidence"}
 
 
 def read_notes(run: Run, pages: list | None = None) -> dict:

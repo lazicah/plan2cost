@@ -53,3 +53,11 @@ def test_collinear_pieces_join_into_one_line_and_dashes_are_ignored():
     segs = [Seg(0, 5, 10, 5, 1.0), Seg(10, 5, 25, 5, 1.0), Seg(40, 5, 50, 5, 1.0, dashed=True)]
     ls = axis_lines(segs, min_len_pt=2)
     assert len(ls) == 1 and ls[0].a == 0 and ls[0].b == 25
+
+
+def test_extents_must_match_printed_overall_dimensions():
+    from plan2cost.interpret import extents_match_printed
+
+    assert extents_match_printed(14.03, 11.79, [14250, 12000, 3000, 600])  # outer extents are within a wall thickness of the grid strings
+    assert extents_match_printed(11.8, 14.0, [14250, 12000])  # either axis order
+    assert not extents_match_printed(30.0, 20.0, [14250, 12000])  # a network of grid lines spans something else
