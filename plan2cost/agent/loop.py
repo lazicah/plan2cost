@@ -17,7 +17,7 @@ How to work:
 4. Record each value against a checklist item (record_fact). A value from the drawings needs its page and the exact printed text.
    Use "assumed" only when the set is silent, give the standard it comes from, and it will be flagged.
 5. If an item cannot be settled from the drawings and no standard default is safe, ask the user (ask_user). Never guess a dimension.
-6. If a structural drawing is given, read_foundation_section and read_pad_bases first (their printed values beat defaults). compute_foundation (strip foundation from the ground floor walls), then compute_boq, then submit_boq. Submit is refused until every checklist item is settled.
+6. If a structural drawing is given, read_foundation_section, read_pad_bases and read_strip_layout first (their printed values beat defaults). compute_foundation (strip foundation from the ground floor walls), then compute_boq, then submit_boq. Submit is refused until every checklist item is settled.
 
 Wall girth comes from read_wall_girth on each floor-plan page; record it as source "computed" (it is approximate). read_wall_girth also reports junction_ends: record it as junction_ends_ground for the ground floor, and its building_length_m and building_width_m as facts of those names. Wall girth per floor is recorded as facts named ext_girth_<floor>_m and int_girth_<floor>_m (floor: ground, first, ...).
 Girth is your job, never the user's: the users are not technical and do not know the word. Read the wall lengths from the plan, grid line by
@@ -67,7 +67,7 @@ def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> Non
 def run_agent(run: Run, llm: Callable[[list], str] = default_llm, max_turns: int = 30, tools: dict | None = None) -> Run:
     if not run.messages:
         run.messages = [{"role": "system", "content": _system()},
-                        {"role": "user", "content": f"Objective: {run.objective}\nThe drawing set is the PDF at: {run.pdf}" + (f"\nA structural drawing set is also given: read_foundation_section and read_pad_bases must be called before compute_foundation." if run.structural_pdf else "")}]
+                        {"role": "user", "content": f"Objective: {run.objective}\nThe drawing set is the PDF at: {run.pdf}" + (f"\nA structural drawing set is also given: read_foundation_section, read_pad_bases and read_strip_layout must be called before compute_foundation." if run.structural_pdf else "")}]
     start = run.turn
     while run.status == "running" and run.turn - start < max_turns:
         step(run, llm, tools)

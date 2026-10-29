@@ -126,6 +126,8 @@ def submit_boq(run: Run, summary: str = "") -> dict:
             problems.append("A structural drawing was given but the foundation section was not read (read_foundation_section).")
         if "pads" not in run.data:
             problems.append("A structural drawing was given but the column bases were not read (read_pad_bases).")
+        if "strip_layout" not in run.data:
+            problems.append("A structural drawing was given but the strip layout was not read (read_strip_layout).")
     if problems:
         return {"refused": problems}
     run.status = "done"
@@ -259,6 +261,35 @@ def read_pad_bases(run: Run) -> dict:
     return {"pages": pages, "bases": [f"type {p.type}: {p.length_m:g} x {p.width_m:g} m, {p.thickness_m * 1000:.0f}mm thick, {p.count} no" for p in kept], "questions": questions}
 
 
+def read_strip_layout(run: Run) -> dict:
+    """Strip footing girth from the structural foundation layout (needs read_pad_bases first). The grid, printed bays and dashed footing edges
+    give the runs; the column bases are taken out because they are dug as pits. Replaces the ground floor stand-in in compute_foundation."""
+    import re
+
+    from plan2cost.pdf import page_count, page_text
+    from plan2cost.strip_layout import measure_strips
+
+    if not run.structural_pdf:
+        return {"error": "No structural drawing was given for this run."}
+    if "pads" not in run.data:
+        return {"error": "Read the column bases first (read_pad_bases): their sizes are taken out of the strip runs."}
+    pages = [p for p in range(1, page_count(run.structural_pdf) + 1) if re.search(r"FOUNDATION\s*LAYOUT", page_text(run.structural_pdf, p), re.I)]
+    if not pages:
+        return {"error": "No foundation layout page found in the structural drawing."}
+    sizes = {d["type"]: d["length_m"] for d in run.data["pads"]}
+    layout = measure_strips(run.structural_pdf, pages[0], sizes)
+    if not layout.runs:
+        return {"error": f"No strip runs could be measured on page {pages[0]} ({layout.scale_basis or 'the page is not a vector drawing'}). Use the ground floor plan instead (compute_foundation)."}
+    run.data["strip_layout"] = {"page": pages[0], "gross_m": layout.gross_m, "net_m": layout.net_m,
+                                "floating_base_types": layout.floating_base_types, "scaled_runs": [f"{r.axis}{r.line} {r.start}-{r.end}" for r in layout.runs if r.basis != "printed"]}
+    item = next((c["id"] for c in run.checklist if "foundation" in c["question"].lower()), run.checklist[0]["id"] if run.checklist else "C1")
+    record_fact(run, item=item, name="strip_girth_m", value=layout.net_m, unit="m", source="computed", page=pages[0],
+                basis=f"{len(layout.runs)} runs along grid lines, {layout.gross_m} m centre to centre less {round(layout.gross_m - layout.net_m, 2)} m inside the column bases", file="structural")
+    return {"page": pages[0], "runs": [f"{r.axis} {r.line} {r.start}-{r.end}: {r.length_m} m less bases {r.bases_m} = {r.net_m}" for r in layout.runs],
+            "gross_m": layout.gross_m, "net_m": layout.net_m, "scale": layout.scale_basis,
+            "not_measured": f"{len(layout.floating_base_types)} base(s) off the grid (types {layout.floating_base_types}) and the strips serving them" if layout.floating_base_types else None}
+
+
 def compute_foundation(run: Run, block_mm: int = 230) -> dict:
     """Strip foundation from the ground floor walls when no foundation layout is given: trench girth is the ground floor wall girth less
     the overlaps at joints, trench width is three times the block thickness, depths are flagged defaults. Needs the facts
@@ -268,10 +299,14 @@ def compute_foundation(run: Run, block_mm: int = 230) -> dict:
     from plan2cost.tools.foundation import GridLine, foundation_takeoff
 
     facts = {f["name"]: f["value"] for f in run.facts}
-    if "ext_girth_ground_m" not in facts or "int_girth_ground_m" not in facts:
-        return {"error": "Record ext_girth_ground_m and int_girth_ground_m first (read_wall_girth on the ground floor plan)."}
-    total = float(facts["ext_girth_ground_m"]) + float(facts["int_girth_ground_m"])
-    overlaps = float(facts.get("junction_ends_ground", 0)) * block_mm / 1000
+    layout = run.data.get("strip_layout")
+    if layout:  # the drawn strip layout beats the ground floor stand-in: blockwork runs the full length, the trench is net of the bases
+        total, overlaps = float(layout["gross_m"]), float(layout["gross_m"]) - float(layout["net_m"])
+    elif "ext_girth_ground_m" not in facts or "int_girth_ground_m" not in facts:
+        return {"error": "Record ext_girth_ground_m and int_girth_ground_m first (read_wall_girth on the ground floor plan), or read the strip layout (read_strip_layout)."}
+    else:
+        total = float(facts["ext_girth_ground_m"]) + float(facts["int_girth_ground_m"])
+        overlaps = float(facts.get("junction_ends_ground", 0)) * block_mm / 1000
     drawn = {"block_mm": block_mm}
     if "fdn_footing_width_mm" in facts:
         drawn["width_mm"] = float(facts["fdn_footing_width_mm"])
@@ -348,6 +383,7 @@ TOOLS = {
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
     "read_foundation_section": (read_foundation_section, "no args: foundation cross-section (footing, blinding, slab, filling, overall depth) from the structural drawing, when one is given"),
+    "read_strip_layout": (read_strip_layout, "no args: strip footing girth from the structural foundation layout; call after read_pad_bases, before compute_foundation"),
     "read_pad_bases": (read_pad_bases, "no args: column base types (size, thickness, number) from the structural drawing, when one is given"),
     "compute_foundation": (compute_foundation, "block_mm: int (default 230): strip foundation from the ground floor walls; run after the ground girth is recorded, before compute_boq"),
     "compute_boq": (compute_boq, "no args: wall areas and priced lines from the recorded facts"),
