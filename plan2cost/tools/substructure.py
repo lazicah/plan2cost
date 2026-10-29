@@ -53,7 +53,12 @@ def disposal_and_backfill(excavation_m3: float, blockwork_girth_m: float, blockw
     return {"disposal_off_site_m3": disposal, "backfill_around_foundations_m3": whole_units(excavation_m3 - disposal)}
 
 
-def void_filling_m3(blockwork_area_m2: float, void_depth_m: float = 0.1153) -> float:
-    """Mass concrete in the cores of sandcrete blocks below DPC. 0.1153 is the ratio on the author's plan2 sheet (10.26 m3 on 89 m2), not a
-    derived or published figure; confirm it with him before relying on it for other block sizes."""
-    return round(blockwork_area_m2 * void_depth_m, 2)
+BLOCKS_PER_M2 = 10  # the author's count of 450 x 225 blocks per m2 of wall face
+VOID_PER_BLOCK_M3 = 0.01153  # the author's constant: concrete in the cores of one 225mm hollow block (about half the block's 0.0228 m3)
+
+
+def void_filling_m3(blockwork_area_m2: float, blocks_per_m2: float = BLOCKS_PER_M2, void_per_block_m3: float = VOID_PER_BLOCK_M3) -> float:
+    """Mass concrete in the cores of the hollow blocks below DPC: blocks x void per block. Both numbers are the author's constants for the
+    225mm block (10 x 0.01153 = 0.1153 m3 per m2; 89 m2 gives his 10.26 m3). The void per block is for the 225mm block only; another block
+    thickness needs its own constant, so ask rather than reuse it."""
+    return round(blockwork_area_m2 * blocks_per_m2 * void_per_block_m3, 2)
