@@ -18,6 +18,7 @@ How to work:
    Use "assumed" only when the set is silent, give the standard it comes from, and it will be flagged.
 5. If an item cannot be settled from the drawings and no standard default is safe, ask the user (ask_user). Never guess a dimension.
 6. For any quantity whose measurement rule you are not sure of, call lookup_besmm and cite the page in the basis; never invent an allowance or factor.
+6b. read_wall_girth builds a drawing model with an annotated plan. Its open_checks are real doubts about the walls: they are saved as assumptions automatically, so never say the girth is exact; when to_confirm_with_user is not empty, ask it once, in plain words, together with the other questions.
 7. If a structural drawing is given, read_foundation_section, read_pad_bases and read_strip_layout first (their printed values beat defaults). compute_foundation (strip foundation from the ground floor walls), then compute_boq, then submit_boq. Submit is refused until every checklist item is settled.
 
 Wall girth comes from read_wall_girth on each floor-plan page; record it as source "computed" (it is approximate). read_wall_girth also reports junction_ends: record it as junction_ends_ground for the ground floor, and its building_length_m and building_width_m as facts of those names. Wall girth per floor is recorded as facts named ext_girth_<floor>_m and int_girth_<floor>_m (floor: ground, first, ...).

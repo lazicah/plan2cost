@@ -176,17 +176,33 @@ def read_levels(run: Run) -> dict:
 
 def read_wall_girth(run: Run, page: int, floor: str) -> dict:
     """Wall girth for one floor from a floor-plan page, measured by code: vector line work is read exactly, a raster page is read through the
-    image route (the model reads the printed overall dimensions to fix the scale). The result says which route was used and how far to trust it
-    (confidence high, medium or low); external is the walls with outdoors on one side, which can differ from an outline-only convention.
-    Record it as source "computed". For an upper floor use assume_floor_like_ground when the plan cannot be read."""
+    image route (the model reads the printed overall dimensions to fix the scale). Builds the drawing model for the floor (every wall with an id,
+    the scale evidence, quality checks) and an annotated plan the user can check. The result says which route was used, how far to trust it
+    (confidence high, medium or low) and which checks are open. External is the walls with outdoors on one side, which can differ from an
+    outline-only convention. Record it as source "computed". For an upper floor use assume_floor_like_ground when the plan cannot be read."""
     from plan2cost.interpret import interpret_page
+    from plan2cost.markup import model_for_page
 
-    m = interpret_page(run.pdf, int(page), str(run.dir / "scratch"))
-    if m.get("error"):
-        return m
-    return {"floor": floor, "ext_girth_m": float(m["external_m"]), "int_girth_m": float(m["internal_m"]), "walls": m["walls"],
-            "junction_ends": m["junction_ends"], "building_length_m": float(m["length_m"]), "building_width_m": float(m["width_m"]),
-            "route": m["route"], "confidence": m["confidence"], "scale": m["scale"], "notes": m.get("notes", []),
+    models_dir = run.dir / "models"
+    try:
+        model = model_for_page(run.pdf, int(page), floor, str(models_dir))
+    except ValueError as e:  # no route kept its walls: fall back to the plain measurement, without a drawing model
+        m = interpret_page(run.pdf, int(page), str(run.dir / "scratch"))
+        if m.get("error"):
+            return {"error": m["error"], "detail": str(e)}
+        return {"floor": floor, "ext_girth_m": float(m["external_m"]), "int_girth_m": float(m["internal_m"]), "walls": m["walls"], "junction_ends": m["junction_ends"],
+                "building_length_m": float(m["length_m"]), "building_width_m": float(m["width_m"]), "route": m["route"], "confidence": "low",
+                "note": "no drawing model could be built for this page; treat the girth as a rough estimate"}
+    run.data.setdefault("models", {})[floor] = {"file": f"models/drawing_model_{floor}_p{int(page)}.json", "markup": f"models/{model.markup}", **model.summary()}
+    open_checks = [i for i in model.issues if i.severity != "info"]
+    for i in open_checks:  # open checks travel with the estimate so they cannot be lost at submit
+        run.assumptions.append({"name": "_".join(["drawing_check", floor, i.code, *i.elements[:2]]), "value": "open", "basis": f"{i.message} {i.check}".strip()})
+    t = model.totals
+    return {"floor": floor, "ext_girth_m": float(t["external_m"]), "int_girth_m": float(t["internal_m"]), "walls": len(model.walls()),
+            "junction_ends": sum(len(e.connected) for e in model.walls()) // 2, "building_length_m": float(t["length_m"]), "building_width_m": float(t["width_m"]),
+            "route": model.route, "confidence": model.confidence, "scale": model.calibrations[0].basis, "markup": f"models/{model.markup}",
+            "open_checks": [f"{i.code}: {i.message}" for i in open_checks],
+            "to_confirm_with_user": [i.check for i in model.issues if i.code == "external_convention"],
             "note": "approximate; the external and internal split depends on what counts as outdoors, so treat it as medium confidence"}
 
 

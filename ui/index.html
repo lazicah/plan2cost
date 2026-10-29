@@ -96,12 +96,16 @@ function render(run) {
       <tr><td colspan="5"><b>Total (priced lines)</b></td><td class="n"><b>${money(run.boq.total)} ${esc(run.boq.currency)}</b></td></tr></table>
       ${run.boq.unpriced?.length ? `<p class="small assumed">Unpriced, add a rate to include: ${run.boq.unpriced.map(esc).join(', ')}</p>` : ''}
       ${run.assumptions.length ? `<p class="small mute">Assumptions: ${run.assumptions.map(a => esc(a.name) + ' = ' + esc(a.value) + ' (' + esc(a.basis) + ')').join('; ')}</p>` : ''}</section>` : '';
+  const models = Object.values(run.models || {}).map(m => `<section class="card"><h2>Walls found: ${esc(m.floor)} floor, page ${esc(m.page)}</h2>
+      <div class="small">${m.walls} walls, ${money(m.total_m)} m (external ${money(m.external_m)}, internal ${money(m.internal_m)}) by the ${esc(m.route)} route, ${esc(m.confidence)} confidence.</div>
+      ${m.issues.length ? `<ul class="small">${m.issues.map(i => `<li class="${i.severity === 'error' ? 'escalated' : 'assumed'}">${esc(i.message)}</li>`).join('')}</ul>` : '<div class="small proven">All checks passed.</div>'}
+      <a href="/api/runs/${run.id}/${esc(m.markup)}" target="_blank"><img src="/api/runs/${run.id}/${esc(m.markup)}" alt="annotated plan" style="width:100%;border:1px solid var(--line);border-radius:8px;margin-top:8px"></a></section>`).join('');
   $('#main').innerHTML = `<section class="card row"><span class="pill ${run.status}">${esc(run.status.replace('_', ' '))}</span>
       <span>Turn ${run.turn}</span><span class="mute small">${esc(run.pdf.split('/').pop())}</span><span class="spacer"></span>
       <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${q}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
-      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${boq}`;
+      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}`;
   const btn = $('#answer');
   if (btn) btn.onclick = async () => { btn.disabled = true; await api(`/api/runs/${run.id}/answer`, {answer: $('#ans').value}); };
 }

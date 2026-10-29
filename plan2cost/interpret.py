@@ -146,7 +146,12 @@ def interpret_image(path: str, facts: dict | None = None, dark: int = 150, keep_
     return {"source": "raster", "scale": scale_basis, "mm_per_px": round(s, 3), "ruler": [best["px"], best["kind"], best["block"]], "wall_weight_px": info["wall_weight"],
             "length_m": round(length, 2), "width_m": round(width, 2), "walls": len(walls), "total_m": round(total, 2), "external_m": round(ext, 2),
             "internal_m": round(total - ext, 2), "junction_ends": junctions(walls), "by_thickness_m": girth_by_thickness(walls), "building": best["building"],
-            "notes": notes, "tried": tried, **({"_walls": walls} if keep_walls else {})}
+            "notes": notes, "tried": tried,
+            **({"_walls": walls, "_fractions": fr, "_unit": "px", "_mm_per_unit": s, "_image": path, "_calibration": {
+                "method": "wall thickness as a ruler, block size chosen by the printed overall dimensions" if best["err"] is not None else "wall thickness assumed to be 225mm",
+                "kind": best["kind"], "ruler_px": best["px"], "block_mm": best["block"], "fit_error": best["err"], "basis": scale_basis, "readings": tried,
+                "printed_overall_mm": (facts or {}).get("horizontal_mm", []) + (facts or {}).get("vertical_mm", []), "stated_denominator": (facts or {}).get("scale")}}
+               if keep_walls else {})}
 
 
 def extents_match_printed(length_m: float, width_m: float, printed_mm: list[int], tol: float = 0.07) -> bool:
@@ -157,7 +162,7 @@ def extents_match_printed(length_m: float, width_m: float, printed_mm: list[int]
         any(abs(a - width_m) <= tol * width_m and abs(b - length_m) <= tol * length_m for a in vals for b in vals)
 
 
-def interpret_page(pdf: str, page: int, scratch: str | None = None) -> dict:
+def interpret_page(pdf: str, page: int, scratch: str | None = None, keep: bool = False) -> dict:
     """Wall measurement for one plan page of a PDF, by the best route the page allows. Vector line work is read exactly; a raster page is
     rendered and read through the image route (the model reads the printed overall dimensions to fix the scale); a page neither route can
     read falls back to the older measurement tuned to one drawing style, flagged as low confidence. `confidence` says how far to trust it."""
@@ -169,7 +174,7 @@ def interpret_page(pdf: str, page: int, scratch: str | None = None) -> dict:
 
     from plan2cost.dims import dimension_tokens
 
-    v = measure_walls_vector(pdf, page)
+    v = measure_walls_vector(pdf, page, keep=keep)
     if "error" not in v and v["total_m"] >= 25 and not extents_match_printed(v["length_m"], v["width_m"], [t.value for t in dimension_tokens(pdf, page)]):
         v = {"error": "the measured building does not match the printed overall dimensions (probably not the walls)", "was": v["total_m"]}
     if "error" not in v and v["total_m"] >= 25:
@@ -187,9 +192,10 @@ def interpret_page(pdf: str, page: int, scratch: str | None = None) -> dict:
         facts_note = f"the model could not read the printed dimensions ({type(e).__name__})"
     else:
         facts_note = None
-    r = interpret_image(img, facts)
+    r = interpret_image(img, facts, keep_walls=keep)
     if "error" not in r and r["total_m"] >= 25:
         r["route"] = "raster"
+        r["_image"] = img
         fitted = "printed overall dimensions fit" in r["scale"]
         r["confidence"] = "medium" if fitted and r.get("building") else "low"
         if facts_note:

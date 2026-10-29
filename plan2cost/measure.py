@@ -44,6 +44,12 @@ def measure_walls(pdf: str, page: int, dpi: int = 150, margin_mm: float = 2500) 
 
 def vector_scale(pdf: str, page: int, pg, lines, stated_denominator: float | None = None) -> tuple[float | None, str]:
     """Scale in mm per point, best source first. Each source says how it was found so the caller can state its confidence."""
+    d = vector_scale_detail(pdf, page, pg, lines, stated_denominator)
+    return d["mm_per_pt"], d["basis"]
+
+
+def vector_scale_detail(pdf: str, page: int, pg, lines, stated_denominator: float | None = None) -> dict:
+    """The same, with the evidence kept: which method, how many printed dimensions voted and how strongly they agreed."""
     from plan2cost.scale import fit_scale
 
     from plan2cost.pdf import page_text
@@ -53,17 +59,22 @@ def vector_scale(pdf: str, page: int, pg, lines, stated_denominator: float | Non
     stated_denominator = stated_denominator or stated_scale(page_text(pdf, page))
     t = fit_scale(toks, pg.segs, lines, stated_denominator)
     if t["mm_per_pt"] and t["votes"] >= 8 and t["agree"] >= 0.25 and t["dominance"] >= 2:
-        return t["mm_per_pt"], f"printed dimensions against the lines they measure ({t['votes']} dimensions, {int(t['agree'] * 100)}% agree)"
+        return {"mm_per_pt": t["mm_per_pt"], "method": "printed dimensions against the lines they measure", "votes": t["votes"], "agree": t["agree"],
+                "dominance": t["dominance"], "stated_denominator": stated_denominator,
+                "basis": f"printed dimensions against the lines they measure ({t['votes']} dimensions, {int(t['agree'] * 100)}% agree)"}
     grid = calibrate(find_grid(pdf, page), [x.value for x in toks])
     if grid.mm_per_pt and len(grid.verticals) >= 2 and len(grid.horizontals) >= 2:
-        return grid.mm_per_pt, grid.scale_basis + " (grid bubbles; about 2% accuracy)"
+        return {"mm_per_pt": grid.mm_per_pt, "method": "grid bubbles against printed chains", "stated_denominator": stated_denominator,
+                "basis": grid.scale_basis + " (grid bubbles; about 2% accuracy)"}
     from plan2cost.scale import scale_from_wall_thickness
 
     w = scale_from_wall_thickness(lines, stated_denominator)
-    return (w["mm_per_pt"], w["basis"]) if w.get("mm_per_pt") else (None, "")
+    if w.get("mm_per_pt"):
+        return {"mm_per_pt": w["mm_per_pt"], "method": "wall thickness with the stated scale", "stated_denominator": stated_denominator, "basis": w["basis"]}
+    return {"mm_per_pt": None, "method": "none", "basis": ""}
 
 
-def measure_walls_vector(pdf: str, page: int, mm_per_pt: float | None = None, stated_denominator: float | None = None, mask_mm_per_px: float = 50.0) -> dict:
+def measure_walls_vector(pdf: str, page: int, mm_per_pt: float | None = None, stated_denominator: float | None = None, mask_mm_per_px: float = 50.0, keep: bool = False) -> dict:
     """The exact route for a plan drawn as vectors: same result shape as measure_walls, from face lines instead of pixels. The scale is
     read from the drawing (or given, e.g. from dimensions the model read); the wall weight and the building cluster are found, not set."""
     from plan2cost.vector import read_page
@@ -74,9 +85,10 @@ def measure_walls_vector(pdf: str, page: int, mm_per_pt: float | None = None, st
     lines = axis_lines(pg.segs)
     if len(lines) < 50:
         return {"error": "This page has too little vector line work (a raster plan?).", "confidence": "none"}
-    basis = "given"
+    basis, detail = "given", {"method": "given", "basis": "given"}
     if not mm_per_pt:
-        mm_per_pt, basis = vector_scale(pdf, page, pg, lines, stated_denominator)
+        detail = vector_scale_detail(pdf, page, pg, lines, stated_denominator)
+        mm_per_pt, basis = detail["mm_per_pt"], detail["basis"]
     if not mm_per_pt:
         return {"error": "No scale could be read from this page; give one from printed dimensions.", "confidence": "none"}
     walls, info = find_walls_vector(lines, mm_per_pt)
@@ -89,4 +101,5 @@ def measure_walls_vector(pdf: str, page: int, mm_per_pt: float | None = None, st
     length, width = extents_m(walls)
     return {"source": "vector", "scale": basis, "mm_per_pt": mm_per_pt, "wall_weight_pt": info["wall_weight"], "length_m": round(length, 2), "width_m": round(width, 2),
             "walls": len(walls), "total_m": round(total, 2), "external_m": round(ext, 2), "internal_m": round(total - ext, 2),
-            "junction_ends": junctions(walls), "by_thickness_m": girth_by_thickness(walls)}
+            "junction_ends": junctions(walls), "by_thickness_m": girth_by_thickness(walls),
+            **({"_walls": walls, "_fractions": fr, "_unit": "pt", "_mm_per_unit": mm_per_pt, "_calibration": detail} if keep else {})}

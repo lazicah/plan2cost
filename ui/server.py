@@ -3,6 +3,7 @@
     python ui/server.py            then open http://127.0.0.1:8765
 """
 import json
+import re
 import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +34,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, (ROOT / "ui" / "index.html").read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/runs":
             self._json(200, view.list_runs())
+        elif re.match(r"^/api/runs/\d{8}-\d{6}/models/[\w.\-]+\.(jpg|json)$", self.path):  # the annotated plans and drawing models of a run
+            f = view.RUNS_DIR / self.path.split("/")[3] / "models" / self.path.split("/")[5]
+            if f.is_file():
+                self._send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "application/json")
+            else:
+                self._json(404, {"error": "no such file"})
         elif self.path.startswith("/api/runs/") and view.RUN_ID.match(self.path.split("/")[3]):
             try:
                 self._json(200, view.summary(Run.load(self.path.split("/")[3])))
