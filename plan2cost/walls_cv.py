@@ -4,7 +4,7 @@ A cut wall is drawn as two thin parallel face lines one wall thickness apart. We
 runs of the right spacing that overlap, and merge collinear pieces across openings (the QS convention: full runs, openings ignored). All
 lengths are in millimetres from the fitted scale; no model is involved at this stage. The model's job comes later, on the walls this
 finds that are ambiguous."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
@@ -17,6 +17,7 @@ class Wall:
     start_mm: float
     end_mm: float
     thickness_mm: float
+    gaps: list = field(default_factory=list)  # (start_mm, end_mm) stretches along the run that were bridged: openings, or places the faces were not found
 
     @property
     def length_mm(self) -> float:
@@ -134,10 +135,13 @@ def _merge(pieces: list[Wall], bridge_mm: float, tol_mm: float = 60) -> list[Wal
             last = None
             for p in sorted(cl, key=lambda w: w.start_mm):
                 if last and p.start_mm - last.end_mm <= bridge_mm:
+                    if p.start_mm > last.end_mm + 1:
+                        last.gaps.append((last.end_mm, p.start_mm))
+                    last.gaps.extend(p.gaps)
                     last.end_mm = max(last.end_mm, p.end_mm)
                     last.thickness_mm = max(last.thickness_mm, p.thickness_mm)  # nominal classes: keep the thickest piece's class
                 else:
-                    last = Wall(p.orient, p.centre_mm, p.start_mm, p.end_mm, p.thickness_mm)
+                    last = Wall(p.orient, p.centre_mm, p.start_mm, p.end_mm, p.thickness_mm, list(p.gaps))
                     merged.append(last)
     return merged
 

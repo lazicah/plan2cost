@@ -43,3 +43,11 @@ code runs on it: overlapping runs (possible double count), runs past the last jo
 nothing, building size against the printed overall dimensions, weak scale evidence, and external-versus-outline convention. A model reviews the annotated
 plan as well and can only add questions. Examples: plan 1 (image) is flagged for a missing north wall by both the extents check (11.0 m deep against
 13.5 m printed) and the model review; plan 2's architectural page is flagged for two grid lines merged into walls.
+
+## Openings tied to walls (plan 6 ground floor, raster route)
+Candidates: stretches of a wall where both faces are broken (46) plus printed dimensions equal to a schedule width. The model looks at a crop of each
+candidate (door, window, bare opening, not an opening) and reads its tag; tags in the text layer are used first and each tag belongs to one gap only.
+Result against the author's window counts (ground floor: 16 at 600 mm and 4 at 900 mm): 12 found at 600 mm (AW1) and 5 at 900 mm (AW2), plus AW3 x4 and
+AW4 x2 which the author's per-floor count does not list. Doors are weaker: the plan carries no door tags and several schedule types share one width, so
+12 of 16 doors stay unmatched (they keep the schedule's old external/internal rule in the BoQ). Over-counts are flagged (AW3: 4 found, 2 in the whole
+building's schedule) and the BoQ never deducts more than the schedule has.

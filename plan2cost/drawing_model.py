@@ -46,6 +46,10 @@ class Element:
     evidence: str = "geometrically measured"
     confidence: str = "medium"
     notes: list = field(default_factory=list)
+    gaps_mm: list = field(default_factory=list)  # stretches along the run (sheet frame) where both faces are broken: candidate openings
+    parent: str = ""  # for a door, window or opening: the id of the wall it is in
+    mark: str = ""  # the tag on the drawing (W3, D2...) and the schedule type it was matched to
+    width_mm: float = 0.0  # measured from the drawing, for an opening
 
 
 @dataclass
@@ -73,6 +77,9 @@ class DrawingModel:
     def walls(self) -> list:
         return [e for e in self.elements if e.category == "wall"]
 
+    def openings(self) -> list:
+        return [e for e in self.elements if e.category in ("door", "window", "opening")]
+
     def summary(self) -> dict:
         return {"floor": self.floor, "page": self.page, "route": self.route, "confidence": self.confidence, **self.totals, "walls": len(self.walls()),
                 "issues": [{"severity": i.severity, "code": i.code, "message": i.message, "source": i.source} for i in self.issues if i.severity != "info"],
@@ -96,6 +103,17 @@ def touching(a: Wall, b: Wall, tol_mm: float = 150) -> bool:
     return h.start_mm - tol_mm <= v.centre_mm <= h.end_mm + tol_mm and v.start_mm - tol_mm <= h.centre_mm <= v.end_mm + tol_mm
 
 
+def merge_gaps(gaps: list, start: float, end: float, join_mm: float = 60) -> list:
+    """One interval per opening: overlapping or touching gaps are joined, and a gap at the very end of a run is not an opening (it is where the run stops)."""
+    out: list = []
+    for a, b in sorted(gaps):
+        if out and a <= out[-1][1] + join_mm:
+            out[-1][1] = max(out[-1][1], b)
+        else:
+            out.append([a, b])
+    return [[round(a, 1), round(b, 1)] for a, b in out if a > start + 100 and b < end - 100]
+
+
 def stable_order(walls: list[Wall]) -> list[int]:
     """Indexes in a fixed order, so the same drawing always gives the same ids: horizontal runs top to bottom, then vertical runs left to right,
     each by where it starts. Positions are rounded to 50mm so a one-pixel wobble does not reshuffle ids."""
@@ -117,7 +135,8 @@ def build_model(result: dict, floor: str, page: int, printed_mm: list | None = N
         notes = ["part of this run has the outdoors on one side and part does not"] if 0.15 < f < 0.85 else []
         elements.append(Element(ids[i], "wall", "external" if f >= 0.5 else "internal", page, floor, w.orient, round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1),
                                 round(w.length_mm / 1000, 3), float(w.thickness_mm), external_share=round(float(f), 2),
-                                connected=sorted(ids[j] for j, v in enumerate(walls) if j != i and touching(w, v)), confidence=conf, notes=notes))
+                                connected=sorted(ids[j] for j, v in enumerate(walls) if j != i and touching(w, v)), confidence=conf, notes=notes,
+                                gaps_mm=merge_gaps(w.gaps, w.start_mm, w.end_mm)))
     cal = result.get("_calibration", {})
     method = cal.get("method", "unknown")
     strong = method.startswith("printed dimensions") or "overall dimensions" in method

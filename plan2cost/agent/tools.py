@@ -206,6 +206,48 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
             "note": "approximate; the external and internal split depends on what counts as outdoors, so treat it as medium confidence"}
 
 
+def locate_openings_tool(run: Run, floor: str) -> dict:
+    """Find the doors, windows and openings on a floor's plan and tie each to the wall it is in (so external or internal comes from the wall, not
+    a guess) and to a schedule type. Needs read_wall_girth for that floor and read_openings (the schedule). Candidates are gaps in the walls and
+    printed dimensions equal to a schedule width; the model checks each one by looking at a crop and reads its tag. Counts per schedule type go to
+    the BoQ; anything that cannot be matched stays on the schedule and is flagged."""
+    from plan2cost.drawing_model import DrawingModel
+    from plan2cost.markup import draw_markup, plan_image
+    from plan2cost.openings import counts_by_mark, locate_openings
+
+    entry = (run.data.get("models") or {}).get(floor)
+    if not entry:
+        return {"error": f"Read the wall girth for the {floor} floor first (read_wall_girth), so there is a drawing model to put the openings in."}
+    if not run.data.get("openings"):
+        return {"error": "Read the schedule first (read_openings): the openings are matched to its types."}
+    model = DrawingModel.load(run.dir / entry["file"])
+    if model.openings():
+        return {"error": f"The openings of the {floor} floor are already located."}
+    img, scale = plan_image(model, run.pdf, model.page, None, 200)
+    schedule = [{"label": o["label"], "width_m": o["width_m"], "height_m": o["height_m"], "count": o["count"], "kind": o["kind"]} for o in run.data["openings"]]
+    before = len(model.issues)
+    locate_openings(model, img, scale, run.pdf, model.page, schedule)
+    model.save(run.dir / entry["file"])
+    draw_markup(model, str(run.dir / entry["markup"]), pdf=run.pdf, page=model.page)
+    counts = counts_by_mark(model)
+    run.data.setdefault("located_openings", {})[floor] = counts
+    run.data["models"][floor] = {**entry, **model.summary()}
+    new = model.issues[before:]
+    for i in new:
+        if i.severity != "info":
+            run.assumptions.append({"name": "_".join(["drawing_check", floor, i.code, *i.elements[:2]]), "value": "open", "basis": f"{i.message} {i.check}".strip()})
+    kinds: dict = {}
+    for o in model.openings():
+        kinds[o.category] = kinds.get(o.category, 0) + 1
+    total: dict = {}
+    for fc in run.data["located_openings"].values():
+        for mark, c in fc.items():
+            total[mark] = total.get(mark, 0) + c["external"] + c["internal"]
+    versus = {o["label"]: {"schedule": o["count"], "found_so_far": total.get(o["label"].upper(), 0)} for o in run.data["openings"]}
+    return {"floor": floor, "found": kinds, "by_schedule_type": counts, "schedule_vs_found": versus, "unmatched": sum(1 for o in model.openings() if not o.mark),
+            "checks": [f"{i.code}: {i.message}" for i in new if i.severity != "info"], "markup": entry["markup"]}
+
+
 def read_notes(run: Run, pages: list | None = None) -> dict:
     """Specification notes (roof sheet, timber, ceiling, floor finish, slab thickness...) from the pages' text, each with its exact
     quote already checked against the page. Default pages: sections, details, roof plans and elevations. Record the ones you need
@@ -375,6 +417,31 @@ def compute_foundation(run: Run, block_mm: int = 230) -> dict:
             "assumed": [f"{a.name}={a.value}" for a in log if a.source == "assumed"]}
 
 
+def merge_located_openings(schedule: list[dict], located: dict) -> list:
+    """The openings the BoQ deducts. For each schedule type, the ones found on the plans count on the side of the wall they sit in; whatever the
+    schedule has beyond that stays as scheduled, on the old rule (windows external, doors by material), so nothing is counted twice or dropped."""
+    from plan2cost.tools.walls import Opening
+
+    found: dict = {}
+    for floor_counts in located.values():
+        for mark, c in floor_counts.items():
+            f = found.setdefault(mark, {"external": 0, "internal": 0})
+            f["external"] += c["external"]
+            f["internal"] += c["internal"]
+    out = []
+    for o in schedule:
+        o = dict(o)
+        f = found.get(o["label"].upper(), {"external": 0, "internal": 0})
+        ext_n, int_n = min(f["external"], o["count"]), min(f["internal"], max(o["count"] - f["external"], 0))
+        rest = o["count"] - ext_n - int_n
+        for n, external in ((ext_n, True), (int_n, False)):
+            if n:
+                out.append(Opening(o["label"], o["width_m"], o["height_m"], n, o["kind"], external))
+        if rest:
+            out.append(Opening(o["label"], o["width_m"], o["height_m"], rest, o["kind"], o["external"]))
+    return out
+
+
 def compute_boq(run: Run) -> dict:
     """Wall blockwork and priced BoQ lines from recorded facts: girth per floor (facts named ext_girth_<floor>_m and
     int_girth_<floor>_m), storey heights and the openings read from the drawings."""
@@ -400,7 +467,7 @@ def compute_boq(run: Run) -> dict:
     missing = [f for f in ext if f not in heights]
     if missing:
         return {"error": f"No storey height for {missing}. Read the levels, record an assumed height, or ask the user."}
-    openings = [Opening(**o) for o in run.data.get("openings", [])]
+    openings = merge_located_openings(run.data.get("openings", []), run.data.get("located_openings", {}))
     items = superstructure_boq(ext, internal, heights, openings)
     from plan2cost.boq import BoqItem
 
@@ -414,6 +481,7 @@ def compute_boq(run: Run) -> dict:
 TOOLS = {
     "set_checklist": (set_checklist, 'items: [{"question": str, "evidence": str}], 3 to 12 questions that must be settled to cost the building'),
     "index_document": (index_document, "no args: classify every page of the drawing set"),
+    "locate_openings": (locate_openings_tool, "floor: str: find the doors, windows and openings on that floor's plan and tie them to walls and schedule types (after read_wall_girth and read_openings)"),
     "read_openings": (read_openings, "no args: door and window types from the schedule pages"),
     "read_levels": (read_levels, "no args: storey heights from the sections"),
     "record_fact": (record_fact, 'item: "C1", name: str, value, unit: str, source: "drawing"|"assumed"|"user"|"computed", page: int, quote: exact printed text, basis: str (assumed and computed)'),

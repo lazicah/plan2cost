@@ -1,7 +1,7 @@
 """Walls from exact vector lines: a wall is two parallel face lines a wall-thickness apart that run alongside each other. Candidates only;
 the weight of the lines and what else is drawn around them is kept so the next stage (model and cross-checks) can judge each one."""
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from plan2cost.vector import Seg
 from plan2cost.walls_cv import Wall
@@ -18,6 +18,7 @@ class Line:
     b: float
     w: float
     raw: float = 0.0  # the measured thickness when `w` has been grouped into a weight class (raster); 0 means w is exact
+    gaps: list = field(default_factory=list)  # (a, b) stretches this line was bridged across: where the face is broken
 
     @property
     def length(self) -> float:
@@ -54,6 +55,17 @@ def axis_lines(segs: list[Seg], min_len_pt: float = 2.0) -> list[Line]:
     return [l for l in out if l.length >= min_len_pt]
 
 
+def _both_broken(g1: list, g2: list, lo: float, hi: float) -> list:
+    """Stretches within lo..hi where both faces are broken: an opening interrupts a wall's two faces together."""
+    out = []
+    for a1, b1 in g1:
+        for a2, b2 in g2:
+            a, b = max(a1, a2, lo), min(b1, b2, hi)
+            if b > a:
+                out.append((a, b))
+    return out
+
+
 def pair_walls(lines: list[Line], mm_per_pt: float, min_run_mm: float = 350, windows: dict | None = None) -> list[dict]:
     """Candidate wall pieces: every pair of parallel lines whose spacing is a block thickness and that overlap for at least `min_run_mm`.
     Each carries the line weights so the caller can tell face lines from fixtures and hatching."""
@@ -69,12 +81,14 @@ def pair_walls(lines: list[Line], mm_per_pt: float, min_run_mm: float = 350, win
                 nominal = next((n for n, (lo, hi) in windows.items() if lo <= gap <= hi), None)
                 a, b = max(l1.a, l2.a), min(l1.b, l2.b)
                 if nominal and (b - a) * mm_per_pt >= min_run_mm:
-                    out.append({"orient": orient, "centre_pt": (l1.pos + l2.pos) / 2, "a_pt": a, "b_pt": b, "nominal": nominal, "gap_mm": gap, "gap_pt": l2.pos - l1.pos, "w": (l1.w, l2.w)})
+                    out.append({"orient": orient, "centre_pt": (l1.pos + l2.pos) / 2, "a_pt": a, "b_pt": b, "nominal": nominal, "gap_mm": gap, "gap_pt": l2.pos - l1.pos, "w": (l1.w, l2.w),
+                                "gaps_pt": _both_broken(l1.gaps, l2.gaps, a, b)})
     return out
 
 
 def to_walls(pieces: list[dict], mm_per_pt: float) -> list[Wall]:
-    return [Wall(p["orient"], p["centre_pt"] * mm_per_pt, p["a_pt"] * mm_per_pt, p["b_pt"] * mm_per_pt, p["nominal"]) for p in pieces]
+    return [Wall(p["orient"], p["centre_pt"] * mm_per_pt, p["a_pt"] * mm_per_pt, p["b_pt"] * mm_per_pt, p["nominal"],
+                 [(a * mm_per_pt, b * mm_per_pt) for a, b in p.get("gaps_pt", [])]) for p in pieces]
 
 
 def wall_weight_classes(pieces: list[dict], tol: float = 0.02) -> dict[float, float]:
@@ -100,7 +114,7 @@ def extend_to_centrelines(walls: list[Wall], tol_mm: float = 60) -> list[Wall]:
                 if abs(end - (v.centre_mm - v.thickness_mm / 2 if (i == 1) else v.centre_mm + v.thickness_mm / 2)) <= tol_mm and v.start_mm - tol_mm <= w.centre_mm <= v.end_mm + tol_mm:
                     ext[i] = v.thickness_mm / 2
                     break
-        out.append(Wall(w.orient, w.centre_mm, w.start_mm - ext[0], w.end_mm + ext[1], w.thickness_mm))
+        out.append(Wall(w.orient, w.centre_mm, w.start_mm - ext[0], w.end_mm + ext[1], w.thickness_mm, list(w.gaps)))
     return out
 
 
@@ -189,9 +203,12 @@ def bridge_lines(lines: list[Line], mm_per_pt: float, bridge_mm: float = 3600) -
             cur = None
             for l in g:
                 if cur and (l.a - cur.b) * mm_per_pt <= bridge_mm:
+                    if l.a > cur.b + 0.3:
+                        cur.gaps.append((cur.b, l.a))
+                    cur.gaps.extend(l.gaps)
                     cur.b = max(cur.b, l.b)
                 else:
-                    cur = Line(orient, l.pos, l.a, l.b, l.w)
+                    cur = Line(orient, l.pos, l.a, l.b, l.w, l.raw, list(l.gaps))
                     out.append(cur)
     return out
 

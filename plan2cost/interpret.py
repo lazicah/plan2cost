@@ -196,6 +196,8 @@ def interpret_page(pdf: str, page: int, scratch: str | None = None, keep: bool =
     if "error" not in r and r["total_m"] >= 25:
         r["route"] = "raster"
         r["_image"] = img
+        if "_calibration" in r:
+            r["_calibration"]["dpi"] = 250
         fitted = "printed overall dimensions fit" in r["scale"]
         r["confidence"] = "medium" if fitted and r.get("building") else "low"
         if facts_note:
