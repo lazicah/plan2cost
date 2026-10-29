@@ -32,8 +32,10 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
     for i in open_checks:  # open checks travel with the estimate so they cannot be lost at submit
         run.assumptions.append({"name": "_".join(["drawing_check", floor, i.code, *i.elements[:2]]), "value": "open", "basis": f"{i.message} {i.check}".strip()})
     t = model.totals
+    ext = [e for e in model.walls() if e.subtype == "external"]
+    outer = (max(ext, key=lambda e: e.length_m).thickness_mm / 1000) if ext else 0.0  # joints are on centre lines: add one wall thickness for the outer-face overall size
     return {"floor": floor, "ext_girth_m": float(t["external_m"]), "int_girth_m": float(t["internal_m"]), "walls": len(model.walls()),
-            "junction_ends": sum(len(e.connected) for e in model.walls()) // 2, "building_length_m": float(t["length_m"]), "building_width_m": float(t["width_m"]),
+            "junction_ends": sum(len(e.connected) for e in model.walls()) // 2, "building_length_m": round(float(t["length_m"]) + outer, 2), "building_width_m": round(float(t["width_m"]) + outer, 2),
             "route": model.route, "confidence": model.confidence, "scale": model.calibrations[0].basis, "markup": f"models/{model.markup}",
             "open_checks": [f"{i.code}: {i.message}" for i in open_checks],
             "to_confirm_with_user": [i.check for i in model.issues if i.code == "external_convention"],

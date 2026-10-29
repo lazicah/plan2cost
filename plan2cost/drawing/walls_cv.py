@@ -181,7 +181,11 @@ def footprint_area_m2(walls: list[Wall], shape: tuple[int, int], mm_per_px: floa
 
 
 def extents_m(walls: list[Wall]) -> tuple[float, float]:
-    """Overall length (x) and width (y) of the wall layout, in metres."""
+    """Overall length (x) and width (y) of the wall layout, in metres, between the outermost joints. A run that overshoots the building (a grid or
+    extension line merged into a wall) makes no joint and cannot inflate it; with too few joints the bounding box of the runs is used."""
+    j = joint_extents_mm(walls)
+    if j:
+        return j[0] / 1000, j[1] / 1000
     xs = [w.start_mm for w in walls if w.orient == "h"] + [w.end_mm for w in walls if w.orient == "h"] + [w.centre_mm for w in walls if w.orient == "v"]
     ys = [w.start_mm for w in walls if w.orient == "v"] + [w.end_mm for w in walls if w.orient == "v"] + [w.centre_mm for w in walls if w.orient == "h"]
     return (max(xs) - min(xs)) / 1000, (max(ys) - min(ys)) / 1000

@@ -28,6 +28,13 @@
   "external_wall_paint_m2": "1.29.1.1.2",
   "rebar_y12_foundations_t": "1.11.8.1.34.1",
   "blinding_on_hardcore_m3": "1.11.2.2.1",
-  "brc_mesh_part1_m2": "1.11.8.1.37.2"
+  "brc_mesh_part1_m2": "1.11.8.1.37.2",
+  "floor_finish_m2": "1.28.1.2.2",
+  "internal_wall_finish_m2": "1.28.1.7.2",
+  "ceiling_finish_m2": "1.28.1.9.2",
+  "skirting_m": "1.28.1.14.1",
+  "internal_wall_paint_m2": "1.29.1.1.2",
+  "ceiling_paint_m2": "1.29.1.1.2",
+  "lintel_nr": "1.13.2.2.2"
  }
 }

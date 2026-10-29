@@ -154,6 +154,7 @@ function render(run) {
   const tiles = `<section class="card"><h2>Built so far</h2><div class="tiles">
       ${tile(wf.length, wf.map(([f, m]) => money(m.total_m) + ' m').join(' + '), wf.length ? 'wall girth, ' + wf.map(([f]) => f).join(' + ') + ' floor' : 'walls')}
       ${tile(Object.keys(b.openings_found).length, Object.values(b.openings_found).reduce((a, c) => a + c, 0) + ' of ' + b.openings_scheduled, 'doors and windows tied to walls')}
+      ${tile(Object.keys(b.rooms || {}).length, Object.values(b.rooms || {}).map(r => money(r.net_floor_area_m2) + ' m²').join(' + '), 'net floor area from the printed room sizes')}
       ${tile(b.pads || b.strip, b.strip ? money(b.strip.net_m) + ' m' : b.pads + ' bases', 'foundation: strip girth, column bases')}
       ${tile(b.foundation_lines, b.foundation_lines + ' lines', 'foundation quantities')}
       ${tile(b.boq, b.boq ? b.boq.lines + ' lines' : '', b.boq ? money(b.boq.total) + ' ' + b.boq.currency : 'priced bill')}</div></section>`;

@@ -6,7 +6,8 @@ from pathlib import Path
 
 from plan2cost.takeoff.substructure import (blinding_foundations_m3, disposal_and_backfill, formwork_foundation_sides_m, levelling_compaction_m2,
                                           topsoil_strip_m2, void_filling_m3)
-from plan2cost.takeoff.walls import Opening, blockwork_area_m2
+from plan2cost.takeoff.finishes import external_finish_area
+from plan2cost.takeoff.walls import Opening, blockwork_area_m2, facade_area_m2
 from plan2cost.takeoff.foundation import PadBase, StripSection, ground_bed_takeoff, pad_concrete_m3, pad_rebar_kg, whole_units
 
 
@@ -93,12 +94,13 @@ def superstructure_boq(ext_girth: dict[str, float], int_girth: dict[str, float],
     facade material and the finishes differ between the two faces."""
     ext = blockwork_area_m2(ext_girth, heights, [o for o in openings if o.external])
     internal = blockwork_area_m2(int_girth, heights, [o for o in openings if not o.external])
+    finish = external_finish_area(facade_area_m2(ext_girth, heights), openings)  # BESMM4 1.28 M3: only voids over 1.00 m2 come off a finish
     block = f"{block_mm}mm thick hollow sandcrete blockwork; cement mortar (1:6); stretcher bond"
     items = [
         BoqItem("ext_blockwork_230_m2", f"{block}; external walls", "m2", ext),
         BoqItem("int_blockwork_230_m2", f"{block}; internal walls and partitions", "m2", internal),
-        BoqItem("external_wall_render_m2", "Cement-sand rendering to external walls; over 600mm wide; to blockwork", "m2", ext),
-        BoqItem("external_wall_paint_m2", "Weatherproof paint, 2 coats, on rendered walls; general surfaces over 300mm girth", "m2", ext),
+        BoqItem("external_wall_render_m2", "Cement-sand rendering to external walls; over 600mm wide; to blockwork", "m2", finish),
+        BoqItem("external_wall_paint_m2", "Weatherproof paint, 2 coats, on rendered walls; general surfaces over 300mm girth", "m2", finish),
     ]
     for o in openings:
         where = "external" if o.external else "internal"
@@ -137,7 +139,7 @@ def price_boq(items: list[BoqItem], rates: dict) -> dict:
     unpriced = []
     codes = json.loads(Path("data/besmm_codes.json").read_text())["codes"]
     for i in items:
-        i.besmm = codes.get(i.key, "")
+        i.besmm = codes.get(i.key, "") or (codes["lintel_nr"] if i.key.startswith("lintel_") else "")
         r = rates["rates"].get(i.key)
         if r:
             i.rate, i.amount = r, round(i.qty * r, 2)

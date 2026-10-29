@@ -4,7 +4,9 @@ from pathlib import Path
 
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff.boq import BoqItem, foundation_boq, foundation_extras, price_boq, strip_inputs, substructure_extras, superstructure_boq
+from plan2cost.facts.rooms import Room
 from plan2cost.takeoff.checklist import coverage, statement
+from plan2cost.takeoff.finishes import finishes_boq, floor_finishes, lintel_items
 from plan2cost.takeoff.foundation import GridLine, PadBase, foundation_takeoff
 from plan2cost.takeoff.walls import Opening
 
@@ -72,6 +74,18 @@ def merge_located_openings(schedule: list[dict], located: dict) -> list:
     return out
 
 
+def floor_openings(run: Run, floor: str) -> list[Opening]:
+    """The doors and windows located on one floor's plan, sized from the schedule, each on the side of the wall it is in."""
+    located = (run.data.get("located_openings") or {}).get(floor, {})
+    out = []
+    for o in run.data.get("openings", []):
+        c = located.get(o["label"].upper(), {"external": 0, "internal": 0})
+        for n, external in ((c["external"], True), (c["internal"], False)):
+            if n:
+                out.append(Opening(o["label"], o["width_m"], o["height_m"], n, o["kind"], external))
+    return out
+
+
 def compute_boq(run: Run) -> dict:
     """Wall blockwork and priced BoQ lines from recorded facts: girth per floor (facts named ext_girth_<floor>_m and
     int_girth_<floor>_m), storey heights and the openings read from the drawings."""
@@ -97,12 +111,32 @@ def compute_boq(run: Run) -> dict:
         return {"error": f"No storey height for {missing}. Read the levels, record an assumed height, or ask the user."}
     openings = merge_located_openings(run.data.get("openings", []), run.data.get("located_openings", {}))
     items = superstructure_boq(ext, internal, heights, openings)
+    facts = {f["name"]: f["value"] for f in run.facts}
+    questions: list[str] = []
+    rooms_by_floor = run.data.get("rooms", {})
+    if rooms_by_floor:
+        include_open = str(facts.get("include_open_spaces", "")).lower() in ("yes", "true", "1")
+        floors = {f: floor_finishes(f, [Room(**{k: v for k, v in r.items() if k not in ("area_m2", "perimeter_m")}) for r in rs], heights.get(f, 3.0),
+                                    floor_openings(run, f), include_open) for f, rs in rooms_by_floor.items()}
+        for f in floors:
+            if f not in run.data.get("located_openings", {}):
+                run.assumptions.append({"name": f"finishes_{f}_openings", "value": "not deducted", "basis": f"the openings of the {f} floor are not located, so none were taken off its wall finishes"})
+        fin, ask = finishes_boq(floors, facts)
+        items += fin
+        questions += ask
+        if floors and any(fl.open_spaces for fl in floors.values()) and "include_open_spaces" not in facts:
+            questions.append(f"Do the {', '.join(sorted({n for fl in floors.values() for n in fl.open_spaces}))} count for floor finishes, and what is their finish?")
+    lint, ask = lintel_items(openings, float(facts["lintel_bearing_mm"]) if facts.get("lintel_bearing_mm") else None)
+    items += lint
+    questions += ask
     items += [BoqItem(**d) for d in run.data.get("foundation_items", [])]
     rates = json.loads(Path("data/rates.json").read_text())
     priced = price_boq(items, rates)
     run.data["boq"] = {"items": [i.__dict__ for i in items], **priced}
     cov = coverage([i.key for i in items], floors=len(ext))
     out = {"lines": len(items), "total": priced["total"], "currency": priced["currency"], "unpriced": priced["unpriced"]}
+    if questions:  # one plain question each; the answers are recorded as facts (names in the prompt) and compute_boq is run again
+        out["to_confirm_with_user"] = questions
     if cov:
         run.data["boq"]["coverage"] = {k: v for k, v in cov.items() if k != "items"} | {"statement": statement(cov), "items": cov["items"]}
         out["coverage"] = statement(cov)
