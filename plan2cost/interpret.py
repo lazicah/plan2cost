@@ -8,7 +8,7 @@ from collections import Counter
 import cv2
 import numpy as np
 
-from plan2cost.raster_lines import vectorise
+from plan2cost.raster_lines import bar_lines, bar_widths, vectorise_multi
 from plan2cost.vector_walls import Line, find_walls_vector
 from plan2cost.walls_cv import external_fractions, extents_m, girth_by_thickness, junctions
 
@@ -21,7 +21,22 @@ def bin_width(w: float) -> float:
     return round(2 ** (round(math.log2(max(w, 1.0)) * 2) / 2), 1)
 
 
-def ruler_candidates(lines: list[Line], min_len_px: float = 80, max_gap_px: float = 150, min_w_px: float = 3.0, top: int = 3) -> list[tuple[float, float, str]]:
+def _clusters(counter: collections.Counter, tol: float = 0.12, top: int = 6) -> list[tuple[float, float]]:
+    """Group neighbouring values (within `tol` of each other) into one reading each: (weighted centre, total evidence), strongest first."""
+    items = dict(counter)
+    out = []
+    while items and len(out) < top:
+        key = max(items, key=items.get)
+        near = [k for k in items if abs(k - key) <= tol * key]
+        evidence = sum(items[k] for k in near)
+        centre = sum(k * items[k] for k in near) / evidence
+        out.append((centre, float(evidence)))
+        for k in near:
+            del items[k]
+    return out
+
+
+def ruler_candidates(lines: list[Line], min_len_px: float = 80, min_gap_px: float = 8, max_gap_px: float = 100, min_w_px: float = 3.0, top: int = 6) -> list[tuple[float, float, str]]:
     """Readings of the dominant wall thickness in pixels, strongest first, as (pixels, evidence, kind). Evidence is the length of line work
     that supports it. 'pair': the spacing of long parallel heavy lines of similar weight (walls drawn as two faces). 'bar': the width of long
     solid bands (walls drawn as one band). The caller tests each against independent facts; none is trusted on its own."""
@@ -32,13 +47,9 @@ def ruler_candidates(lines: list[Line], min_len_px: float = 80, max_gap_px: floa
             if b.orient != a.orient or b.pos - a.pos > max_gap_px:
                 break
             ov = min(a.b, b.b) - max(a.a, b.a)
-            if b.pos - a.pos > min_w_px and ov > min_len_px * 0.7 and max(a.w, b.w) <= 1.8 * min(a.w, b.w):
-                gaps[round((b.pos - a.pos) / 2) * 2] += ov
-    bars: collections.Counter = collections.Counter()
-    for l in lines:
-        if l.length >= 4 * min_len_px and l.w >= 3 * min_w_px:
-            bars[round(l.w / 4) * 4] += l.length
-    out = [(float(g), float(e), "pair") for g, e in gaps.most_common(top) if e >= 600] + [(float(w), float(e), "bar") for w, e in bars.most_common(top) if e >= 600]
+            if b.pos - a.pos >= min_gap_px and ov > min_len_px * 0.7 and max(a.w, b.w) <= 1.8 * min(a.w, b.w):
+                gaps[round(b.pos - a.pos)] += ov
+    out = [(g, e, "pair") for g, e in _clusters(gaps, top=top) if e >= 600]
     return sorted(out, key=lambda c: -c[1])
 
 
@@ -61,27 +72,33 @@ def _run(lines: list[Line], px: float, facts: dict | None, primitive: str = "pai
     dimensions (which pick the block size), then the walls again at the scale that block size fixes. Returns None when the reading breaks down.
     A reading is only believable if the walls at its final scale still form a building."""
     s0 = STANDARD_MM / px
-    walls, info = find_walls_vector(lines, s0, primitive=primitive)
+    walls, info = find_walls_vector(lines, s0, primitive=primitive, min_length_m=25, min_joints=4, dominant_bar=px if primitive == "bar" else None)
     hs, vs = [w for w in walls if w.orient == "h"], [w for w in walls if w.orient == "v"]
-    block, err = STANDARD_MM, None
+    block, err, fitted_s = STANDARD_MM, None, None
     if hs and vs:
         ext_x = max(w.end_mm for w in hs) - min(w.start_mm for w in hs)
         ext_y = max(w.end_mm for w in vs) - min(w.start_mm for w in vs)
         vals = [float(v) for v in (facts or {}).get("horizontal_mm", []) + (facts or {}).get("vertical_mm", []) if v]
         fit = scale_from_overall(ext_x, ext_y, vals) if vals else None
         if fit:
-            t = _block_for(fit[0])
+            t = _block_for(fit[0], 0.14 if primitive == "bar" else 0.07)
+            if t and t >= 150:  # the dominant wall of a building is not a 100mm partition
+                pass
+            else:
+                t = None
             if t:
                 block, err = t, fit[1]
-    s = block / px
-    if block != STANDARD_MM or not walls:
-        walls, info = find_walls_vector(lines, s, primitive=primitive)
+                if primitive == "bar":  # a bar is drawn with its outline, so its width overstates the wall; the dimension fit is the better scale
+                    fitted_s = s0 * fit[0]
+    s = fitted_s or block / px
+    if block != STANDARD_MM or fitted_s or not walls:
+        walls, info = find_walls_vector(lines, s, primitive=primitive, min_length_m=25, min_joints=4, dominant_bar=px if primitive == "bar" else None)
     total = sum(w.length_mm for w in walls) / 1000
     joints = junctions(walls) if walls else 0
-    return {"walls": walls, "info": info, "block": block, "err": err, "s": s, "total": total, "joints": joints, "building": total >= 30 and joints >= 8}
+    return {"walls": walls, "info": info, "block": block, "err": err, "s": s, "total": total, "joints": joints, "building": total >= 30 and joints >= 6}
 
 
-def _block_for(factor: float, tol: float = 0.07) -> int | None:
+def _block_for(factor: float, tol: float = 0.07) -> int | None:  # a solid bar is drawn with its outline, so callers allow more for bars
     """The standard block thickness the dimension fit points to (the ruler read as 225mm times the fitted factor), or None when the fit
     implies a wall thickness that is not a block size, which means this reading of the ruler is not the wall."""
     implied = STANDARD_MM * factor
@@ -89,24 +106,27 @@ def _block_for(factor: float, tol: float = 0.07) -> int | None:
     return t if abs(t - implied) / t <= tol else None
 
 
-def interpret_image(path: str, facts: dict | None = None, dark: int = 150) -> dict:
+def interpret_image(path: str, facts: dict | None = None, dark: int = 150, keep_walls: bool = False) -> dict:
     gray = cv2.imread(path, 0)
-    lines = vectorise(gray, dark=dark, min_len_px=30)
+    lines = vectorise_multi(gray, dark=dark)
     for l in lines:
-        l.w = bin_width(l.w)
-    cands = ruler_candidates(lines)
+        l.raw, l.w = l.w, bin_width(l.w)  # keep the measured thickness; the binned width is only the weight class
+    cands = ruler_candidates(lines) + [(w, e, "bar") for w, e in _clusters(bar_widths(gray, dark=dark), tol=0.15, top=4) if e >= 600]
+    cands.sort(key=lambda c: -c[1])
     if not cands:
         return {"error": "No regular wall bands could be found in this image.", "confidence": "none"}
     tried, results = [], []
     for px, evidence, kind in cands:
-        r = _run(lines, px, facts, kind)
+        r = _run(bar_lines(gray, px, dark) if kind == "bar" else lines, px, facts, kind)
         r.update(px=px, kind=kind, evidence=evidence)
         results.append(r)
         tried.append(f"{kind} {px:.0f}px: {len(r['walls'])} walls, {r['total']:.0f} m, {r['joints']} joints, " + (f"fit error {r['err'] * 100:.1f}% block {r['block']}" if r["err"] is not None else "no dimension fit"))
     # believable readings first (a building at the final scale); among them the best dimension fit, else the best-supported reading
     pool = [r for r in results if r["building"]] or results
     fitted = [r for r in pool if r["err"] is not None]
-    best = min(fitted, key=lambda r: r["err"]) if fitted else pool[0]
+    good = [r for r in fitted if r["err"] <= 0.02]  # several readings can fit the dimensions by chance: of the good fits, the best-supported one
+    pairs_ok = [r for r in good if r["kind"] == "pair"]  # a "bar" reading of double-line walls is just their thick faces seen one by one
+    best = max(pairs_ok or good, key=lambda r: r["evidence"]) if good else min(fitted, key=lambda r: r["err"]) if fitted else pool[0]
     notes = []
     if best["err"] is not None:
         scale_basis = f"printed overall dimensions fit a {best['block']}mm wall of {best['px']:.0f}px (axes agree to {best['err'] * 100:.1f}%)"
@@ -126,4 +146,4 @@ def interpret_image(path: str, facts: dict | None = None, dark: int = 150) -> di
     return {"source": "raster", "scale": scale_basis, "mm_per_px": round(s, 3), "ruler": [best["px"], best["kind"], best["block"]], "wall_weight_px": info["wall_weight"],
             "length_m": round(length, 2), "width_m": round(width, 2), "walls": len(walls), "total_m": round(total, 2), "external_m": round(ext, 2),
             "internal_m": round(total - ext, 2), "junction_ends": junctions(walls), "by_thickness_m": girth_by_thickness(walls), "building": best["building"],
-            "notes": notes, "tried": tried}
+            "notes": notes, "tried": tried, **({"_walls": walls} if keep_walls else {})}

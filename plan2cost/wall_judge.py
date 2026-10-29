@@ -132,3 +132,51 @@ def judge_page(pdf: str, page: int, cands: list[Cand], mm_per_pt: float, out_dir
         unsure |= {int(x) for x in v.get("unsure", []) if int(x) in ids}
         other.update({int(k): r for k, r in v.get("not_walls", {}).items() if int(k) in ids})
     return {"walls": walls, "not_walls": other, "unsure": unsure, "tiles": len(groups)}
+
+
+def overlay_image(img, cands: list[Cand], mm_per_px: float, out_path: str, margin_m: float = 2.5):
+    """The same numbered overlay for a raster plan: candidates are in millimetres and the image is in pixels."""
+    img = img.copy()
+    xs, ys = [], []
+    for c in cands:
+        w = c.wall
+        cp, a, b = w.centre_mm / mm_per_px, w.start_mm / mm_per_px, w.end_mm / mm_per_px
+        p1, p2 = ((int(a), int(cp)), (int(b), int(cp))) if w.orient == "h" else ((int(cp), int(a)), (int(cp), int(b)))
+        col = COLOURS[c.id % len(COLOURS)]
+        cv2.line(img, p1, p2, col, 6)
+        mid = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+        off = 26 if c.id % 2 else -26
+        pos = (mid[0] + (off if w.orient == "v" else 0), mid[1] + (off if w.orient == "h" else 0))
+        label = str(c.id)
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1.4, 3)
+        cv2.rectangle(img, (pos[0] - 3, pos[1] - th - 5), (pos[0] + tw + 3, pos[1] + 5), (255, 255, 255), -1)
+        cv2.putText(img, label, pos, cv2.FONT_HERSHEY_SIMPLEX, 1.4, col, 3)
+        xs += [p1[0], p2[0]]
+        ys += [p1[1], p2[1]]
+    m = int(margin_m * 1000 / mm_per_px)
+    x0, y0, x1, y1 = max(min(xs) - m, 0), max(min(ys) - m, 0), min(max(xs) + m, img.shape[1]), min(max(ys) + m, img.shape[0])
+    crop = img[y0:y1, x0:x1]
+    k = 2200 / max(crop.shape[:2])
+    if k < 1:
+        crop = cv2.resize(crop, (int(crop.shape[1] * k), int(crop.shape[0] * k)), interpolation=cv2.INTER_AREA)
+    cv2.imwrite(out_path, crop)
+    return out_path
+
+
+def judge_image_walls(img, walls: list[Wall], mm_per_px: float, max_per_tile: int = 45, workers: int = 4) -> dict:
+    """Judge the walls found on a raster plan. Returns the indexes (into `walls`) kept as walls, rejected with a reason, and unsure."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    cands = [Cand(i + 1, w, 0.0) for i, w in enumerate(walls)]
+    groups = tiles(cands, max_per_tile)
+    out_dir = tempfile.mkdtemp()
+    paths = [overlay_image(img, g, mm_per_px, f"{out_dir}/tile{i}.jpg") for i, g in enumerate(groups)]
+    with ThreadPoolExecutor(workers) as ex:
+        verdicts = list(ex.map(judge, paths))
+    keep, other, unsure = set(), {}, set()
+    for g, v in zip(groups, verdicts):
+        ids = {c.id for c in g}
+        keep |= {int(x) - 1 for x in v.get("walls", []) if int(x) in ids}
+        unsure |= {int(x) - 1 for x in v.get("unsure", []) if int(x) in ids}
+        other.update({int(k) - 1: r for k, r in v.get("not_walls", {}).items() if int(k) in ids})
+    return {"keep": keep, "not_walls": other, "unsure": unsure, "tiles": len(groups)}
