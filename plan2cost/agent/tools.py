@@ -136,7 +136,7 @@ def submit_boq(run: Run, summary: str = "") -> dict:
         return {"refused": problems}
     run.status = "done"
     cov = (run.data["boq"].get("coverage") or {}).get("statement", "")
-    run.result = {"summary": (summary + " " + cov).strip(), "boq": run.data["boq"], "assumptions": run.assumptions}
+    run.result = {"summary": (summary if cov and cov in summary else (summary + " " + cov)).strip(), "boq": run.data["boq"], "assumptions": run.assumptions}
     (run.dir).mkdir(parents=True, exist_ok=True)
     (run.dir / "boq.json").write_text(json.dumps(run.result, indent=2))
     return {"filed": True}
