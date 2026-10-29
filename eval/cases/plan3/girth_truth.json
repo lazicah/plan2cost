@@ -1,0 +1,14 @@
+{
+ "_note": "from the author's workbook, Block work Girth summary (numbers only)",
+ "floors": {
+  "ground_floor": {
+   "overall_m": 201.872,
+   "external_m": 64.85,
+   "internal_m": 137.022,
+   "by_block_mm": {
+    "225": 150.312,
+    "150": 51.559999999999995
+   }
+  }
+ }
+}

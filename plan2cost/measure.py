@@ -40,3 +40,53 @@ def measure_walls(pdf: str, page: int, dpi: int = 150, margin_mm: float = 2500) 
             "internal_m": round(total - ext, 2), "junction_ends": junctions(walls),
             "by_thickness_m": {int(t): round(sum(w.length_mm for w in walls if abs(w.thickness_mm - t) < 1) / 1000, 2) for t in {w.thickness_mm for w in walls}},
             "confidence": "medium"}
+
+
+def vector_scale(pdf: str, page: int, pg, lines, stated_denominator: float | None = None) -> tuple[float | None, str]:
+    """Scale in mm per point, best source first. Each source says how it was found so the caller can state its confidence."""
+    from plan2cost.scale import fit_scale
+
+    from plan2cost.pdf import page_text
+    from plan2cost.scale import stated_scale
+
+    toks = dimension_tokens(pdf, page)
+    stated_denominator = stated_denominator or stated_scale(page_text(pdf, page))
+    t = fit_scale(toks, pg.segs, lines, stated_denominator)
+    if t["mm_per_pt"] and t["votes"] >= 8 and t["agree"] >= 0.25 and t["dominance"] >= 2:
+        return t["mm_per_pt"], f"printed dimensions against the lines they measure ({t['votes']} dimensions, {int(t['agree'] * 100)}% agree)"
+    grid = calibrate(find_grid(pdf, page), [x.value for x in toks])
+    if grid.mm_per_pt and len(grid.verticals) >= 2 and len(grid.horizontals) >= 2:
+        return grid.mm_per_pt, grid.scale_basis + " (grid bubbles; about 2% accuracy)"
+    from plan2cost.scale import scale_from_wall_thickness
+
+    w = scale_from_wall_thickness(lines, stated_denominator)
+    return (w["mm_per_pt"], w["basis"]) if w.get("mm_per_pt") else (None, "")
+
+
+def measure_walls_vector(pdf: str, page: int, mm_per_pt: float | None = None, stated_denominator: float | None = None, mask_mm_per_px: float = 50.0) -> dict:
+    """The exact route for a plan drawn as vectors: same result shape as measure_walls, from face lines instead of pixels. The scale is
+    read from the drawing (or given, e.g. from dimensions the model read); the wall weight and the building cluster are found, not set."""
+    from plan2cost.vector import read_page
+    from plan2cost.vector_walls import axis_lines, find_walls_vector
+    from plan2cost.walls_cv import girth_by_thickness
+
+    pg = read_page(pdf, page)
+    lines = axis_lines(pg.segs)
+    if len(lines) < 50:
+        return {"error": "This page has too little vector line work (a raster plan?).", "confidence": "none"}
+    basis = "given"
+    if not mm_per_pt:
+        mm_per_pt, basis = vector_scale(pdf, page, pg, lines, stated_denominator)
+    if not mm_per_pt:
+        return {"error": "No scale could be read from this page; give one from printed dimensions.", "confidence": "none"}
+    walls, info = find_walls_vector(lines, mm_per_pt)
+    if not walls:
+        return {"error": "No walls were found on this page.", "confidence": "none"}
+    shape = (int(pg.height * mm_per_pt / mask_mm_per_px) + 2, int(pg.width * mm_per_pt / mask_mm_per_px) + 2)
+    fr = external_fractions(walls, shape, mask_mm_per_px)
+    total = sum(w.length_mm for w in walls) / 1000
+    ext = sum(w.length_mm * f for w, f in zip(walls, fr)) / 1000
+    length, width = extents_m(walls)
+    return {"source": "vector", "scale": basis, "mm_per_pt": mm_per_pt, "wall_weight_pt": info["wall_weight"], "length_m": round(length, 2), "width_m": round(width, 2),
+            "walls": len(walls), "total_m": round(total, 2), "external_m": round(ext, 2), "internal_m": round(total - ext, 2),
+            "junction_ends": junctions(walls), "by_thickness_m": girth_by_thickness(walls)}
