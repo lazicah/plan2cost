@@ -99,26 +99,68 @@ def extend_to_centrelines(walls: list[Wall], tol_mm: float = 60) -> list[Wall]:
     return out
 
 
-def class_network(lines: list[Line], weight: float, mm_per_pt: float, bridge_mm: float = 3600) -> tuple[list[Wall], dict]:
+def drop_centreline_halves(pieces: list[dict]) -> list[dict]:
+    """A grid or centre line drawn down the middle of a wall pairs with each face at half the thickness. When a full-thickness pair lies over
+    the same span with that line in the middle, the two half-pairs are not walls."""
+    keep = []
+    for p in pieces:
+        half = False
+        for q in pieces:
+            if q is p or q["orient"] != p["orient"] or abs(q["gap_pt"] - 2 * p["gap_pt"]) > 0.1 * q["gap_pt"]:
+                continue
+            over = min(p["b_pt"], q["b_pt"]) - max(p["a_pt"], q["a_pt"])
+            if over >= 0.5 * (p["b_pt"] - p["a_pt"]) and abs(abs(q["centre_pt"] - p["centre_pt"]) - p["gap_pt"] / 2) <= 0.3:
+                half = True
+                break
+        if not half:
+            keep.append(p)
+    return keep
+
+
+BAR_MM = (80, 330)  # a solid band this wide on the drawing is a wall drawn as one bar (a block thickness, a little under or over)
+
+
+def _is_bar(l: Line, mm_per_unit: float) -> bool:
+    return BAR_MM[0] <= l.w * mm_per_unit <= BAR_MM[1] and l.length * mm_per_unit >= 600 and l.w >= 3
+
+
+def bar_walls(lines: list[Line], mm_per_unit: float, min_weight: float = 0.0, paired: list[Wall] | None = None) -> list[Wall]:
+    """Walls drawn as a single solid bar: one thick run whose width is a block thickness. Its position is the centre line already. A thick
+    face line that belongs to a pair is not a bar, so runs lying on an already paired wall are skipped."""
+    out = []
+    for l in lines:
+        if round(l.w, 2) >= min_weight - 1e-6 and _is_bar(l, mm_per_unit):
+            if any(p.orient == l.orient and abs(p.centre_mm - l.pos * mm_per_unit) <= p.thickness_mm * 0.9 + l.w * mm_per_unit / 2 and
+                   min(p.end_mm, l.b * mm_per_unit) - max(p.start_mm, l.a * mm_per_unit) >= 0.4 * l.length * mm_per_unit for p in (paired or [])):
+                continue
+            gap = l.w * mm_per_unit * 1.0
+            nominal = next((n for n, (lo, hi) in THICKNESS_MM.items() if lo * 0.85 <= gap <= hi * 1.25), None)
+            if nominal:
+                out.append(Wall(l.orient, l.pos * mm_per_unit, l.a * mm_per_unit, l.b * mm_per_unit, float(nominal)))
+    return out
+
+
+def class_network(lines: list[Line], weight: float, mm_per_pt: float, bridge_mm: float = 3600, primitive: str = "pair") -> tuple[list[Wall], dict]:
     """The wall network one line weight would make: pair its lines, merge into runs, keep the biggest connected group, and report how
     building-like it is (length, joints between perpendicular runs)."""
     from plan2cost.walls_cv import _merge, junctions
 
-    cls = [l for l in bridge_lines([l for l in lines if round(l.w, 2) == weight], mm_per_pt, bridge_mm) if l.length * mm_per_pt >= 600]
-    if len(cls) < 4:
+    cls = [l for l in bridge_lines([l for l in lines if round(l.w, 2) >= weight - 1e-6], mm_per_pt, bridge_mm) if l.length * mm_per_pt >= 600]
+    if len(cls) < 4 and primitive == "pair":
         return [], {"length_m": 0.0, "joints": 0}
-    base = to_walls(pair_walls(cls, mm_per_pt, min_run_mm=600), mm_per_pt)
+    pairs = to_walls(drop_centreline_halves(pair_walls(cls, mm_per_pt, min_run_mm=600)), mm_per_pt) if primitive == "pair" else []
+    base = pairs + (bar_walls(lines, mm_per_pt, weight, pairs) if primitive == "bar" else [])
     walls = largest_cluster([m for n in sorted({b.thickness_mm for b in base}) for m in _merge([b for b in base if b.thickness_mm == n], bridge_mm=bridge_mm)])
     return walls, {"length_m": round(sum(w.length_mm for w in walls) / 1000, 1), "joints": junctions(walls)}
 
 
-def wall_weight(lines: list[Line], mm_per_pt: float, min_length_m: float = 40.0, min_joints: int = 10) -> tuple[float | None, dict]:
+def wall_weight(lines: list[Line], mm_per_pt: float, min_length_m: float = 40.0, min_joints: int = 10, primitive: str = "pair") -> tuple[float | None, dict]:
     """The weight cut walls are drawn at: the heaviest stroke weight whose lines pair up into a building-sized, jointed, connected network
     (at least `min_length_m` of wall with `min_joints` T and L joints). Fixtures, hatching and annotation are lighter and do not form such a
     network at the heavy weights; sheet borders do not either, because they carry no joints."""
     nets = {}
-    for w in sorted({round(l.w, 2) for l in lines}, reverse=True):
-        walls, stats = class_network(lines, w, mm_per_pt)
+    for w in sorted({round(l.w, 2) for l in lines}, reverse=True):  # a threshold: all lines at least this heavy
+        walls, stats = class_network(lines, w, mm_per_pt, primitive=primitive)
         nets[w] = stats
         if stats["length_m"] >= min_length_m and stats["joints"] >= min_joints:
             return w, nets
@@ -145,18 +187,19 @@ def bridge_lines(lines: list[Line], mm_per_pt: float, bridge_mm: float = 3600) -
     return out
 
 
-def find_walls_vector(lines: list[Line], mm_per_pt: float, bridge_mm: float = 3600) -> tuple[list[Wall], dict]:
+def find_walls_vector(lines: list[Line], mm_per_pt: float, bridge_mm: float = 3600, primitive: str = "pair") -> tuple[list[Wall], dict]:
     """Walls from face lines: take the wall weight, bridge the lines across openings, pair them at block thickness, merge into runs and
     take each to the centre line of the wall it meets. Returns the walls and what was used, for the caller to report."""
-    w, nets = wall_weight(lines, mm_per_pt)
+    w, nets = wall_weight(lines, mm_per_pt, primitive=primitive)
     if w is None:
         return [], {"wall_weight": None, "networks": nets}
-    bridged = bridge_lines([l for l in lines if abs(l.w - w) <= 0.02], mm_per_pt, bridge_mm)  # a corner stub next to a window joins its wall first
+    bridged = bridge_lines([l for l in lines if round(l.w, 2) >= w - 1e-6], mm_per_pt, bridge_mm)  # a corner stub next to a window joins its wall first
     heavy = [l for l in bridged if l.length * mm_per_pt >= 600]  # then a face line is long; hatch and fixture strokes are not
-    pieces = pair_walls(heavy, mm_per_pt, min_run_mm=350)
+    pieces = drop_centreline_halves(pair_walls(heavy, mm_per_pt, min_run_mm=350)) if primitive == "pair" else []
     from plan2cost.walls_cv import _merge
 
-    base = to_walls(pieces, mm_per_pt)
+    pairs = to_walls(pieces, mm_per_pt)
+    base = pairs + (bar_walls(lines, mm_per_pt, w, pairs) if primitive == "bar" else [])
     walls = extend_to_centrelines([m for n in sorted({b.thickness_mm for b in base}) for m in _merge([b for b in base if b.thickness_mm == n], bridge_mm=bridge_mm)])
     walls = largest_cluster(walls)
     return walls, {"wall_weight": w, "pieces": len(pieces), "networks": nets}
@@ -164,7 +207,7 @@ def find_walls_vector(lines: list[Line], mm_per_pt: float, bridge_mm: float = 36
 
 def largest_cluster(walls: list[Wall], link_mm: float = 1500) -> list[Wall]:
     """The walls of the building: walls linked to one another (their extents come within `link_mm`), keeping the biggest group. A detail, a
-    legend or a second drawing on the same sheet forms its own small group and is dropped."""
+    legend, a title block table or a second drawing on the same sheet forms its own group and is dropped."""
     n = len(walls)
     parent = list(range(n))
 
@@ -186,4 +229,11 @@ def largest_cluster(walls: list[Wall], link_mm: float = 1500) -> list[Wall]:
     groups: dict[int, list[Wall]] = defaultdict(list)
     for i, w in enumerate(walls):
         groups[find(i)].append(w)
-    return max(groups.values(), key=lambda g: sum(w.length_mm for w in g)) if groups else []
+
+    def building_score(g: list[Wall]) -> float:
+        """A building has walls both ways; a table or a title block is nearly all one direction. Score by the shorter direction's length."""
+        h = sum(w.length_mm for w in g if w.orient == "h")
+        v = sum(w.length_mm for w in g if w.orient == "v")
+        return min(h, v) + 0.01 * (h + v)
+
+    return max(groups.values(), key=building_score) if groups else []

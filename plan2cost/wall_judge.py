@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import cv2
 
 from plan2cost.pdf import render_pages
-from plan2cost.vector_walls import bridge_lines, pair_walls, to_walls
+from plan2cost.vector_walls import bridge_lines, drop_centreline_halves, pair_walls, to_walls
 from plan2cost.walls_cv import Wall, _merge
 
 JUDGE_PROMPT = """This is part of a floor plan from a building drawing set. Coloured numbered segments mark CANDIDATE wall centre-lines found by
@@ -26,24 +26,6 @@ class Cand:
     id: int
     wall: Wall
     weight: float
-
-
-def drop_centreline_halves(pieces: list[dict]) -> list[dict]:
-    """A grid or centre line drawn down the middle of a wall pairs with each face at half the thickness. When a full-thickness pair lies over
-    the same span with that line in the middle, the two half-pairs are not walls."""
-    keep = []
-    for p in pieces:
-        half = False
-        for q in pieces:
-            if q is p or q["orient"] != p["orient"] or abs(q["gap_pt"] - 2 * p["gap_pt"]) > 0.1 * q["gap_pt"]:
-                continue
-            over = min(p["b_pt"], q["b_pt"]) - max(p["a_pt"], q["a_pt"])
-            if over >= 0.5 * (p["b_pt"] - p["a_pt"]) and abs(abs(q["centre_pt"] - p["centre_pt"]) - p["gap_pt"] / 2) <= 0.3:
-                half = True
-                break
-        if not half:
-            keep.append(p)
-    return keep
 
 
 def candidates(lines, mm_per_pt: float, bridge_mm: float = 3600) -> list[Cand]:
@@ -67,8 +49,40 @@ def candidates(lines, mm_per_pt: float, bridge_mm: float = 3600) -> list[Cand]:
     return out
 
 
-def overlay(pdf: str, page: int, cands: list[Cand], mm_per_pt: float, out_dir: str | None = None, dpi: int = 130) -> str:
-    """The page with each candidate drawn and numbered, cropped to where the candidates are. Returns the image path."""
+def building_candidates(lines, mm_per_pt: float, bridge_mm: float = 3600) -> list[Cand]:
+    """Candidates from every weight, kept to the building: the connected group with walls both ways (a title block table, a legend or a
+    detail forms a different group)."""
+    from plan2cost.vector_walls import largest_cluster
+
+    cs = candidates(lines, mm_per_pt, bridge_mm)
+    keep = {id(w) for w in largest_cluster([c.wall for c in cs])}
+    out = [c for c in cs if id(c.wall) in keep]
+    for i, c in enumerate(out, 1):
+        c.id = i
+    return out
+
+
+def tiles(cands: list[Cand], max_per_tile: int = 45) -> list[list[Cand]]:
+    """Split the candidates into spatial groups of at most `max_per_tile` so each image stays readable."""
+    def centre(c: Cand) -> tuple[float, float]:
+        w = c.wall
+        mid = (w.start_mm + w.end_mm) / 2
+        return (mid, w.centre_mm) if w.orient == "h" else (w.centre_mm, mid)
+
+    def split(group: list[Cand]) -> list[list[Cand]]:
+        if len(group) <= max_per_tile:
+            return [group]
+        xs, ys = [centre(c)[0] for c in group], [centre(c)[1] for c in group]
+        axis = 0 if (max(xs) - min(xs)) >= (max(ys) - min(ys)) else 1
+        group = sorted(group, key=lambda c: centre(c)[axis])
+        half = len(group) // 2
+        return split(group[:half]) + split(group[half:])
+
+    return split(cands)
+
+
+def overlay(pdf: str, page: int, cands: list[Cand], mm_per_pt: float, out_dir: str | None = None, dpi: int = 150, margin_m: float = 2.5, name: str = "judge") -> str:
+    """The page cropped to where the given candidates are, each drawn thin and numbered beside it so the hatching stays visible."""
     out_dir = out_dir or tempfile.mkdtemp()
     img = cv2.imread(render_pages(pdf, [page], out_dir, dpi=dpi)[0])
     k = dpi / 72
@@ -78,19 +92,19 @@ def overlay(pdf: str, page: int, cands: list[Cand], mm_per_pt: float, out_dir: s
         cp, a, b = w.centre_mm / mm_per_pt * k, w.start_mm / mm_per_pt * k, w.end_mm / mm_per_pt * k
         p1, p2 = ((int(a), int(cp)), (int(b), int(cp))) if w.orient == "h" else ((int(cp), int(a)), (int(cp), int(b)))
         col = COLOURS[c.id % len(COLOURS)]
-        cv2.line(img, p1, p2, col, 4)
+        cv2.line(img, p1, p2, col, 3)
         mid = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
-        off = 14 if c.id % 2 else -14
+        off = 16 if c.id % 2 else -16
         pos = (mid[0] + (off if w.orient == "v" else 0), mid[1] + (off if w.orient == "h" else 0))
         label = str(c.id)
-        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
         cv2.rectangle(img, (pos[0] - 2, pos[1] - th - 3), (pos[0] + tw + 2, pos[1] + 3), (255, 255, 255), -1)
-        cv2.putText(img, label, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.7, col, 2)
+        cv2.putText(img, label, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.6, col, 2)
         xs += [p1[0], p2[0]]
         ys += [p1[1], p2[1]]
-    m = int(150 * k / 2)
+    m = int(margin_m * 1000 / mm_per_pt * k)
     x0, y0, x1, y1 = max(min(xs) - m, 0), max(min(ys) - m, 0), min(max(xs) + m, img.shape[1]), min(max(ys) + m, img.shape[0])
-    path = f"{out_dir}/judge_p{page}.jpg"
+    path = f"{out_dir}/{name}_p{page}.jpg"
     cv2.imwrite(path, img[y0:y1, x0:x1])
     return path
 
@@ -100,3 +114,21 @@ def judge(image_path: str) -> dict:
     from plan2cost.document import _chat
 
     return _chat([{"type": "text", "text": JUDGE_PROMPT}, image_part(image_path)])
+
+
+def judge_page(pdf: str, page: int, cands: list[Cand], mm_per_pt: float, out_dir: str | None = None, workers: int = 4) -> dict:
+    """Judge every candidate, tile by tile. Returns the ids kept as walls, the ids judged otherwise with the reason, and the ones unsure."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    out_dir = out_dir or tempfile.mkdtemp()
+    groups = tiles(cands)
+    paths = [overlay(pdf, page, g, mm_per_pt, out_dir, name=f"tile{i}") for i, g in enumerate(groups)]
+    with ThreadPoolExecutor(workers) as ex:
+        verdicts = list(ex.map(judge, paths))
+    walls, other, unsure = set(), {}, set()
+    for g, v in zip(groups, verdicts):
+        ids = {c.id for c in g}
+        walls |= {int(x) for x in v.get("walls", []) if int(x) in ids}
+        unsure |= {int(x) for x in v.get("unsure", []) if int(x) in ids}
+        other.update({int(k): r for k, r in v.get("not_walls", {}).items() if int(k) in ids})
+    return {"walls": walls, "not_walls": other, "unsure": unsure, "tiles": len(groups)}
