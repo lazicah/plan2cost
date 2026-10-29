@@ -94,6 +94,8 @@ function render(run) {
       ${run.boq.items.map(i => `<tr><td class="small mute">${esc(i.besmm || "own line")}</td><td>${esc(i.description)}</td><td>${esc(i.unit)}</td><td class="n">${money(i.qty)}</td>
         <td class="n">${i.rate ? money(i.rate) : '<span class="assumed">no rate</span>'}</td><td class="n">${i.amount ? money(i.amount) : ''}</td></tr>`).join('')}
       <tr><td colspan="5"><b>Total (priced lines)</b></td><td class="n"><b>${money(run.boq.total)} ${esc(run.boq.currency)}</b></td></tr></table>
+      ${run.boq.coverage ? `<p class="small"><b>Coverage.</b> ${esc(run.boq.coverage.statement)}</p><table class="small"><tr><th>Trade</th><th class="n">Covered</th><th class="n">Partly</th><th class="n">Not included</th></tr>
+        ${Object.entries(run.boq.coverage.trades).map(([t, v]) => `<tr><td>${esc(t.replace(/_/g, ' '))}</td><td class="n">${v.covered}</td><td class="n">${v.partial}</td><td class="n ${v.not_built ? 'assumed' : ''}">${v.not_built}</td></tr>`).join('')}</table>` : ''}
       ${run.boq.unpriced?.length ? `<p class="small assumed">Unpriced, add a rate to include: ${run.boq.unpriced.map(esc).join(', ')}</p>` : ''}
       ${run.assumptions.length ? `<p class="small mute">Assumptions: ${run.assumptions.map(a => esc(a.name) + ' = ' + esc(a.value) + ' (' + esc(a.basis) + ')').join('; ')}</p>` : ''}</section>` : '';
   const models = Object.values(run.models || {}).map(m => `<section class="card"><h2>Walls found: ${esc(m.floor)} floor, page ${esc(m.page)}</h2>

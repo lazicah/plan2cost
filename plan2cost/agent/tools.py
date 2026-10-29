@@ -26,7 +26,11 @@ def set_checklist(run: Run, items: list) -> dict:
     if not 3 <= len(items) <= 12:
         return {"error": "Give 3 to 12 checklist items: each a question about the drawings that must be settled to cost the building."}
     run.checklist = [{"id": f"C{i}", "question": it["question"], "evidence": it.get("evidence", ""), "status": "open"} for i, it in enumerate(items, 1)]
-    return {"checklist": run.checklist}
+    from plan2cost.checklist import trades_missing
+
+    missing = trades_missing([f"{it['question']} {it.get('evidence', '')}" for it in items])
+    return {"checklist": run.checklist, **({"trades_not_in_your_checklist": missing,
+                                            "note": "These trades are part of a house estimate. Add an item for each you can settle, or leave it out on purpose: the estimate will then say it does not cover it."} if missing else {})}
 
 
 def record_fact(run: Run, item: str, name: str, value, unit: str = "", source: str = "drawing", page: int | None = None,
@@ -131,7 +135,8 @@ def submit_boq(run: Run, summary: str = "") -> dict:
     if problems:
         return {"refused": problems}
     run.status = "done"
-    run.result = {"summary": summary, "boq": run.data["boq"], "assumptions": run.assumptions}
+    cov = (run.data["boq"].get("coverage") or {}).get("statement", "")
+    run.result = {"summary": (summary + " " + cov).strip(), "boq": run.data["boq"], "assumptions": run.assumptions}
     (run.dir).mkdir(parents=True, exist_ok=True)
     (run.dir / "boq.json").write_text(json.dumps(run.result, indent=2))
     return {"filed": True}
@@ -475,7 +480,14 @@ def compute_boq(run: Run) -> dict:
     rates = json.loads(Path("data/rates.json").read_text())
     priced = price_boq(items, rates)
     run.data["boq"] = {"items": [i.__dict__ for i in items], **priced}
-    return {"lines": len(items), "total": priced["total"], "currency": priced["currency"], "unpriced": priced["unpriced"]}
+    from plan2cost.checklist import coverage, statement
+
+    cov = coverage([i.key for i in items], floors=len(ext))
+    out = {"lines": len(items), "total": priced["total"], "currency": priced["currency"], "unpriced": priced["unpriced"]}
+    if cov:
+        run.data["boq"]["coverage"] = {k: v for k, v in cov.items() if k != "items"} | {"statement": statement(cov), "items": cov["items"]}
+        out["coverage"] = statement(cov)
+    return out
 
 
 TOOLS = {

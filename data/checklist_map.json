@@ -1,0 +1,26 @@
+{
+  "_note": "Which of the reference checklist items (reference/trades_checklist.json, ids only here) our BoQ lines cover. covered: a BoQ line gives the quantity in the item's own unit; partial: we measure the underlying quantity (an area or volume) but the item is a material count, labour or a different unit that needs a coefficient the author has not confirmed. Anything not listed is not built.",
+  "items": {
+    "SUB-01": {"status": "covered", "keys": ["trench_excavation_strip_m3", "pit_excavation_column_bases_m3"]},
+    "SUB-02": {"status": "covered", "keys": ["backfill_around_foundations_m3"]},
+    "SUB-03": {"status": "covered", "keys": ["blinding_foundations_m3", "blinding_on_hardcore_m3"]},
+    "SUB-04": {"status": "covered", "keys": ["strip_footing_concrete_m3", "column_base_concrete_m3"]},
+    "SUB-05": {"status": "partial", "keys": ["fdn_blockwork_230_m2"], "missing": "block count from the wall area (blocks per m2 and wastage)"},
+    "SUB-08": {"status": "partial", "keys": ["fdn_blockwork_230_m2"], "missing": "labour rate basis for the wall area"},
+    "SUB-09": {"status": "covered", "keys": ["hardcore_m3"]},
+    "SUB-13": {"status": "partial", "keys": ["ground_slab_m3"], "missing": "labour on the slab area"},
+    "SUB-14": {"status": "covered", "keys": ["dpm_polythene_m2"]},
+    "SUB-15": {"status": "partial", "keys": ["brc_mesh_part1_m2"], "missing": "sheets from the mesh area"},
+    "SUB-16": {"status": "partial", "keys": ["rebar_y12_foundations_t"], "missing": "strip footing bars; column base bars are measured, in tonnes not lengths"},
+    "SUB-18": {"status": "covered", "keys": ["excavated_surface_treatment_m2"]},
+    "SUP-01": {"status": "partial", "keys": ["ext_blockwork_230_m2"], "missing": "block count from the wall area"},
+    "SUP-02": {"status": "partial", "keys": ["int_blockwork_230_m2"], "missing": "block count from the wall area"},
+    "SUP-05": {"status": "partial", "keys": ["ext_blockwork_230_m2", "int_blockwork_230_m2"], "missing": "labour rate basis for the wall area"},
+    "FIN-02": {"status": "covered", "keys": ["external_wall_render_m2"]},
+    "FIN-04": {"status": "covered", "keys": ["external_wall_paint_m2"]},
+    "DW-01": {"status": "partial", "prefix": "opening_d", "missing": "door types by security or flush, not only by schedule size"},
+    "DW-02": {"status": "partial", "prefix": "opening_d", "missing": "door types by security or flush, not only by schedule size"},
+    "DW-03": {"status": "partial", "prefix": "opening_w", "missing": "window sizes by large or small class"},
+    "DW-04": {"status": "partial", "prefix": "opening_w", "missing": "window sizes by large or small class"}
+  }
+}
