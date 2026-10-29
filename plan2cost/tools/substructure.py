@@ -20,8 +20,10 @@ class FoundationColumn:
     height_m: float = 1.5
 
 
-def topsoil_strip_m2(length_m: float, width_m: float, working_space_m: float = 0.6, factor: float = 0.95) -> int:
-    """The building's overall length and width plus working space both sides, times 0.95 (the author's allowance)."""
+def topsoil_strip_m2(length_m: float, width_m: float, working_space_m: float = 0.6, factor: float = 1.0) -> int:
+    """BESMM4 (Excavating and filling, site preparation): remove topsoil, m2, depth stated. Area taken as the building's overall length and width
+    plus working space both sides. `factor` exists only because the author's plan2 sheet gives 226, which is 0.95 of this area; that ratio was
+    fitted by us, not stated by him or the rule book, so it is off by default until he confirms how the sheet gets 226."""
     return whole_units((length_m + 2 * working_space_m) * (width_m + 2 * working_space_m) * factor)
 
 
@@ -52,5 +54,6 @@ def disposal_and_backfill(excavation_m3: float, blockwork_girth_m: float, blockw
 
 
 def void_filling_m3(blockwork_area_m2: float, void_depth_m: float = 0.1153) -> float:
-    """Mass concrete in the cores of sandcrete blocks below DPC: the author's factor (10.26 m3 on 89 m2)."""
+    """Mass concrete in the cores of sandcrete blocks below DPC. 0.1153 is the ratio on the author's plan2 sheet (10.26 m3 on 89 m2), not a
+    derived or published figure; confirm it with him before relying on it for other block sizes."""
     return round(blockwork_area_m2 * void_depth_m, 2)

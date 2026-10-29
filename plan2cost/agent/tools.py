@@ -290,6 +290,17 @@ def read_strip_layout(run: Run) -> dict:
             "not_measured": f"{len(layout.floating_base_types)} base(s) off the grid (types {layout.floating_base_types}) and the strips serving them" if layout.floating_base_types else None}
 
 
+def lookup_besmm(run: Run, query: str) -> dict:
+    """Find what the BESMM4 rule book says about something to be measured (unit, what is included or deducted, what the item description must
+    state). Returns page numbers and excerpts for you to read; say which page your rule comes from when you record a fact based on it."""
+    from plan2cost.besmm import book_path, search
+
+    if not book_path():
+        return {"error": "The BESMM4 book is not available here (set P2C_BESMM_PDF). Say in the basis that the rule was not checked."}
+    hits = search(query)
+    return {"query": query, "pages": hits} if hits else {"query": query, "pages": [], "note": "No page carries all the words; try fewer or different words."}
+
+
 def compute_foundation(run: Run, block_mm: int = 230) -> dict:
     """Strip foundation from the ground floor walls when no foundation layout is given: trench girth is the ground floor wall girth less
     the overlaps at joints, trench width is three times the block thickness, depths are flagged defaults. Needs the facts
@@ -383,6 +394,7 @@ TOOLS = {
     "read_notes": (read_notes, "pages: [int] optional: specification notes (roof, ceiling, floor finish, slab...) with checked quotes"),
     "read_wall_girth": (read_wall_girth, 'page: int (a floor plan page), floor: "ground"|"first"|...: wall girth from the plan; record it as source "computed"'),
     "read_foundation_section": (read_foundation_section, "no args: foundation cross-section (footing, blinding, slab, filling, overall depth) from the structural drawing, when one is given"),
+    "lookup_besmm": (lookup_besmm, "query: what to look up in the BESMM4 book, e.g. 'remove topsoil'; returns pages and excerpts"),
     "read_strip_layout": (read_strip_layout, "no args: strip footing girth from the structural foundation layout; call after read_pad_bases, before compute_foundation"),
     "read_pad_bases": (read_pad_bases, "no args: column base types (size, thickness, number) from the structural drawing, when one is given"),
     "compute_foundation": (compute_foundation, "block_mm: int (default 230): strip foundation from the ground floor walls; run after the ground girth is recorded, before compute_boq"),

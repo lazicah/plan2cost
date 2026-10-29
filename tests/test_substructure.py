@@ -8,7 +8,8 @@ PADS = [PadBase("1", 1.2, 1.2, 4, 0.25), PadBase("2", 1.4, 1.4, 5, 0.25), PadBas
 
 
 def test_topsoil_levelling_and_blinding_reproduce_the_sheet():
-    assert topsoil_strip_m2(19.1, 10.5) == 226
+    assert topsoil_strip_m2(19.1, 10.5, factor=0.95) == 226  # fitted ratio, see the docstring
+    assert topsoil_strip_m2(19.1, 10.5) == 238
     assert levelling_compaction_m2(70, 0.69, PADS) == 89
     assert blinding_foundations_m3(70, 0.69, PADS) == 7
 
