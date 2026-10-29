@@ -10,7 +10,8 @@ Built for the Meta x Cerebral Valley Global AI Developer Hackathon (Indie track,
 
 ## What existed before the hackathon
 
-- The author's personal Excel BoQ calculators. They are **not** included in this repo. They are used only as a reference to cross-check the agent's numbers.
+Nothing. Plan2Cost started during the hackathon. The author is a quantity surveyor and drew on professional experience, textbooks and public sites for the measurement conventions, rates and
+coefficients; the sources are named in `data/` and `CLAUDE.md`. The author's own bills and drawings used for checking are not in this repo.
 
 ## Built during the hackathon (Oct 27 – Nov 4, 2026)
 
