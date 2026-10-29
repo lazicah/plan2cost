@@ -36,10 +36,14 @@ def test_an_estimated_line_keeps_its_range_through_the_recipe():
     assert c["qty_low"] < c["qty"] < c["qty_high"] and c["basis"] == "estimated" and c["amount_low"] < c["amount"] < c["amount_high"]
 
 
-def test_foundation_block_laying_costs_more_than_wall_block_laying():
-    a = lines(bill_of_materials([item("fdn_blockwork_230_m2", 100, "m2")]), "Blockwork in foundation")
-    b = lines(bill_of_materials([item("ext_blockwork_230_m2", 100, "m2")]), "Blockwork in external walls")
-    assert next(v for k, v in a.items() if k.startswith("Labour"))["rate"] == 200 and next(v for k, v in b.items() if k.startswith("Labour"))["rate"] == 45
+def test_block_laying_is_200_a_block_everywhere_and_internal_walls_use_the_leaner_mortar():
+    ext = lines(bill_of_materials([item("ext_blockwork_230_m2", 100, "m2")]), "Blockwork in external walls")
+    fdn = lines(bill_of_materials([item("fdn_blockwork_230_m2", 100, "m2")]), "Blockwork in foundation")
+    inn = lines(bill_of_materials([item("int_blockwork_230_m2", 100, "m2")]), "Blockwork in internal walls")
+    for d in (ext, fdn, inn):
+        assert next(v for k, v in d.items() if k.startswith("Labour"))["rate"] == 200
+    cement = lambda d: next(v for k, v in d.items() if k.startswith("Cement"))["qty"]
+    assert abs(cement(ext) - 24.5) < 0.01 and abs(cement(inn) - 22.2) < 0.01  # 1:4 against 1:6 mortar
 
 
 def test_a_line_with_no_recipe_is_carried_at_its_boq_rate_and_totals_add_up():

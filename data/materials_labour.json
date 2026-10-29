@@ -135,7 +135,7 @@
   "block_laying_per_block": {
    "name": "Block laying",
    "unit": "no",
-   "rate": 45.0
+   "rate": 200.0
   },
   "plaster_per_m2": {
    "name": "Plastering",
@@ -206,9 +206,14 @@
    "nails_bag": 0.0133
   },
   "block_per_m2": {
-   "block_225": 9.51,
-   "cement_bag": 0.153,
-   "sand_t": 0.0363
+   "block_225": 10.5,
+   "cement_bag": 0.245,
+   "sand_t": 0.12
+  },
+  "block_int_per_m2": {
+   "block_225": 10.5,
+   "cement_bag": 0.222,
+   "sand_t": 0.074
   },
   "plaster_per_m2": {
    "cement_bag": 0.0777,
@@ -252,6 +257,12 @@
    "cement_bag": 7.0,
    "sand_t": 0.74,
    "granite_t": 1.39
+  },
+  "bill_block_per_m2": {
+   "block_225": 9.51,
+   "cement_bag": 0.153,
+   "sand_t": 0.0363,
+   "laying_per_block": 45.0
   },
   "bill_sand_t_per_m3": 1.76,
   "bill_granite_t_per_m3": 1.61,

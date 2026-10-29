@@ -8,7 +8,7 @@ from pathlib import Path
 
 from plan2cost.takeoff.sections import bill_name, bill_of, group_of
 
-# BoQ line key -> (recipe family in the ratios, name of the element it makes). Families: concrete (per m3), blinding (per m3), steel_per_t, formwork_per_m2, block_per_m2,
+# BoQ line key -> (recipe family in the ratios, name of the element it makes). Families: concrete (per m3), blinding (per m3), steel_per_t, formwork_per_m2, block_per_m2 (1:4 mortar), block_int_per_m2 (1:6),
 # plaster_per_m2, paint_per_m2, floor_tiling_per_m2, skirting_per_m, ceiling_per_m2, roof_cover_per_m2, roof_timber_per_m, earthwork_support_per_m2.
 RECIPES = {
     "strip_footing_concrete_m3": ("concrete", "Foundation footing concrete (1:2:4)"), "column_base_concrete_m3": ("concrete", "Column bases concrete"),
@@ -19,7 +19,7 @@ RECIPES = {
     "frame_steel_t": ("steel_per_t", "Reinforcement (columns, beams, slabs and stairs)"), "rebar_y12_foundations_t": ("steel_per_t", "Reinforcement (foundation)"),
     "rebar_y8_foundations_t": ("steel_per_t", "Reinforcement (foundation links)"),
     "frame_formwork_soffit_m2": ("formwork_per_m2", "Formwork to soffits of slabs"), "frame_formwork_beams_columns_m2": ("formwork_per_m2", "Formwork to beams and columns"),
-    "fdn_blockwork_230_m2": ("block_per_m2", "Blockwork in foundation"), "ext_blockwork_230_m2": ("block_per_m2", "Blockwork in external walls"), "int_blockwork_230_m2": ("block_per_m2", "Blockwork in internal walls"),
+    "fdn_blockwork_230_m2": ("block_per_m2", "Blockwork in foundation"), "ext_blockwork_230_m2": ("block_per_m2", "Blockwork in external walls"), "int_blockwork_230_m2": ("block_int_per_m2", "Blockwork in internal walls"),
     "external_wall_render_m2": ("plaster_per_m2", "Rendering to external walls"), "fdn_wall_render_m2": ("plaster_per_m2", "Rendering to foundation walls"), "internal_wall_finish_m2": ("plaster_per_m2", "Plastering to internal walls"),
     "external_wall_paint_m2": ("paint_per_m2", "Painting to external walls"), "internal_wall_paint_m2": ("paint_per_m2", "Painting to internal walls"),
     "floor_finish_m2": ("floor_tiling_per_m2", "Floor tiling and screed"), "skirting_m": ("skirting_per_m", "Skirting tiles"), "ceiling_finish_m2": ("ceiling_per_m2", "Ceiling work"),
@@ -27,10 +27,9 @@ RECIPES = {
 }
 # what the labour of each family is paid by, and how it scales: (labour rate key, quantity it is paid on per unit of the BoQ line)
 LABOUR = {"concrete": [("casting_per_bag", "cement_bag")], "blinding_per_m3": [("casting_per_bag", "cement_bag")], "steel_per_t": [("iron_bending_per_kg", 1000.0)], "formwork_per_m2": [("carpenter_per_m2", 1.0)],
-          "block_per_m2": [("block_laying_per_block", "block_225")], "plaster_per_m2": [("plaster_per_m2", 1.0)], "paint_per_m2": [("painting_per_m2", 1.0), ("screeding_for_paint_per_m2", 1.0)],
+          "block_per_m2": [("block_laying_per_block", "block_225")], "block_int_per_m2": [("block_laying_per_block", "block_225")], "plaster_per_m2": [("plaster_per_m2", 1.0)], "paint_per_m2": [("painting_per_m2", 1.0), ("screeding_for_paint_per_m2", 1.0)],
           "floor_tiling_per_m2": [("floor_tiling_per_m2", 1.0)], "ceiling_per_m2": [("ceiling_per_m2", 1.0)], "roof_cover_per_m2": [("roof_covering_per_m2", 1.0)],
           "roof_timber_per_m": [("carcassing_per_m", 1.0)], "earthwork_support_per_m2": [("earthwork_support_per_m2", 1.0)]}
-LABOUR_RATE = {"fdn_blockwork_230_m2": {"block_laying_per_block": "block_laying_foundation_per_block"}}  # laying blocks in the foundation is paid more
 
 
 @lru_cache(maxsize=1)
@@ -58,7 +57,6 @@ def recipe_lines(item: dict, element: str, family: str, key: str = "") -> list[d
     for m, per in ratios.items():
         out.append(_line("", f"{mats[m]['name']} – {short}", mats[m]["unit"], tuple(x * per for x in q), mats[m]["rate"], item.get("basis", "measured")))
     for lab, on in LABOUR.get(family, []):
-        lab = LABOUR_RATE.get(key, {}).get(lab, lab)
         per_unit = ratios[on] if isinstance(on, str) else on
         out.append(_line("", f"Labour – {labs[lab]['name'].lower()} – {short}", labs[lab]["unit"], tuple(x * per_unit for x in q), labs[lab]["rate"], item.get("basis", "measured")))
     return out

@@ -12,6 +12,12 @@ SIMPLIFIED = "reference/boq/SIMPLIFIED BOQ.pdf"
 # roughly half, and the measured BoQ steel rates (1.32M and 1.70M a tonne) agree with the calculator, so the higher price is used.
 BAR_KG_PER_M = {"Y8": 0.395, "Y10": 0.617, "Y12": 0.888, "Y16": 1.579, "Y20": 2.467, "Y25": 3.854}
 REBAR_PRICE_PER_KG = 1650
+# Blockwork per m2 of 225 mm wall from the nigeriabuildingcost block wall calculator (10 blocks plus 5% waste, 0.035 m3 of wet mortar per m2): 1:4 mortar for external and foundation walls (0.245 bag, 0.12 t sand per m2 as the page states),
+# 1:6 for internal partitions (0.035 m3 x 6.33 bags and 2.112 t sand per m3 of 1:6 mortar, Structville). The bill's own 9.5 blocks, 0.153 bag and 0.036 t are lower, so the higher figures are used (the author's rule); laying is 200 a block
+# (the calculator's rate and the bill's foundation rate) everywhere, not the bill's 45 above ground.
+BLOCK_EXT = {"block_225": 10.5, "cement_bag": 0.245, "sand_t": 0.12}
+BLOCK_INT = {"block_225": 10.5, "cement_bag": 0.222, "sand_t": 0.074}
+BLOCK_LAYING_PER_BLOCK = 200.0
 MIX_124 = {"cement_bag": 7.0, "sand_t": 0.74, "granite_t": 1.39}  # per m3 of 1:2:4 concrete
 OUT = Path("data/materials_labour.json")
 SIMPLE_ROW = re.compile(r"^\s*(\d+[a-z]?)\s+(.*?)\s{2,}(\d[\d,]*)\s+(\w[\w²³.]*)\s+([\d,]+\.\d\d)\s+([\d,]+\.\d\d)\s*$")
@@ -66,7 +72,7 @@ def derive() -> dict:
     blocks, block_m2 = s(r"Sandcrete Blocks", "no"), 144 + 616 + 584 + 60
     mortar_cement, mortar_sand = s(r"Cement.*(Mortar|Blockwork)", "bag"), s(r"Stone Dust / Sand|Sand for Blockwork", "ton", sub="BLOCKWORK|PARAPET|COLUMNS & BLOCKWORK")
     plaster_m2 = s(r"Wall Plastering", "m")
-    evidence = {"mix_124_used": MIX_124, "bill_sand_t_per_m3": round(typical * sand_per_bag, 2), "bill_granite_t_per_m3": round(typical * granite_per_bag, 2), "cement_bags_per_m3_by_element": cement_per_m3, "cement_bags_per_m3_all": typical, "sand_t_per_bag": round(sand_per_bag, 3), "granite_t_per_bag": round(granite_per_bag, 3),
+    evidence = {"mix_124_used": MIX_124, "bill_block_per_m2": {"block_225": round(blocks / block_m2, 2), "cement_bag": round(mortar_cement / block_m2, 3), "sand_t": round(mortar_sand / block_m2, 4), "laying_per_block": rate(r"Labour – Blockwork", "no")}, "bill_sand_t_per_m3": round(typical * sand_per_bag, 2), "bill_granite_t_per_m3": round(typical * granite_per_bag, 2), "cement_bags_per_m3_by_element": cement_per_m3, "cement_bags_per_m3_all": typical, "sand_t_per_bag": round(sand_per_bag, 3), "granite_t_per_bag": round(granite_per_bag, 3),
                 "kg_steel_per_12m_length": round(bending_kg / lengths, 2), "binding_wire_rolls_per_t_steel": round(s(r"Binding Wire", "roll") / bending_kg * 1000, 2),
                 "planks_per_m2_formwork": round(planks / form_m2, 3), "blocks_per_m2_wall": round(blocks / block_m2, 2), "plaster_m2": plaster_m2}
     r = {
@@ -75,7 +81,7 @@ def derive() -> dict:
         "blinding_per_m3": {"cement_bag": round(s(r"^Cement", "bag", r"^BLINDING") / 21, 3), "sand_t": round(s(r"Sand|Stone Dust", "ton", r"^BLINDING") / 21, 3)},  # 21 m3 of grade 15 blinding in the Cubana bill
         "steel_per_t": {"rebar_length": round(1000 / (bending_kg / lengths), 1), "binding_wire_roll": evidence["binding_wire_rolls_per_t_steel"]},
         "formwork_per_m2": {"plank_1x12": round(planks / form_m2, 2), "nails_bag": round(s(r"^Nail", "bag", nsub="EARTHWORK SUPPORT") / form_m2, 4)},
-        "block_per_m2": {"block_225": round(blocks / block_m2, 2), "cement_bag": round(mortar_cement / block_m2, 3), "sand_t": round(mortar_sand / block_m2, 4)},
+        "block_per_m2": BLOCK_EXT, "block_int_per_m2": BLOCK_INT,
         "plaster_per_m2": {"cement_bag": round(s(r"Cement – Plastering", "bag") / plaster_m2, 4), "sand_t": round(s(r"Sand – Plastering", "ton") / plaster_m2, 4)},
         "paint_per_m2": {"paint_drum_20l": round(s(r"Emulsion", "drum") / 2400, 4), "white_cement_bag": round(s(r"Screeding Cement", "bag") / 2400, 5)},
         "floor_tiling_per_m2": {"floor_tile_m2": 1.0, "cement_bag": round((s(r"Cement – Tile Fixing", "bag") + s(r"Cement – Floor Screed", "bag")) / s(r"Labour – Tiling \(Floor\)", "m"), 3),
@@ -100,7 +106,7 @@ def derive() -> dict:
                  "paint_drum_20l": ("Emulsion or texture paint, 20 litre drum", "drum", rate(r"Emulsion", "drum")), "white_cement_bag": ("White cement for paint base", "bag", rate(r"Screeding Cement", "bag")),
                  "rebar_length": ("Reinforcement bar, 12 m length (mixed sizes)", "length", max(round(sum(x["amount"] for x in S if x["item"].startswith("Rebar") and x["unit"].startswith("len")) / lengths), round(REBAR_PRICE_PER_KG * bending_kg / lengths)))}
     labour = {"casting_per_bag": ("Casting concrete, per bag of cement", "bag", rate(r"Labour.*Casting", "bag")), "iron_bending_per_kg": ("Iron bending", "kg", rate(r"Iron Bending", "kg")),
-              "block_laying_foundation_per_block": ("Block laying in the foundation", "no", rate(r"Labour – Blockwork", "blk")), "carpenter_per_m2": ("Carpenter, formwork", "m2", rate(r"Carpenter", "m")), "block_laying_per_block": ("Block laying", "no", rate(r"Labour – Blockwork", "no")),
+              "block_laying_foundation_per_block": ("Block laying in the foundation", "no", rate(r"Labour – Blockwork", "blk")), "carpenter_per_m2": ("Carpenter, formwork", "m2", rate(r"Carpenter", "m")), "block_laying_per_block": ("Block laying", "no", BLOCK_LAYING_PER_BLOCK),
               "plaster_per_m2": ("Plastering", "m2", rate(r"Wall Plastering", "m")), "floor_tiling_per_m2": ("Floor tiling", "m2", rate(r"Labour – Tiling \(Floor\)", "m")),
               "ceiling_per_m2": ("Ceiling work", "m2", rate(r"Labour – Ceiling", "m")), "painting_per_m2": ("Painting", "m2", rate(r"Labour – Painting", "m")),
               "screeding_for_paint_per_m2": ("Screeding for paint", "m2", rate(r"Wall Screeding for Paint", "m")), "carcassing_per_m": ("Roof carcassing", "m", rate(r"Carcassing", "m")),
