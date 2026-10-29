@@ -113,6 +113,32 @@ def frame_items(floors: list[FloorData]) -> tuple[list[BoqItem], dict]:
     return items, {"upper_floor_area_m2": round(upper, 1), "frame_concrete_m3": [round(x, 1) for x in conc]}
 
 
+def missing_openings(floors: list[FloorData], rates: dict) -> tuple[list[BoqItem], list[dict]]:
+    """A plan read can miss openings (a wall the reader lost has none). When far fewer windows or doors are found than the author's own plans have per m2 of floor, the rest are
+    added as estimated lines, at a standard size, and the estimate says so. Lintels follow the openings."""
+    gfa = sum(f.footprint_m2 for f in floors)
+    ops = [o for f in floors for o in f.openings]
+    items, notes, extra_total = [], [], (0.0, 0.0, 0.0)
+    for kind, coef, label, key, w, h, side in (("window", "plans_windows_per_m2_floor", "Windows", "windows_estimated_nr", 1.2, 1.2, True),
+                                               ("door", "plans_doors_per_m2_floor", "Doors", "doors_estimated_nr", 0.9, 2.1, False)):
+        found = sum(o.count for o in ops if o.kind == kind)
+        want = _rng(coef, gfa)
+        if found >= 0.6 * want[0]:
+            continue
+        extra = tuple(max(x - found, 0.0) for x in want)
+        it = _est(key, f"{label} not found on the plans; estimated from the floor area; standard size {int(w * 1000)} x {int(h * 1000)}mm", "nr", extra, [coef])
+        r = rates.get("window_base_nr", 0) + rates.get("window_per_m2", 0) * w * h if kind == "window" else rates.get("door_internal_nr")
+        it.rate = round(r, -2) if r else None
+        items.append(it)
+        extra_total = tuple(a + b for a, b in zip(extra_total, extra))
+        notes.append({"name": f"{kind}s_estimated", "value": f"{found:g} found, about {want[1]:.0f} expected", "basis": f"only {found:g} {kind}s were found on the plans for {gfa:.0f} m2 of floor; the rest are estimated from the author's own plans"})
+    if items:
+        lint = _est("lintels_estimated_nr", "Lintels over the estimated openings; precast concrete", "nr", extra_total, ["plans_windows_per_m2_floor", "plans_doors_per_m2_floor"])
+        lint.rate = rates.get("lintel_nr")
+        items.append(lint)
+    return items, notes
+
+
 def service_items(floors: list[FloorData]) -> list[BoqItem]:
     """One WC, basin, shower, water point and heater point for each wet room named on the plans, a sink for each kitchen."""
     wet = sum(f.wet_rooms() for f in floors)
@@ -197,6 +223,9 @@ def estimate(floors: list[FloorData], inputs: dict, rates: dict | None = None) -
     items += found
     assumptions += fa
     set_opening_rates(items, allops, rates or {})
+    more, notes = missing_openings(floors, rates or {})
+    items += more
+    assumptions += notes
     fr, frw = frame_items(floors)
     items += fr
     rf, rw = roof_items(floors, inputs)

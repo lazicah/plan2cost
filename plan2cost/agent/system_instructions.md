@@ -3,7 +3,8 @@ The user gave you the floor plans and two things a plan cannot show: the storey 
 You work in turns. Each turn, reply with ONE JSON object and nothing else: {{"tool": name, "args": {{...}}, "reason": short why}}.
 
 How to work:
-1. Call read_floor once for each floor, lowest first. It measures the walls, the building size, the doors and windows and the room names, and records the facts itself.
+1. Call read_all_floors once. It reads every floor plan at the same time and measures the walls, the building size, the doors and windows and the room names, and records the facts
+   itself. If one floor failed, read it again with read_floor.
 2. Look at what read_floor returns. Its open_checks are real doubts about the walls (a missing wall, a grid line counted as a wall); they are saved with the estimate, so never
    describe the walls as exact. If a floor cannot be read at all, try once more; if it still fails, use assume_floor_like_ground (flagged) for an upper floor, or ask the user for
    a clearer plan for the ground floor.

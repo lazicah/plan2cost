@@ -1511,6 +1511,81 @@
    "note": "The bill adds 15% outside the rates; the author says 15 to 20% sits inside the rates. Do not add it twice."
   },
   {
+   "id": "door_height_m",
+   "group": "openings",
+   "what": "Door height when the floor plan does not give one",
+   "unit": "m",
+   "per": "door",
+   "low": 2.1,
+   "typical": 2.1,
+   "high": 2.1,
+   "sources": [
+    "author"
+   ],
+   "confidence": "medium",
+   "note": "Every door in plan 2's schedule is 2100 high."
+  },
+  {
+   "id": "window_height_m",
+   "group": "openings",
+   "what": "Window height when the floor plan does not give one",
+   "unit": "m",
+   "per": "window",
+   "low": 0.6,
+   "typical": 1.2,
+   "high": 1.5,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Plan 2's schedule runs 450 to 1500; 1200 is the common one."
+  },
+  {
+   "id": "lintel_bearing_mm",
+   "group": "openings",
+   "what": "Bearing of a lintel on the wall at each end",
+   "unit": "mm",
+   "per": "lintel end",
+   "low": 150,
+   "typical": 225,
+   "high": 225,
+   "sources": [
+    "calc"
+   ],
+   "confidence": "low",
+   "note": "Not on a floor plan; one block thickness each end is assumed, and flagged."
+  },
+  {
+   "id": "roof_eaves_overhang_m",
+   "group": "roof",
+   "what": "Roof overhang beyond the outer wall face",
+   "unit": "m",
+   "per": "roof edge",
+   "low": 0.3,
+   "typical": 0.45,
+   "high": 0.6,
+   "sources": [
+    "author"
+   ],
+   "confidence": "low",
+   "note": "Plan 2's section prints a 450 fascia; the range around it is not sourced."
+  },
+  {
+   "id": "ring_beam_section_m2",
+   "group": "frame",
+   "what": "Ring beam cross-section, 230 x 450",
+   "unit": "m2",
+   "per": "beam",
+   "low": 0.1035,
+   "typical": 0.1035,
+   "high": 0.1035,
+   "sources": [
+    "nbcgen"
+   ],
+   "confidence": "low",
+   "note": "Used to estimate the ring beam of a single-storey building from its wall girth."
+  },
+  {
    "id": "plans_roof_timber_m_per_m2_roof",
    "group": "from plans",
    "what": "All roof timber (wall plates, tie beams, rafters, king posts and struts, purlins) per m2 of roof covering",
@@ -1941,6 +2016,52 @@
    "note": "Depends on the soil and the foundation type. From 5 plan(s) of the author's own BOQs sheets; the per-plan values are kept in per_plan."
   },
   {
+   "id": "plans_windows_per_m2_floor",
+   "group": "from plans",
+   "what": "Windows per m2 of floor (ground area x floors)",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.069,
+   "typical": 0.087,
+   "high": 0.1,
+   "sources": [
+    "authorboq"
+   ],
+   "confidence": "low",
+   "n_plans": 5,
+   "per_plan": {
+    "plan2": 0.09,
+    "plan3": 0.069,
+    "plan4": 0.1,
+    "plan6": 0.075,
+    "plan9": 0.087
+   },
+   "note": "Counted once each; used only when the floor plan shows far fewer than this. From 5 plan(s) of the author's own BOQs sheets; the per-plan values are kept in per_plan."
+  },
+  {
+   "id": "plans_doors_per_m2_floor",
+   "group": "from plans",
+   "what": "Doors per m2 of floor (ground area x floors)",
+   "unit": "nr",
+   "per": "m2 of floor",
+   "low": 0.047,
+   "typical": 0.05,
+   "high": 0.061,
+   "sources": [
+    "authorboq"
+   ],
+   "confidence": "low",
+   "n_plans": 5,
+   "per_plan": {
+    "plan2": 0.052,
+    "plan3": 0.061,
+    "plan4": 0.048,
+    "plan6": 0.05,
+    "plan9": 0.047
+   },
+   "note": "Counted once each. From 5 plan(s) of the author's own BOQs sheets; the per-plan values are kept in per_plan."
+  },
+  {
    "id": "plans_hollow_block_wall_m2_per_m2_floor",
    "group": "from plans",
    "what": "Hollow block wall area (all walls) per m2 of floor (ground area x floors)",
@@ -1962,81 +2083,6 @@
     "plan9": 1.646
    },
    "note": "Block area as the sheets count it, with openings taken off. From 5 plan(s) of the author's own BOQs sheets; the per-plan values are kept in per_plan."
-  },
-  {
-   "id": "door_height_m",
-   "group": "openings",
-   "what": "Door height when the floor plan does not give one",
-   "unit": "m",
-   "per": "door",
-   "low": 2.1,
-   "typical": 2.1,
-   "high": 2.1,
-   "sources": [
-    "author"
-   ],
-   "confidence": "medium",
-   "note": "Every door in plan 2's schedule is 2100 high."
-  },
-  {
-   "id": "window_height_m",
-   "group": "openings",
-   "what": "Window height when the floor plan does not give one",
-   "unit": "m",
-   "per": "window",
-   "low": 0.6,
-   "typical": 1.2,
-   "high": 1.5,
-   "sources": [
-    "author"
-   ],
-   "confidence": "low",
-   "note": "Plan 2's schedule runs 450 to 1500; 1200 is the common one."
-  },
-  {
-   "id": "lintel_bearing_mm",
-   "group": "openings",
-   "what": "Bearing of a lintel on the wall at each end",
-   "unit": "mm",
-   "per": "lintel end",
-   "low": 150,
-   "typical": 225,
-   "high": 225,
-   "sources": [
-    "calc"
-   ],
-   "confidence": "low",
-   "note": "Not on a floor plan; one block thickness each end is assumed, and flagged."
-  },
-  {
-   "id": "roof_eaves_overhang_m",
-   "group": "roof",
-   "what": "Roof overhang beyond the outer wall face",
-   "unit": "m",
-   "per": "roof edge",
-   "low": 0.3,
-   "typical": 0.45,
-   "high": 0.6,
-   "sources": [
-    "author"
-   ],
-   "confidence": "low",
-   "note": "Plan 2's section prints a 450 fascia; the range around it is not sourced."
-  },
-  {
-   "id": "ring_beam_section_m2",
-   "group": "frame",
-   "what": "Ring beam cross-section, 230 x 450",
-   "unit": "m2",
-   "per": "beam",
-   "low": 0.1035,
-   "typical": 0.1035,
-   "high": 0.1035,
-   "sources": [
-    "nbcgen"
-   ],
-   "confidence": "low",
-   "note": "Used to estimate the ring beam of a single-storey building from its wall girth."
   }
  ]
 }

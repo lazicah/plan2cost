@@ -42,6 +42,16 @@ def total(items: list[dict], unit: str, pattern: str, exclude: str = "") -> floa
     return round(sum(x["qty"] for x in items if x["unit"] == unit and x["qty"] and re.search(pattern, x["desc"], re.I) and not (exclude and re.search(exclude, x["desc"], re.I))), 2)
 
 
+def unique_count(items: list[dict], pattern: str) -> float:
+    """Quantity of the lines matching the pattern, counting a repeated line once: the sheets list the windows and doors twice (supply, then fixing)."""
+    seen, n = set(), 0.0
+    for x in items:
+        if x["qty"] and re.search(pattern, x["desc"], re.I) and (x["desc"], x["qty"]) not in seen:
+            seen.add((x["desc"], x["qty"]))
+            n += x["qty"]
+    return n
+
+
 def plan_metrics(i: int) -> dict:
     it = parse(PLAN_FILE.format(i))
     t = lambda unit, pat, ex="": total(it, unit, pat, ex)  # noqa: E731
@@ -52,6 +62,7 @@ def plan_metrics(i: int) -> dict:
             "timber": t("m", r"wall plate") + t("m", "tie beam") + t("m", "rafter") + t("m", "kingpost") + t("m", "purlin", r"50 x 50"),
             "A_ground": max(t("m2", "Fabric reference|BRC"), t("m2", "polythene")), "excavation": t("m3", "maximum depth not exceeding 2.00m", "Earthwork"),
             "blinding": t("m3", "Blinding"), "footing": t("m3", "^Foundation") + t("m3", "Column Base"),
+            "windows": unique_count(it, r"^Window\s+size"), "doors": unique_count(it, r"^Overall size"),
             "blocks": round(sum(x["qty"] for x in it if x["unit"] == "m2" and x["qty"] and re.search("hollow blocks", x["desc"], re.I)), 2)}
 
 
@@ -91,6 +102,9 @@ def derive() -> list[dict]:
         entry("plans_excavation_m3_per_m2_ground", "Excavation (trenches, pits, bed) per m2 of ground floor area", "m3", "m2 of ground floor", pick(area_ok, lambda x: x["excavation"] / x["A_ground"]), ""),
         entry("plans_blinding_m3_per_m2_ground", "Blinding concrete per m2 of ground floor area", "m3", "m2 of ground floor", pick(area_ok, lambda x: x["blinding"] / x["A_ground"]), ""),
         entry("plans_footing_concrete_m3_per_m2_ground", "Foundation and column base concrete per m2 of ground floor area", "m3", "m2 of ground floor", pick(area_ok, lambda x: x["footing"] / x["A_ground"]), "Depends on the soil and the foundation type."),
+        entry("plans_windows_per_m2_floor", "Windows per m2 of floor (ground area x floors)", "nr", "m2 of floor", pick(area_ok, lambda x: x["windows"] / (x["A_ground"] * x["floors"])),
+              "Counted once each; used only when the floor plan shows far fewer than this."),
+        entry("plans_doors_per_m2_floor", "Doors per m2 of floor (ground area x floors)", "nr", "m2 of floor", pick(area_ok, lambda x: x["doors"] / (x["A_ground"] * x["floors"])), "Counted once each."),
         entry("plans_hollow_block_wall_m2_per_m2_floor", "Hollow block wall area (all walls) per m2 of floor (ground area x floors)", "m2", "m2 of floor", pick(area_ok, lambda x: x["blocks"] / (x["A_ground"] * x["floors"])), "Block area as the sheets count it, with openings taken off."),
     ]
     return [e for e in out if e["per_plan"]]

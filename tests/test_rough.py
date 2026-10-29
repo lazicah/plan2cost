@@ -70,3 +70,14 @@ def test_wet_rooms_set_the_sanitary_fittings_and_openings_are_priced_from_their_
 def test_no_column_base_lines_appear_when_the_plans_cannot_show_column_bases():
     by, ass, _, _ = run_estimate([ground(), first()])
     assert not {"column_base_concrete_m3", "pit_excavation_column_bases_m3"} & set(by) and any(a["name"] == "column_bases" for a in ass)
+
+
+def test_openings_the_plan_reader_missed_are_added_as_estimated_lines_and_flagged():
+    sparse = FloorData("ground", 80.0, 80.0, 39, 10.4, 17.2, 25.0, [Opening("W1200", 1.2, 1.2, 2, "window", True, True)], [])
+    by, ass, _, _ = run_estimate([sparse, first()])
+    assert by["windows_estimated_nr"].basis == "estimated" and by["windows_estimated_nr"].qty > 20 and "lintels_estimated_nr" in by
+    assert any(a["name"] == "windows_estimated" for a in ass)
+    by, ass, _, _ = run_estimate([ground(), first()])  # 12 windows and 11 doors found on 329 m2: not enough either, but the full set below is
+    full = FloorData("ground", 80.0, 80.0, 39, 10.4, 17.2, 25.0, [Opening("W1200", 1.2, 1.2, 20, "window", True, True), Opening("D900", 0.9, 2.1, 10, "door", False, True)], [])
+    by, ass, _, _ = run_estimate([full, first()])
+    assert "windows_estimated_nr" not in by and "doors_estimated_nr" not in by

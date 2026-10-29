@@ -43,7 +43,7 @@ def in_flight(run: Run) -> dict | None:
 
 
 # The stages of an estimate: (label, the tools that complete it, when it applies)
-STAGES = [("Read the floor plans", {"read_floor"}, "always"), ("Estimate", {"compute_boq"}, "always"), ("Quote audit", {"audit_quote"}, "quote"), ("Filed", {"submit_boq"}, "always")]
+STAGES = [("Read the floor plans", {"read_floor", "read_all_floors"}, "always"), ("Estimate", {"compute_boq"}, "always"), ("Quote audit", {"audit_quote"}, "quote"), ("Filed", {"submit_boq"}, "always")]
 
 
 def stages(run: Run, done_turns: list[dict], now: dict | None) -> list[dict]:
@@ -54,8 +54,11 @@ def stages(run: Run, done_turns: list[dict], now: dict | None) -> list[dict]:
         if when == "quote" and not run.quote:
             continue
         n = sum(1 for x in ok if x in tools)
-        need = len(run.floors) if label == "Read the floor plans" else 1
-        out.append({"label": label, "done": n >= need, "count": n, "of": need if need > 1 else None, "active": bool(now and now["tool"] in tools)})
+        if label == "Read the floor plans":  # done when every floor is in the run, however many calls it took
+            read = len(run.data.get("floors") or {})
+            out.append({"label": label, "done": read >= len(run.floors) > 0, "count": read, "of": len(run.floors) if len(run.floors) > 1 else None, "active": bool(now and now["tool"] in tools)})
+            continue
+        out.append({"label": label, "done": n >= 1, "count": n, "of": None, "active": bool(now and now["tool"] in tools)})
     first_open = next((s for s in out if not s["done"]), None)
     if first_open and not any(s["active"] for s in out) and run.status == "running":
         first_open["active"] = True

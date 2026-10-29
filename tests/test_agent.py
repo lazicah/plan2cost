@@ -152,3 +152,33 @@ def test_an_old_run_saved_by_the_earlier_layout_still_opens():
     (state.RUNS_DIR / "20260101-000000").mkdir()
     (state.RUNS_DIR / "20260101-000000" / "run.json").write_text(json.dumps({"id": "20260101-000000", "pdf": "old.pdf", "objective": "x", "status": "done", "pages": []}))
     assert Run.load("20260101-000000").floors == []
+
+
+def test_all_floors_are_read_together_and_a_failed_one_is_reported(monkeypatch):
+    from plan2cost.tools import drawings
+
+    class Model:
+        markup, route, confidence = "m.jpg", "vector", "high"
+        calibrations = [type("C", (), {"basis": "x"})()]
+
+        def walls(self):
+            return []
+
+    def measure(run, floor, on_walls):
+        if floor == "first":
+            return {"error": "no walls"}
+        return {"data": floor_data(floor), "model": Model(), "issues": [], "note": "", "page": 1}
+
+    monkeypatch.setattr(drawings, "_measure", measure)
+    monkeypatch.setattr(Model, "summary", lambda self: {}, raising=False)
+    run = new_run()
+    seed_checklist(run)
+    out = drawings.read_all_floors(run)
+    assert out["failed"] == ["first"] and out["floors"]["ground"]["ext_girth_m"] == 62.0 and "ground" in run.data["floors"] and "first" not in run.data["floors"]
+    assert run.checklist[0]["status"] == "proven" and run.checklist[1]["status"] == "open"
+
+
+def test_measured_gaps_are_snapped_to_the_standard_sizes_so_the_bill_has_few_types():
+    from plan2cost.tools.drawings import DOOR_WIDTHS_MM, WINDOW_WIDTHS_MM, snap
+
+    assert snap(560, DOOR_WIDTHS_MM) == 750 and snap(1120, DOOR_WIDTHS_MM) == 1050 and snap(980, WINDOW_WIDTHS_MM) == 900 and snap(1640, WINDOW_WIDTHS_MM) == 1500

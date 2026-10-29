@@ -176,7 +176,7 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
             m["mark"], m["how"] = fit[0]["label"].upper(), "inferred (the only schedule type of that width)"
         else:
             m["mark"] = ""
-            if m["tag"]:
+            if m["tag"] and schedule:
                 issues.append(Issue("tag_not_in_schedule", "warn", f"A {m['kind']} tagged {m['tag']} in {m['wall']} is not in the schedule.", [m["wall"]], "Check the tag against the schedule."))
     prefix = {"door": "D", "window": "WN", "opening": "O"}
     count = {k: 0 for k in prefix}
@@ -203,7 +203,7 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
             issues.append(Issue("more_than_scheduled", "warn", f"{n} openings of type {mark} were found on this floor but the schedule has only {labels[mark]['count']} in the whole building.", [],
                                 "Some are probably another type or a duplicate; the BoQ counts no more than the schedule."))
     untagged = [o for o in model.openings() if not o.mark]
-    if untagged:
+    if untagged and schedule:
         issues.append(Issue("openings_unmatched", "warn", f"{len(untagged)} openings found on the plan could not be matched to a schedule type, so their size is unknown.", [o.id for o in untagged][:20],
                             "Give their sizes, or check the tags on the plan."))
     model.issues += issues

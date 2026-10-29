@@ -175,8 +175,8 @@ function render(run) {
   const pv = run.preview;
   const reading = pv ? `<section class="card"><h2>Walls measured: ${esc(pv.floor)} floor</h2><img src="/api/runs/${run.id}/${esc(pv.markup)}?v=${pv.walls}" alt="the walls measured" style="width:100%;border:1px solid var(--line);border-radius:8px">
       <div class="small" style="margin-top:6px"><b>${pv.walls} walls, ${money(pv.total_m)} m</b> (external ${money(pv.external_m)}, internal ${money(pv.internal_m)}) by the ${esc(pv.route)} route. Red is external, blue internal. <span class="mute">The model is now reviewing this plan, reading the room names and finding the doors and windows.</span></div></section>`
-    : run.now && run.now.tool === 'read_floor' && nowFloor ? (() => { const i = run.floors.findIndex(f => f.name === nowFloor); const t = thumbFor(i);
-        return t ? `<section class="card"><h2>Reading the ${esc(nowFloor)} floor plan</h2><div class="live"><img src="${t}" alt="the plan being read"></div><div class="small mute" style="margin-top:6px">Finding the wall lines and fixing the scale from the printed dimensions. The measured walls appear here as soon as they are ready.</div></section>` : ''; })() : '';
+    : run.now && ['read_floor', 'read_all_floors'].includes(run.now.tool) ? (() => { const i = Math.max(run.floors.findIndex(f => f.name === nowFloor), 0); const t = thumbFor(i);
+        return t ? `<section class="card"><h2>Reading ${nowFloor ? 'the ' + esc(nowFloor) + ' floor plan' : 'all the floor plans'}</h2><div class="live"><img src="${t}" alt="the plan being read"></div><div class="small mute" style="margin-top:6px">Finding the wall lines and fixing the scale from the printed dimensions. The measured walls appear here as soon as they are ready.</div></section>` : ''; })() : '';
   const b = run.built, fl = Object.entries(b.floors || {}), w = b.working;
   const tile = (on, big, label) => `<div class="tile ${on ? 'on' : 'wait'}"><b>${on ? big : '…'}</b><span>${label}</span></div>`;
   const tiles = `<section class="card"><h2>Built so far</h2><div class="tiles">

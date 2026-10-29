@@ -43,6 +43,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(code, json.dumps(obj, default=str).encode())
 
     def do_GET(self) -> None:
+        self.path = self.path.split("?")[0]  # the page adds ?v=... to images so a redrawn plan is fetched again; routes ignore it
         if self.path in ("/", "/index.html"):
             self._send(200, (ROOT / "ui" / "index.html").read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/api/runs":

@@ -1,10 +1,12 @@
 """A run is a folder under workspace/runs/ holding its saved state, so it can pause for a person and resume."""
 import json
+import threading
 import time
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 RUNS_DIR = Path("workspace/runs")
+_SAVE = threading.Lock()
 STATUSES = ("running", "needs_input", "paused", "done", "failed")
 ROOF_TYPES = ("gable", "hip", "flat")  # the roof types we hold coefficients for
 FLOOR_NAMES = ("ground", "first", "second", "third", "fourth")
@@ -36,7 +38,8 @@ class Run:
 
     def save(self) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
-        (self.dir / "run.json").write_text(json.dumps(self.__dict__, indent=2, default=str))
+        with _SAVE:
+            (self.dir / "run.json").write_text(json.dumps(self.__dict__, indent=2, default=str))
 
     def trace(self, line: str) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
