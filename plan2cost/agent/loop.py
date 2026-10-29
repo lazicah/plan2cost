@@ -46,7 +46,8 @@ def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> Non
 def run_agent(run: Run, llm: Callable[[list], str] = default_llm, max_turns: int = 30, tools: dict | None = None) -> Run:
     if not run.messages:
         run.messages = [{"role": "system", "content": _system()},
-                        {"role": "user", "content": f"Objective: {run.objective}\nThe drawing set is the PDF at: {run.pdf}" + (f"\nA structural drawing set is also given: read_foundation_section, read_pad_bases and read_strip_layout must be called before compute_foundation." if run.structural_pdf else "")}]
+                        {"role": "user", "content": f"Objective: {run.objective}\nThe drawing set is the PDF at: {run.pdf}" + ("\nA structural drawing set is also given: read_foundation_section, read_pad_bases and read_strip_layout must be called before compute_foundation." if run.structural_pdf else "")
+                        + ("\nA contractor quote is also given: after compute_boq call audit_quote, then report its flags in plain words in your summary." if run.quote else "")}]
     start = run.turn
     while run.status == "running" and run.turn - start < max_turns:
         step(run, llm, tools)

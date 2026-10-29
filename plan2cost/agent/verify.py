@@ -25,4 +25,6 @@ def verify_boq(run: Run) -> list[str]:
             problems.append("A structural drawing was given but the column bases were not read (read_pad_bases).")
         if "strip_layout" not in run.data:
             problems.append("A structural drawing was given but the strip layout was not read (read_strip_layout).")
+    if run.quote and "audit" not in run.data:
+        problems.append("A contractor quote was given but it has not been audited (audit_quote).")
     return problems

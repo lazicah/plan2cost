@@ -54,3 +54,10 @@ building's schedule) and the BoQ never deducts more than the schedule has.
 
 ## Code layout
 See README.md. Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`; the prompt lives in `agent/system_instructions.md`.
+
+## Quote audit
+`audit_quote` (tools/audit.py, rules in takeoff/audit.py, quote reading in facts/quote.py) checks a contractor's quote against the filed BoQ. The model reads the
+quote's lines (each number must be printed on the page when it has a text layer) and suggests which BoQ key each line matches (only real keys are kept); code does
+every comparison: line and total arithmetic (total to the unit), quantity (over 10%), rate against the user's rate (over 15%), unit mismatch, double charging, work the quote
+leaves out (largest priced items listed, the rest rolled up) and quote lines matching nothing. Each flag says what to ask; none accuses. Test on a synthetic scanned quote
+built from the filed BoQ with four planted errors: all four caught. Not yet tried on a real quote. When a quote is given, submit is refused until it is audited.

@@ -56,6 +56,11 @@ class Handler(BaseHTTPRequestHandler):
             if not pdf.is_file() or pdf.suffix.lower() != ".pdf":
                 return self._json(400, {"error": "pdf must be the path of an existing .pdf file"})
             cmd += ["--pdf", str(pdf), "--turns", str(int(body.get("turns", 30)))]
+            if body.get("quote"):
+                quote = Path(body["quote"]).expanduser()
+                if not quote.is_file():
+                    return self._json(400, {"error": "quote must be the path of an existing file"})
+                cmd += ["--quote", str(quote)]
             if body.get("objective"):
                 cmd += ["--objective", body["objective"]]
         elif self.path.startswith("/api/runs/") and self.path.endswith("/answer") and view.RUN_ID.match(self.path.split("/")[3]):

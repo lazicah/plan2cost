@@ -33,7 +33,7 @@ def turns(run: Run) -> list[dict]:
 def summary(run: Run) -> dict:
     return {"id": run.id, "status": run.status, "turn": run.turn, "objective": run.objective, "pdf": run.pdf, "checklist": run.checklist,
             "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result,
-            "boq": run.data.get("boq"), "models": run.data.get("models", {}), "turns": turns(run)}
+            "boq": run.data.get("boq"), "models": run.data.get("models", {}), "audit": run.data.get("audit"), "turns": turns(run)}
 
 
 def list_runs() -> list[dict]:

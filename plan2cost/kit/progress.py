@@ -14,6 +14,7 @@ class Run:
     pdf: str
     objective: str
     structural_pdf: str | None = None  # the structural drawing set, when there is one
+    quote: str | None = None  # a contractor's quote (PDF or image) to audit against the BoQ, when there is one
     status: str = "running"
     turn: int = 0
     messages: list = field(default_factory=list)  # the model's whole conversation; the model itself is stateless
@@ -39,8 +40,8 @@ class Run:
             f.write(line.rstrip() + "\n")
 
     @classmethod
-    def new(cls, pdf: str, objective: str, structural_pdf: str | None = None) -> "Run":
-        return cls(id=time.strftime("%Y%m%d-%H%M%S"), pdf=pdf, objective=objective, structural_pdf=structural_pdf)
+    def new(cls, pdf: str, objective: str, structural_pdf: str | None = None, quote: str | None = None) -> "Run":
+        return cls(id=time.strftime("%Y%m%d-%H%M%S"), pdf=pdf, objective=objective, structural_pdf=structural_pdf, quote=quote)
 
     @classmethod
     def load(cls, run_id: str) -> "Run":
