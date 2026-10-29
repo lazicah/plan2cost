@@ -62,7 +62,7 @@ def test_a_single_storey_building_gets_a_ring_beam_and_no_slab_or_stairs():
 def test_wet_rooms_set_the_sanitary_fittings_and_openings_are_priced_from_their_size():
     by, _, _, _ = run_estimate([ground(), first()])
     assert by["sanitary_wc_nr"].qty == 4 and by["sanitary_sink_nr"].qty == 1
-    assert by["opening_w1200_nr"].rate == 69000 and by["opening_d1200_nr"].rate == 80000 and by["opening_d900_nr"].rate == 125000  # internal door: the Asaba rate is the higher
+    assert by["opening_w1200_nr"].rate == 69000 and by["opening_d1200_nr"].rate == 80000 and by["opening_d900_nr"].rate == 38000  # standard finish level: the flush door
 
 
 def test_no_column_base_lines_appear_when_the_plans_cannot_show_column_bases():
@@ -79,3 +79,9 @@ def test_openings_the_plan_reader_missed_are_added_as_estimated_lines_and_flagge
     full = FloorData("ground", 80.0, 80.0, 39, 10.4, 17.2, 25.0, [Opening("W1200", 1.2, 1.2, 20, "window", True, True), Opening("D900", 0.9, 2.1, 10, "door", False, True)], [])
     by, ass, _, _ = run_estimate([full, first()])
     assert "windows_estimated_nr" not in by and "doors_estimated_nr" not in by
+
+
+def test_a_premium_finish_level_prices_the_same_quantities_higher():
+    items, _, _ = estimate([ground(), first()], {"storey_height_m": 3.0, "roof_type": "hip"}, load_rates("premium")["rates"])
+    std, pre = run_estimate([ground(), first()])[3], price_boq(items, load_rates("premium"))
+    assert pre["total"] > std["total"] * 1.1 and {i.key: i.qty for i in items}["floor_finish_m2"] == run_estimate([ground(), first()])[0]["floor_finish_m2"].qty

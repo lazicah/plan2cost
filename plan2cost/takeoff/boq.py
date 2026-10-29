@@ -159,7 +159,10 @@ def price_boq(items: list[BoqItem], rates: dict) -> dict:
             "estimated_share": round(sum(i.amount or 0 for i in items if i.basis == "estimated") / max(sum(i.amount or 0 for i in items), 1), 2)}
 
 
-def load_rates(path: str = "data/rates.json") -> dict:
-    """The one rate table (the higher of the Owerri and Asaba rates where both bills have one), and where each rate came from."""
+def load_rates(tier: str | None = None, path: str = "data/rates.json") -> dict:
+    """The rate table for a finish level (standard or premium): the common rates plus the lines that differ by specification. `source` says where a common rate came from and
+    `tier_notes` what differs between the tiers."""
     d = json.loads(Path(path).read_text())
-    return {"currency": d["currency"], "rates": dict(d["rates"]), "source": d.get("source", {}), "label": "the higher of the Owerri and Asaba rates"}
+    tier = tier if tier in d["tiers"] else d["default_tier"]
+    return {"currency": d["currency"], "rates": {**d["rates"], **d["tiers"][tier]}, "tier": tier, "source": d.get("source", {}), "tier_notes": d.get("tier_notes", {}),
+            "label": f"{tier} finish level; the higher of the Owerri and Asaba rates for everything that does not change with specification"}

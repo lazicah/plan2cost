@@ -29,8 +29,8 @@ def test_foundation_extras_are_all_priced_and_a_rate_in_both_bills_takes_the_hig
     items = foundation_extras([PadBase("1", 1.2, 1.2, 4, 0.25, ("06-Y1202@200c/c B",))], 20, slab_area_m2=200.55, fill_area_m2=184)
     rates = load_rates()
     out = price_boq(items, rates)
-    assert out["unpriced"] == [] and rates["source"]["laterite_m3"] == "Asaba only"  # only the Asaba bill has a laterite rate
-    assert rates["rates"]["frame_steel_t"] == 1699135 and rates["source"]["frame_steel_t"].startswith("both")  # Owerri 1,699,135 against Asaba 1,319,880
+    assert out["unpriced"] == [] and rates["source"]["laterite_m3"] == "Asaba bill only"  # only the Asaba bill has a laterite rate
+    assert rates["rates"]["frame_steel_t"] == 1699135 and rates["source"]["frame_steel_t"].startswith("both bills")  # Owerri 1,699,135 against Asaba 1,319,880
     assert {i.key for i in items} >= {"column_base_concrete_m3", "rebar_y12_foundations_t", "ground_slab_m3"}
 
 
@@ -56,3 +56,11 @@ def test_substructure_extras_follow_the_authors_sheet():
     assert got["blinding_foundations_m3"] == 7 and got["formwork_foundation_sides_m"] == 110  # metres of base sides (BESMM4 1.11.6.13.1)
     assert got["topsoil_disposal_m3"] == 36  # 238 m2 x 0.15m, whole units
     assert (got["disposal_off_site_m3"], got["backfill_around_foundations_m3"]) == (53, 53)
+
+
+def test_the_finish_level_changes_only_the_lines_priced_for_different_specifications():
+    std, pre = load_rates("standard"), load_rates("premium")
+    changed = {k for k in std["rates"] if std["rates"][k] != pre["rates"][k]}
+    assert changed == {"floor_finish_m2", "sanitary_wc_nr", "sanitary_basin_nr", "sanitary_sink_nr", "sanitary_shower_nr", "door_internal_nr", "electrical_light_nr", "roof_covering_m2"}
+    assert all(std["rates"][k] < pre["rates"][k] for k in changed if k != "roof_covering_m2") and std["tier"] == "standard"
+    assert std["rates"]["ext_blockwork_230_m2"] == pre["rates"]["ext_blockwork_230_m2"] and load_rates("nonsense")["tier"] == "standard"
