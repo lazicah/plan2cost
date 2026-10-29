@@ -1,5 +1,5 @@
 {
-  "_note": "Quantities from the author's plan2 BOQs sheet, Substructure element (numbers only). Trench excavation is 58 on the sheet (it used 0.69m width); 57 with the 0.68 rule.",
+  "_note": "Quantities from the author's plan2 BOQs sheet, Substructure element (numbers only). Trench excavation is 58 on the sheet (it used 0.69m width); 57 with the 0.68 rule. Column base types 4 and 5 are 250 mm thick (the author corrected the sheet on Oct 29); column_base_concrete_m3, rebar_column_bases_12mm_kg, blinding_total_m3 and formwork_foundation_sides_m2 below were taken before that fix and need the corrected sheet's values.",
   "topsoil_strip_m2": 226,
   "pit_excavation_column_bases_m3": 48,
   "trench_excavation_strip_m3": 58,

@@ -121,6 +121,11 @@ def submit_boq(run: Run, summary: str = "") -> dict:
         problems.append(f"Facts with an unresolved warning: {unresolved}. Ask the user to confirm them.")
     if "boq" not in run.data:
         problems.append("No BoQ has been computed yet (compute_boq).")
+    if run.structural_pdf:
+        if not any(f["name"].startswith("fdn_") and f.get("file") == "structural" for f in run.facts):
+            problems.append("A structural drawing was given but the foundation section was not read (read_foundation_section).")
+        if "pads" not in run.data:
+            problems.append("A structural drawing was given but the column bases were not read (read_pad_bases).")
     if problems:
         return {"refused": problems}
     run.status = "done"
@@ -313,7 +318,10 @@ def compute_boq(run: Run) -> dict:
             problems.append(f"External girth differs too much between floors ({ext}); upper floors are normally close to the ground floor.")
     if problems:
         return {"error": "Implausible girth. Re-read the plan, or use assume_floor_like_ground for an upper floor. Do not ask the user about girth.", "problems": problems}
-    heights = run.data.get("heights") or {}
+    heights = dict(run.data.get("heights") or {})
+    for f in run.facts:
+        if f["name"].startswith("storey_height_") and f["name"].endswith("_m"):
+            heights.setdefault(f["name"][len("storey_height_"):-2], float(f["value"]))
     missing = [f for f in ext if f not in heights]
     if missing:
         return {"error": f"No storey height for {missing}. Read the levels, record an assumed height, or ask the user."}
