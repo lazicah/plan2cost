@@ -30,10 +30,48 @@ def turns(run: Run) -> list[dict]:
     return out
 
 
+def in_flight(run: Run) -> dict | None:
+    """The tool the agent has asked for and has not heard back from yet: what it is doing right now (a plan read takes a minute or more)."""
+    if run.status != "running" or not run.messages or run.messages[-1]["role"] != "assistant":
+        return None
+    try:
+        a = json.loads(re.search(r"\{.*\}", run.messages[-1]["content"], re.S).group(0))
+    except (AttributeError, ValueError):
+        return None
+    return {"tool": a.get("tool", ""), "args": a.get("args") or {}, "reason": a.get("reason", "")}
+
+
+# The stages of an estimate, in the order the agent normally does them: (label, the tools that complete it, when it applies)
+STAGES = [("Index the pages", {"index_document"}, "always"), ("Set the checklist", {"set_checklist"}, "always"),
+          ("Schedules, levels, notes", {"read_openings", "read_levels", "read_notes"}, "always"), ("Walls, floor by floor", {"read_wall_girth"}, "always"),
+          ("Doors and windows on the plan", {"locate_openings"}, "always"), ("Structural drawing", {"read_foundation_section", "read_pad_bases", "read_strip_layout"}, "structural"),
+          ("Foundation", {"compute_foundation"}, "always"), ("Priced bill", {"compute_boq"}, "always"), ("Quote audit", {"audit_quote"}, "quote"), ("Filed", {"submit_boq"}, "always")]
+
+
+def stages(run: Run, done_turns: list[dict], now: dict | None) -> list[dict]:
+    """Progress for the console: each stage is done (a tool of it returned without error), active (the agent is in it) or waiting."""
+    ok = [t["tool"] for t in done_turns if not ({"error", "refused"} & set((t.get("result") or {})) )]
+    out = []
+    for label, tools, when in STAGES:
+        if (when == "structural" and not run.structural_pdf) or (when == "quote" and not run.quote):
+            continue
+        n = sum(1 for x in ok if x in tools)
+        out.append({"label": label, "done": n >= len(tools) if label == "Structural drawing" else n > 0, "count": n, "active": bool(now and now["tool"] in tools)})
+    first_open = next((s for s in out if not s["done"]), None)
+    if first_open and not any(s["active"] for s in out) and run.status == "running":
+        first_open["active"] = True
+    return out
+
+
 def summary(run: Run) -> dict:
-    return {"id": run.id, "status": run.status, "turn": run.turn, "objective": run.objective, "pdf": run.pdf, "checklist": run.checklist,
+    done_turns, now = turns(run), in_flight(run)
+    d = run.dir
+    tender = json.loads((d / "tender_audit.json").read_text()) if (d / "tender_audit.json").exists() else None
+    files = [f for f in ("bill_priced.xlsx", "bill_unpriced.xlsx", "boq.json", "tender_audit.json") if (d / f).exists()]
+    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "pages": run.pages, "files": files, "tender": tender,
+            "structural": run.structural_pdf, "quote": run.quote, "turn": run.turn, "objective": run.objective, "pdf": run.pdf, "checklist": run.checklist,
             "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result,
-            "boq": run.data.get("boq"), "models": run.data.get("models", {}), "audit": run.data.get("audit"), "turns": turns(run)}
+            "boq": run.data.get("boq"), "models": run.data.get("models", {}), "audit": run.data.get("audit"), "turns": done_turns}
 
 
 def list_runs() -> list[dict]:

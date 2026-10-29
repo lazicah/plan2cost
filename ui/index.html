@@ -32,6 +32,13 @@ th{color:var(--mute);font-weight:600}td.n,th.n{text-align:right;font-variant-num
 .q{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
 .q textarea{width:100%;min-height:64px;margin:8px 0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stages{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.stage{border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:13px;color:var(--mute)}
+.stage.done{color:var(--ok);border-color:var(--ok)}.stage.active{color:var(--info);border-color:var(--info);font-weight:600}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid var(--info);border-top-color:transparent;border-radius:50%;animation:s 1s linear infinite;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+.chip{display:inline-block;background:var(--chip);border-radius:6px;padding:1px 8px;margin:2px;font-size:12px}
+a.dl{display:inline-block;margin-right:12px;color:var(--accent)}
 .empty{color:var(--mute);padding:20px 0;text-align:center}
 </style>
 </head>
@@ -41,10 +48,12 @@ th{color:var(--mute);font-weight:600}td.n,th.n{text-align:right;font-variant-num
   <select id="runs" aria-label="Run"></select>
   <div class="spacer"></div>
   <input id="pdf" size="38" placeholder="Path to a drawing set (.pdf)" aria-label="PDF path">
+  <input id="structural" size="26" placeholder="Structural drawings (optional)" aria-label="Structural path">
   <input id="quote" size="26" placeholder="Contractor quote (optional)" aria-label="Quote path">
   <button id="start">Start run</button>
 </header>
 <main id="main"><div class="empty">No run yet. Enter the path of a drawing set above and start one.</div></main>
+<details id="logbox" style="max-width:1280px;margin:0 auto;padding:0 16px 24px"><summary class="small mute">Process log (errors from background runs appear here)</summary><pre id="log"></pre></details>
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -68,8 +77,11 @@ function brief(t) {
   if (r.refused) return '⚠ Refused: ' + r.refused.join(' ');
   if (r.paused) return 'Paused for you: ' + r.question;
   if (r.answer) return 'You answered: ' + r.answer;
+  if (Array.isArray(r.recorded)) return `Read from the structural drawing (p.${r.page}): ${r.recorded.join(', ') || 'nothing'}`;
   if (r.recorded) return `Recorded ${r.recorded.name} = ${r.recorded.value} ${r.recorded.unit || ''} (${r.recorded.verified || r.recorded.source})`;
   if (r.total != null) return `BoQ computed: ${r.lines} lines, total ${money(r.total)} ${r.currency || ''}` + (r.unpriced?.length ? `, unpriced: ${r.unpriced.join(', ')}` : '');
+  if (r.filed) return `BoQ filed. Bills: ${(r.bills || []).join(', ')}`;
+  if (r.counts && r.flags) return `Quote audited: ${r.flags.length} questions for the contractor`;
   if (r.checklist) return `Checklist set: ${r.checklist.length} items`;
   if (r.roles) return `${r.pages} pages indexed: ` + Object.entries(r.roles).map(([k, v]) => `${k} ${v.length}`).join(', ');
   return '';
@@ -108,12 +120,31 @@ function render(run) {
       <div class="small">${m.walls} walls, ${money(m.total_m)} m (external ${money(m.external_m)}, internal ${money(m.internal_m)}) by the ${esc(m.route)} route, ${esc(m.confidence)} confidence.</div>
       ${m.issues.length ? `<ul class="small">${m.issues.map(i => `<li class="${i.severity === 'error' ? 'escalated' : 'assumed'}">${esc(i.message)}</li>`).join('')}</ul>` : '<div class="small proven">All checks passed.</div>'}
       <a href="/api/runs/${run.id}/${esc(m.markup)}" target="_blank"><img src="/api/runs/${run.id}/${esc(m.markup)}" alt="annotated plan" style="width:100%;border:1px solid var(--line);border-radius:8px;margin-top:8px"></a></section>`).join('');
+  const progress = `<section class="card"><div class="stages">${run.stages.map(s => `<span class="stage ${s.done ? 'done' : s.active ? 'active' : ''}">${s.done ? '✓ ' : s.active && run.status === 'running' ? '<span class="spin"></span>' : ''}${esc(s.label)}${s.count > 1 ? ' ×' + s.count : ''}</span>`).join('')}</div>
+      ${run.now ? `<div class="small" style="margin-top:10px"><span class="spin"></span><b>Working on:</b> <span class="tool">${esc(run.now.tool)}</span> ${esc(Object.values(run.now.args).join(', '))} <span class="mute">${esc(run.now.reason)}</span></div>` : ''}
+      ${run.pages.length ? `<div class="small mute" style="margin-top:8px">Pages: ${run.pages.map(p => `<span class="chip">${esc(p.page)} ${esc(String(p.role).replace(/_/g, ' '))}</span>`).join('')}</div>` : ''}</section>`;
+  const downloads = run.files.length ? `<section class="card"><h2>Files</h2>${run.files.map(f => `<a class="dl" href="/api/runs/${run.id}/files/${esc(f)}">${esc(f.replace(/_/g, ' '))}</a>`).join('')}
+      <div class="small mute" style="margin-top:6px">The priced bill is for a client. The unpriced bill is for tender: contractors fill in the rates and return it.</div></section>` : '';
+  const bidsBox = run.status === 'done' ? `<section class="card"><h2>Bids returned on the unpriced bill</h2>
+      <textarea id="bids" placeholder="Paths of the returned bills, one per line (.xlsx, PDF or image)"></textarea><button id="auditbids">Audit the bids</button>
+      <span class="small mute" id="bidmsg"></span></section>` : '';
+  const tender = run.tender ? (() => { const names = Object.keys(run.tender.bids); return `<section class="card"><h2>Bids compared</h2>
+      <table class="small"><tr><th>Bidder</th><th class="n">Total at our quantities</th><th class="n">Unpriced items</th><th>Questions</th></tr>${names.map(n => { const b = run.tender.bids[n];
+        return `<tr><td>${esc(n)}</td><td class="n">${money(b.total_at_issued_quantities)}</td><td class="n ${b.unpriced_items.length ? 'assumed' : ''}">${b.unpriced_items.length}</td>
+        <td>${Object.entries(b.counts).map(([k, v]) => esc(k.replace(/_/g, ' ')) + ' ' + v).join(', ') || '<span class="proven">none</span>'}</td></tr>`; }).join('')}</table>
+      <p class="small mute">${esc(run.tender.note)}</p>
+      ${names.map(n => `<details><summary class="small"><b>${esc(n)}</b>: ${run.tender.bids[n].flags.length} flags</summary><table class="small">${run.tender.bids[n].flags.map(f => `<tr><td>${esc(f.line)}</td>
+        <td class="${f.severity === 'error' ? 'escalated' : f.severity === 'warn' ? 'assumed' : ''}">${esc(f.message)}</td><td class="mute">${esc(f.ask)}</td></tr>`).join('')}</table></details>`).join('')}
+      <details><summary class="small"><b>Rates side by side</b></summary><table class="small"><tr><th>No</th><th>Item</th><th class="n">Qty</th>${names.map(n => `<th class="n">${esc(n)}</th>`).join('')}</tr>
+        ${run.tender.comparison.map(r => `<tr><td>${esc(r.no)}</td><td>${esc(r.description.slice(0, 60))}</td><td class="n">${money(r.qty)} ${esc(r.unit)}</td>${names.map(n => `<td class="n">${money(r.rates[n])}</td>`).join('')}</tr>`).join('')}</table></details></section>`; })() : '';
   $('#main').innerHTML = `<section class="card row"><span class="pill ${run.status}">${esc(run.status.replace('_', ' '))}</span>
       <span>Turn ${run.turn}</span><span class="mute small">${esc(run.pdf.split('/').pop())}</span><span class="spacer"></span>
-      <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${q}
+      <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${progress}${q}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
-      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}${audit}`;
+      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}${downloads}${audit}${bidsBox}${tender}`;
+  const ab = $('#auditbids');
+  if (ab) ab.onclick = async () => { const r = await api(`/api/runs/${run.id}/bids`, {bids: $('#bids').value.split('\n')}); $('#bidmsg').textContent = r.error || ' Reading the bids…'; };
   const btn = $('#answer');
   if (btn) btn.onclick = async () => { btn.disabled = true; await api(`/api/runs/${run.id}/answer`, {answer: $('#ans').value}); };
 }
@@ -127,17 +158,18 @@ async function tick() {
   if (current) sel.value = current;
   if (!current) return;
   const run = await api('/api/runs/' + current);
-  const key = JSON.stringify([run.status, run.turn, run.pending, run.facts.length]) + document.activeElement?.id;
+  const key = JSON.stringify([run.status, run.turn, run.pending, run.facts.length, run.now, run.files, !!run.tender]) + document.activeElement?.id;
   if (key !== lastKey || prev !== current) { if (document.activeElement?.id !== 'ans') render(run); lastKey = key; }
 }
 $('#runs').onchange = e => { current = e.target.value; lastKey = ''; tick(); };
 $('#start').onclick = async () => {
-  const r = await api('/api/start', {pdf: $('#pdf').value, quote: $('#quote').value});
+  const r = await api('/api/start', {pdf: $('#pdf').value, structural: $('#structural').value, quote: $('#quote').value});
   if (r.error) return alert(r.error);
   current = null; lastKey = '';
   setTimeout(tick, 1500);
 };
-tick(); setInterval(tick, 2000);
+async function showLog() { if ($('#logbox').open) $('#log').textContent = (await api('/api/log')).tail || '(empty)'; }
+tick(); setInterval(tick, 2000); setInterval(showLog, 3000);
 </script>
 </body>
 </html>

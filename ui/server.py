@@ -16,6 +16,14 @@ from plan2cost.agent import view  # noqa: E402
 from plan2cost.kit.progress import Run  # noqa: E402
 
 PORT = 8765
+LOG = ROOT / "workspace" / "console.log"  # what the background processes print, so a crashed run can be explained
+DOWNLOADS = {"bill_priced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_unpriced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+             "boq.json": "application/json", "tender_audit.json": "application/json"}
+
+
+def existing_file(raw: str) -> Path | None:
+    f = Path(raw).expanduser()
+    return f if f.is_file() else None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -40,6 +48,19 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "application/json")
             else:
                 self._json(404, {"error": "no such file"})
+        elif re.match(r"^/api/runs/\d{8}-\d{6}/files/[\w.\-]+$", self.path):  # the bills and audits a run wrote
+            name = self.path.split("/")[5]
+            f = view.RUNS_DIR / self.path.split("/")[3] / name
+            if name in DOWNLOADS and f.is_file():
+                self.send_response(200)
+                self.send_header("Content-Type", DOWNLOADS[name])
+                self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+                self.end_headers()
+                self.wfile.write(f.read_bytes())
+            else:
+                self._json(404, {"error": "no such file"})
+        elif self.path == "/api/log":
+            self._json(200, {"tail": "\n".join(LOG.read_text().splitlines()[-25:]) if LOG.exists() else ""})
         elif self.path.startswith("/api/runs/") and view.RUN_ID.match(self.path.split("/")[3]):
             try:
                 self._json(200, view.summary(Run.load(self.path.split("/")[3])))
@@ -56,20 +77,31 @@ class Handler(BaseHTTPRequestHandler):
             if not pdf.is_file() or pdf.suffix.lower() != ".pdf":
                 return self._json(400, {"error": "pdf must be the path of an existing .pdf file"})
             cmd += ["--pdf", str(pdf), "--turns", str(int(body.get("turns", 30)))]
+            if body.get("structural"):
+                if not existing_file(body["structural"]):
+                    return self._json(400, {"error": "structural must be the path of an existing .pdf file"})
+                cmd += ["--structural", str(existing_file(body["structural"]))]
             if body.get("quote"):
-                quote = Path(body["quote"]).expanduser()
-                if not quote.is_file():
+                if not existing_file(body["quote"]):
                     return self._json(400, {"error": "quote must be the path of an existing file"})
-                cmd += ["--quote", str(quote)]
+                cmd += ["--quote", str(existing_file(body["quote"]))]
             if body.get("objective"):
                 cmd += ["--objective", body["objective"]]
         elif self.path.startswith("/api/runs/") and self.path.endswith("/answer") and view.RUN_ID.match(self.path.split("/")[3]):
             if not body.get("answer"):
                 return self._json(400, {"error": "answer is empty"})
             cmd += ["--resume", self.path.split("/")[3], "--answer", body["answer"]]
+        elif self.path.startswith("/api/runs/") and self.path.endswith("/bids") and view.RUN_ID.match(self.path.split("/")[3]):
+            bids = [b.strip() for b in body.get("bids", []) if b.strip()]
+            if not bids or not all(existing_file(b) for b in bids):
+                return self._json(400, {"error": "give the path of each returned bill (.xlsx, PDF or image), one per line"})
+            cmd = [sys.executable, "-m", "plan2cost.agent.bids", "--run", self.path.split("/")[3], *[str(existing_file(b)) for b in bids]]
         else:
             return self._json(404, {"error": "not found"})
-        subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # the run saves its own state
+        LOG.parent.mkdir(parents=True, exist_ok=True)
+        with LOG.open("a") as log:
+            log.write(f"\n$ {' '.join(cmd[2:])}\n")
+            subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=log)  # the run saves its own state
         self._json(202, {"started": True})
 
     def log_message(self, *args) -> None:
