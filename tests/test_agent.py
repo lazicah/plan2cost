@@ -65,7 +65,7 @@ def test_submit_is_refused_until_settled_then_accepted():
         TOOLS["record_fact"][0](run, item=i, name=f"n{i}", value=1, source="user")
     assert any("No BoQ" in p for p in TOOLS["submit_boq"][0](run)["refused"])
     run.data["boq"] = {"items": [], "total": 0}
-    assert TOOLS["submit_boq"][0](run) == {"filed": True} and run.status == "done"
+    assert TOOLS["submit_boq"][0](run).get("filed") is True and run.status == "done"
 
 
 def test_loop_pauses_for_the_user_and_resumes_with_their_answer():
@@ -119,7 +119,7 @@ def test_bounding_box_girth_is_flagged_and_blocks_submit(monkeypatch):
         TOOLS["record_fact"][0](run, item=i, name=f"n{i}", value=1, source="user")
     assert any("unresolved warning" in p for p in TOOLS["submit_boq"][0](run)["refused"])
     ok = TOOLS["record_fact"][0](run, item="C2", name="ext_girth_ground_m", value=98.62, source="user", page=6, basis="confirmed by user")
-    assert not ok["warning"] and TOOLS["submit_boq"][0](run) == {"filed": True}
+    assert not ok["warning"] and TOOLS["submit_boq"][0](run).get("filed") is True
 
 
 def test_sum_lengths_and_latest_fact_replaces_earlier():
@@ -145,7 +145,7 @@ def test_computed_values_need_no_user_confirmation_and_nonsense_girth_points_to_
     assert any("repeat the ground floor" in a["basis"] for a in run.assumptions)
     run.data["boq"] = {"items": [], "total": 0}
     TOOLS["record_fact"][0](run, item="C3", name="doors", value=1, source="user")
-    assert TOOLS["submit_boq"][0](run) == {"filed": True}  # measured values are labelled low confidence, not blocked
+    assert TOOLS["submit_boq"][0](run).get("filed") is True  # measured values are labelled low confidence, not blocked
 
 
 

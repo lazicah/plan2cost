@@ -61,3 +61,11 @@ quote's lines (each number must be printed on the page when it has a text layer)
 every comparison: line and total arithmetic (total to the unit), quantity (over 10%), rate against the user's rate (over 15%), unit mismatch, double charging, work the quote
 leaves out (largest priced items listed, the rest rolled up) and quote lines matching nothing. Each flag says what to ask; none accuses. Test on a synthetic scanned quote
 built from the filed BoQ with four planted errors: all four caught. Not yet tried on a real quote. When a quote is given, submit is refused until it is audited.
+
+## Bills: priced and unpriced; tender audit
+Overhead, profit and preliminaries live inside the rates (author's practice), so the bill has no section for them. `submit_boq` writes `bill_priced.xlsx` (for a client) and
+`bill_unpriced.xlsx` (for tender: rates blank, amount a formula, items numbered) plus `bill.json` with the issued item numbers. Contractors' returned bills are audited with
+`python -m plan2cost.agent.bids --run <id> bid1.xlsx bid2.pdf`: Excel returns are read directly, PDF/image returns by the model; lines match by item number, so nothing is guessed.
+Flags: unpriced or missing items, changed quantity or unit, wrong arithmetic or total, rate against the user's rate (15%), rate far from the other bids (25%, three or more bids),
+added items. Totals are the bid's rates at our issued quantities; a bid with unpriced items is not comparable on total. Thresholds are defaults for a surveyor to set.
+Checked on three synthetic returns made from the plan 2 BoQ; not yet on real bids.

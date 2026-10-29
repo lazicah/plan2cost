@@ -6,6 +6,7 @@ from pathlib import Path
 from plan2cost.facts.quote import match_lines, read_quote
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff.audit import audit
+from plan2cost.takeoff.tender import audit_bid, compare_bids
 
 
 def audit_quote(run: Run) -> dict:
@@ -30,6 +31,39 @@ def audit_quote(run: Run) -> dict:
     run.dir.mkdir(parents=True, exist_ok=True)
     (run.dir / "audit.json").write_text(json.dumps(run.data["audit"], indent=2))
     return result
+
+
+def _rates(run: Run) -> dict:
+    rates = json.loads(Path("data/rates.json").read_text())["rates"]
+    rates.update({i["key"]: i["rate"] for i in run.data["boq"]["items"] if i.get("rate")})
+    return rates
+
+
+def audit_bids(run: Run, paths: list[str]) -> dict:
+    """Bids returned on the unpriced bill this run issued (bill.json). A bill returned as Excel is read directly; a PDF or image is read by the model
+    and matched by item number. Each bid is audited alone and all are compared side by side. Saved as tender_audit.json."""
+    from plan2cost.takeoff.bill import read_xlsx_bid
+
+    issued = json.loads((run.dir / "bill.json").read_text())
+    rates = _rates(run) if "boq" in run.data else {}
+    bids, audits = {}, {}
+    for path in paths:
+        name, total, unverified = Path(path).stem, None, []
+        if path.lower().endswith(".xlsx"):
+            bid = read_xlsx_bid(path)
+        else:
+            q = read_quote(path, str(run.dir / "scratch" / name))
+            bid = {l.no: {"description": l.description, "unit": l.unit, "qty": l.qty, "rate": l.rate, "amount": l.amount} for l in q["lines"]}
+            total, unverified = q["total"], q["unverified"]
+        bids[name] = bid
+        audits[name] = audit_bid(issued, bid, total, rates) | {"unverified_readings": unverified}
+    compared = compare_bids(issued, bids)
+    for name, flags in compared["peer_flags"].items():
+        audits[name]["flags"] += flags
+        audits[name]["counts"] = {c: sum(f["code"] == c for f in audits[name]["flags"]) for c in sorted({f["code"] for f in audits[name]["flags"]})}
+    out = {"bids": audits, "comparison": compared["items"], "note": "Totals are the bid's rates at our issued quantities. A bid with unpriced items is not comparable on total."}
+    (run.dir / "tender_audit.json").write_text(json.dumps(out, indent=2))
+    return out
 
 
 TOOLS = {

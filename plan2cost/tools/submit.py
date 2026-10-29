@@ -3,6 +3,7 @@ import json
 
 from plan2cost.agent.verify import verify_boq
 from plan2cost.kit.progress import Run
+from plan2cost.takeoff.bill import numbered, write_xlsx
 
 
 def submit_boq(run: Run, summary: str = "") -> dict:
@@ -15,7 +16,12 @@ def submit_boq(run: Run, summary: str = "") -> dict:
     run.result = {"summary": (summary if cov and cov in summary else (summary + " " + cov)).strip(), "boq": run.data["boq"], "assumptions": run.assumptions}
     run.dir.mkdir(parents=True, exist_ok=True)
     (run.dir / "boq.json").write_text(json.dumps(run.result, indent=2))
-    return {"filed": True}
+    rows = numbered(run.data["boq"].get("items", []))
+    (run.dir / "bill.json").write_text(json.dumps(rows, indent=2))  # the issued item numbers, so returned bids can be matched
+    cur = run.data["boq"].get("currency", "NGN")
+    write_xlsx(run.dir / "bill_priced.xlsx", rows, True, cur, "Bill of quantities", run.id)
+    write_xlsx(run.dir / "bill_unpriced.xlsx", rows, False, cur, "Bill of quantities", run.id)
+    return {"filed": True, "bills": ["bill_priced.xlsx", "bill_unpriced.xlsx"]}
 
 
 TOOLS = {
