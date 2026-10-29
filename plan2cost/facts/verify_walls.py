@@ -114,35 +114,48 @@ def merge_duplicates(model: DrawingModel, img, scale: float, ask=_ask) -> list[I
     return log
 
 
+def _runs(mask, min_len: int):
+    """Stretches of set cells in a 1-D mask as (start, end), at least min_len long."""
+    edges = np.diff(np.concatenate([[0], mask.astype(np.int8), [0]]))
+    return [(int(a), int(b)) for a, b in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)) if b - a >= min_len]
+
+
 def _bar(img, scale: float, box_mm: tuple, orient: str):
-    """The longest wall-like bar of the given orientation inside a box: (start, end, centre, thickness) in mm along and across, or None."""
+    """The longest wall-like bar of the given orientation inside a box: (start, end, centre, thickness) in mm along and across, or None. A bar is either one solid
+    heavy band 120 to 350 mm thick, or two long face lines 100 to 350 mm apart (a cut wall with hatching or white between its faces). Lines are found from how much of
+    each row of the picture (each column, for a vertical wall) is ink after joining gaps of up to 1.3 m, so a door gap does not split a wall."""
     h, w = img.shape[:2]
     x0, y0, x1, y1 = (int(max(v * scale, 0)) for v in box_mm)
     x1, y1 = min(x1, w), min(y1, h)
     if x1 - x0 < 10 or y1 - y0 < 10:
         return None
     dark = (cv2.cvtColor(img[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY) < 140).astype(np.uint8)
-    along = (x1 - x0) if orient == "h" else (y1 - y0)
-    close_px, open_px = max(3, int(1300 * scale)), max(3, min(int(600 * scale), int(along * 0.6)))
-    shape = (lambda n: (n, 1)) if orient == "h" else (lambda n: (1, n))
-    pad = close_px  # blank padding, or closing would stretch a bar that stops short of the edge of the box out to the edge
-    dark = cv2.copyMakeBorder(dark, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=0)
-    bar = cv2.morphologyEx(dark, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, shape(close_px)))
-    bar = cv2.morphologyEx(bar, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, shape(open_px)))[pad:-pad, pad:-pad]
-    n, _, stats, _ = cv2.connectedComponentsWithStats(bar)
-    best = None
-    for i in range(1, n):
-        bx, by, bw, bh, _ = stats[i]
-        length, thick = (bw, bh) if orient == "h" else (bh, bw)
-        t_mm = thick / scale
-        if length / scale >= 600 and 80 <= t_mm <= 350 and (best is None or length > best[0]):
-            best = (length, bx, by, bw, bh)
-    if best is None:
+    if orient == "v":
+        dark, (x0, y0) = dark.T, (y0, x0)  # work on a horizontal wall; x0 is now the start along the wall and y0 the start across it
+    close_px, min_px = max(3, int(1300 * scale)), int(600 * scale)
+    d = cv2.morphologyEx(dark, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (max(3, int(250 * scale)), 1)))  # long horizontal ink only: text and ticks go
+    rows = d.mean(axis=1) >= 0.35
+    lines = []  # (start, end, centre, thickness) in px
+    for r0, r1 in _runs(rows, 1):
+        cols = _runs(d[r0:r1].min(axis=0) > 0, 1)
+        joined: list = []
+        for a, b in cols:  # a gap of up to 1.3 m (a door, a window) does not split the wall
+            joined[-1:] = [(joined[-1][0], b)] if joined and a - joined[-1][1] <= close_px else joined[-1:] + [(a, b)]
+        joined = [c for c in joined if c[1] - c[0] >= min_px]
+        if joined:
+            s, e = max(joined, key=lambda c: c[1] - c[0])
+            lines.append((s, e, (r0 + r1) / 2, r1 - r0))
+    found = [(s, e, c, t) for s, e, c, t in lines if 120 <= t / scale <= 350]
+    for i, (s1, e1, c1, t1) in enumerate(lines):
+        for s2, e2, c2, t2 in lines[i + 1:]:
+            over = min(e1, e2) - max(s1, s2)
+            if t1 / scale < 120 and t2 / scale < 120 and 100 <= abs(c1 - c2) / scale <= 350 and over >= min_px:
+                found.append((max(s1, s2), min(e1, e2), (c1 + c2) / 2, abs(c1 - c2) + (t1 + t2) / 2))
+    if not found:
         return None
-    _, bx, by, bw, bh = best
-    if orient == "h":
-        return ((x0 + bx) / scale, (x0 + bx + bw) / scale, (y0 + by + bh / 2) / scale, bh / scale)
-    return ((y0 + by) / scale, (y0 + by + bh) / scale, (x0 + bx + bw / 2) / scale, bw / scale)
+    longest = max(f[1] - f[0] for f in found)
+    s, e, c, t = max((f for f in found if f[1] - f[0] >= 0.9 * longest), key=lambda f: f[3])  # of the long ones, the widest pair: the two faces, not a face and a centre line
+    return ((x0 + s) / scale, (x0 + e) / scale, (y0 + c) / scale, t / scale)
 
 
 def _meets(model: DrawingModel, orient: str, centre: float, end: float, tol: float = 250) -> bool:
