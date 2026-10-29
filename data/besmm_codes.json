@@ -35,6 +35,15 @@
   "skirting_m": "1.28.1.14.1",
   "internal_wall_paint_m2": "1.29.1.1.2",
   "ceiling_paint_m2": "1.29.1.1.2",
-  "lintel_nr": "1.13.2.2.2"
+  "lintel_nr": "1.13.2.2.2",
+  "roof_covering_m2": "1.17.1.1.2",
+  "roof_eaves_m": "1.17.1.4.1",
+  "roof_ridge_m": "1.17.1.4.1",
+  "roof_hips_m": "1.17.1.4.1",
+  "roof_valleys_m": "1.17.1.7.1",
+  "roof_hips_or_valleys_m": "1.17.1.4.1",
+  "roof_rafters_m": "1.16.1.1.1",
+  "roof_purlins_m": "1.16.1.1.1",
+  "roof_wall_plates_m": "1.16.1.1.1"
  }
 }

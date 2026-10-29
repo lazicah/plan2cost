@@ -132,6 +132,8 @@ function render(run) {
       <table class="small"><tr><th>Line</th><th>What we found</th><th>What to ask</th></tr>${run.audit.flags.map(f => `<tr><td>${esc(f.line)}</td>
         <td class="${f.severity === 'error' ? 'escalated' : f.severity === 'warn' ? 'assumed' : ''}">${esc(f.message)}</td><td class="mute">${esc(f.ask)}</td></tr>`).join('')}</table>
       ${run.audit.unverified_readings?.length ? `<p class="small mute">Not printed on the quote, so not used: ${run.audit.unverified_readings.map(esc).join('; ')}</p>` : ''}</section>` : '';
+  const roofCard = run.built.roof ? `<section class="card"><h2>Roof measured</h2><a href="/api/runs/${run.id}/${esc(run.built.roof.markup)}" target="_blank"><img src="/api/runs/${run.id}/${esc(run.built.roof.markup)}" alt="roof plan with the measured lines" style="width:100%;border:1px solid var(--line);border-radius:8px"></a>
+      <div class="small mute" style="margin-top:6px">Red eaves, blue ridges, green hips, magenta valleys, black not told apart. Check the hips and valleys against the drawing.</div></section>` : '';
   const models = Object.values(run.models || {}).map(m => `<section class="card"><h2>Walls found: ${esc(m.floor)} floor, page ${esc(m.page)}</h2>
       <div class="small">${m.walls} walls, ${money(m.total_m)} m (external ${money(m.external_m)}, internal ${money(m.internal_m)}) by the ${esc(m.route)} route, ${esc(m.confidence)} confidence.</div>
       ${m.issues.length ? `<ul class="small">${m.issues.map(i => `<li class="${i.severity === 'error' ? 'escalated' : 'assumed'}">${esc(i.message)}</li>`).join('')}</ul>` : '<div class="small proven">All checks passed.</div>'}
@@ -155,6 +157,7 @@ function render(run) {
       ${tile(wf.length, wf.map(([f, m]) => money(m.total_m) + ' m').join(' + '), wf.length ? 'wall girth, ' + wf.map(([f]) => f).join(' + ') + ' floor' : 'walls')}
       ${tile(Object.keys(b.openings_found).length, Object.values(b.openings_found).reduce((a, c) => a + c, 0) + ' of ' + b.openings_scheduled, 'doors and windows tied to walls')}
       ${tile(Object.keys(b.rooms || {}).length, Object.values(b.rooms || {}).map(r => money(r.net_floor_area_m2) + ' m²').join(' + '), 'net floor area from the printed room sizes')}
+      ${tile(b.roof, b.roof ? money(b.roof.slope_area_m2 || b.roof.plan_area_m2) + ' m²' : '', b.roof && b.roof.slope_area_m2 ? 'roof on the slope' : 'roof plan area (pitch pending)')}
       ${tile(b.pads || b.strip, b.strip ? money(b.strip.net_m) + ' m' : b.pads + ' bases', 'foundation: strip girth, column bases')}
       ${tile(b.foundation_lines, b.foundation_lines + ' lines', 'foundation quantities')}
       ${tile(b.boq, b.boq ? b.boq.lines + ' lines' : '', b.boq ? money(b.boq.total) + ' ' + b.boq.currency : 'priced bill')}</div></section>`;
@@ -180,7 +183,7 @@ function render(run) {
       <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${progress}${stopped}${reading}${tiles}${q}${gallery}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
-      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}${downloads}${audit}${bidsBox}${tender}`;
+      <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${roofCard}${boq}${downloads}${audit}${bidsBox}${tender}`;
   const ab = $('#auditbids');
   const rs = $('#resume');
   if (rs) rs.onclick = async () => { rs.disabled = true; await api(`/api/runs/${run.id}/resume`, {}); };

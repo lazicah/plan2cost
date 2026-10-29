@@ -4,7 +4,10 @@ from pathlib import Path
 
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff.boq import BoqItem, foundation_boq, foundation_extras, price_boq, strip_inputs, substructure_extras, superstructure_boq
+from plan2cost.drawing.roof import Roof
+from plan2cost.facts.roof_spec import RoofSpec
 from plan2cost.facts.rooms import Room
+from plan2cost.takeoff.roof import roof_boq
 from plan2cost.takeoff.checklist import coverage, statement
 from plan2cost.takeoff.finishes import finishes_boq, floor_finishes, lintel_items
 from plan2cost.takeoff.foundation import GridLine, PadBase, foundation_takeoff
@@ -126,6 +129,15 @@ def compute_boq(run: Run) -> dict:
         questions += ask
         if floors and any(fl.open_spaces for fl in floors.values()) and "include_open_spaces" not in facts:
             questions.append(f"Do the {', '.join(sorted({n for fl in floors.values() for n in fl.open_spaces}))} count for floor finishes, and what is their finish?")
+    if run.data.get("roof"):
+        r = run.data["roof"]
+        top = next((f for f in ("fourth", "third", "second", "first", "ground") if f in ext), None)
+        spec = RoofSpec(**r["spec"]) if r.get("spec") else None
+        rf = Roof(**{**r["roof"], "lines": [tuple(x) for x in r["roof"]["lines"]]})
+        roof_items, ask, working = roof_boq(rf, spec, facts, ext.get(top))
+        items += roof_items
+        questions += ask
+        run.data["roof"]["working"] = working
     lint, ask = lintel_items(openings, float(facts["lintel_bearing_mm"]) if facts.get("lintel_bearing_mm") else None)
     items += lint
     questions += ask

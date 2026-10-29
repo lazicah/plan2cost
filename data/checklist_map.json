@@ -169,6 +169,34 @@
   "SUP-10": {
    "status": "covered",
    "prefix": "lintel_"
+  },
+  "ROF-05": {
+   "status": "covered",
+   "keys": [
+    "roof_covering_m2"
+   ]
+  },
+  "ROF-01": {
+   "status": "partial",
+   "keys": [
+    "roof_rafters_m"
+   ],
+   "missing": "stock lengths and the hardwood species; the metres are measured"
+  },
+  "ROF-02": {
+   "status": "partial",
+   "keys": [
+    "roof_purlins_m"
+   ],
+   "missing": "stock lengths; the purlin spacing is asked"
+  },
+  "ROF-06": {
+   "status": "partial",
+   "keys": [
+    "roof_ridge_m",
+    "roof_hips_m"
+   ],
+   "missing": "nails and ridge caps as an allowance; ridge and hip lengths are measured"
   }
  }
 }

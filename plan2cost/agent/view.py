@@ -45,7 +45,7 @@ def in_flight(run: Run) -> dict | None:
 # The stages of an estimate, in the order the agent normally does them: (label, the tools that complete it, when it applies)
 STAGES = [("Index the pages", {"index_document"}, "always"), ("Set the checklist", {"set_checklist"}, "always"),
           ("Schedules, levels, notes", {"read_openings", "read_levels", "read_notes"}, "always"), ("Walls, floor by floor", {"read_wall_girth"}, "always"),
-          ("Doors and windows on the plan", {"locate_openings"}, "always"), ("Rooms and finishes", {"read_rooms"}, "always"), ("Structural drawing", {"read_foundation_section", "read_pad_bases", "read_strip_layout"}, "structural"),
+          ("Doors and windows on the plan", {"locate_openings"}, "always"), ("Rooms and finishes", {"read_rooms"}, "always"), ("Roof", {"read_roof"}, "always"), ("Structural drawing", {"read_foundation_section", "read_pad_bases", "read_strip_layout"}, "structural"),
           ("Foundation", {"compute_foundation"}, "always"), ("Priced bill", {"compute_boq"}, "always"), ("Quote audit", {"audit_quote"}, "quote"), ("Filed", {"submit_boq"}, "always")]
 
 
@@ -70,7 +70,7 @@ def built(run: Run) -> dict:
     opened = {f: sum(c["external"] + c["internal"] for c in counts.values()) for f, counts in (d.get("located_openings") or {}).items()}
     boq = d.get("boq")
     return {"walls": {f: {k: m.get(k) for k in ("walls", "total_m", "external_m", "internal_m", "route", "confidence", "markup")} for f, m in (d.get("models") or {}).items()},
-            "openings_found": opened, "rooms": {f: {"rooms": len(rs), "net_floor_area_m2": round(sum(r["area_m2"] or 0 for r in rs if not r["open_space"]), 2)} for f, rs in (d.get("rooms") or {}).items()}, "openings_scheduled": sum(o["count"] for o in d.get("openings", [])), "pads": len(d.get("pads", [])),
+            "openings_found": opened, "rooms": {f: {"rooms": len(rs), "net_floor_area_m2": round(sum(r["area_m2"] or 0 for r in rs if not r["open_space"]), 2)} for f, rs in (d.get("rooms") or {}).items()}, "openings_scheduled": sum(o["count"] for o in d.get("openings", [])), "roof": ({"slope_area_m2": d["roof"].get("working", {}).get("slope_area_m2"), "plan_area_m2": d["roof"]["roof"]["plan_area_m2"], "markup": d["roof"]["markup"]} if d.get("roof") else None), "pads": len(d.get("pads", [])),
             "strip": ({k: d["strip_layout"][k] for k in ("gross_m", "net_m")} if d.get("strip_layout") else None), "foundation_lines": len(d.get("foundation_items", [])),
             "boq": ({"lines": len(boq["items"]), "total": boq["total"], "currency": boq["currency"]} if boq else None)}
 

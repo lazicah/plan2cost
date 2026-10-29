@@ -80,3 +80,15 @@ says they count. Lintels (nr, 1.13.2.2.2) are one per opening, length = opening 
 Not built: wall tiling to wet rooms (needs the tile height and doors tied to rooms), roof, columns and beams, stairs, services.
 Building length and width (slab, topsoil, fill) come from the outermost joints plus one wall thickness, not the bounding box of the runs: the strict bounding box stays as the
 guard that rejects a vector reading with a grid line merged into a wall (plan 2 page 3), and a test holds both.
+
+## Roof (BESMM4 1.17 and 1.16)
+`read_roof` measures a vector roof plan (drawing/roof.py): the heaviest stroke weight is the roof skeleton; the outline is filled for the plan area; the scale is fixed
+only when the outline matches printed overall dimensions on both axes (plan 2: 12370 x 20185 against the outline, axes agree to 0.01%; the sheet was plotted at about
+1:125, not the stated 1:100, so the stated scale is only a bound). Edges with the outdoors on one side are eaves, interior axis lines ridges, interior 45-degree lines hips
+or valleys: the roof is cut into planes, each plane slopes down toward the eave it touches, and a diagonal is a hip when both planes beside it slope away, a valley when
+both slope toward it. The pitch is the printed rise (apex level less eaves level, read from the text layer by facts/roof_spec.py) over the plan's run from the main ridge
+to its eave; all planes share it, so a hip not at 45 degrees is flagged. Lines (takeoff/roof.py): covering on the slope in m2 with the pitch stated, eaves, ridges, hips and
+valleys in m (true lengths), rafters and purlins as slope area over the printed spacing, wall plates as the top floor's external girth. Not measured and asked: purlin
+spacing when not printed, the number of trusses and tie beams, a fascia board or gutter. Weak spot: a raised or sunk area that touches no eave of its own (plan 2's central
+diamond) makes the hip/valley split uncertain there; it is warned, and the annotated roof plan is saved for a person to check. Total roof area does not depend on that split.
+Raster roof plans are not measured: the agent asks for the pitch and says the roof is not measured.
