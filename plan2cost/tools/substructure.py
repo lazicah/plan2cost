@@ -22,8 +22,8 @@ class FoundationColumn:
 
 def topsoil_strip_m2(length_m: float, width_m: float, working_space_m: float = 0.6, factor: float = 1.0) -> int:
     """BESMM4 (Excavating and filling, site preparation): remove topsoil, m2, depth stated. Area taken as the building's overall length and width
-    plus working space both sides. `factor` exists only because the author's plan2 sheet gives 226, which is 0.95 of this area; that ratio was
-    fitted by us, not stated by him or the rule book, so it is off by default until he confirms how the sheet gets 226."""
+    plus working space both sides. `factor` exists only because the author's plan2 sheet gives 226: he multiplied by 0.95 by hand to reduce the area
+    (his own words: a decision at the time, not a convention), so it stays 1.0."""
     return whole_units((length_m + 2 * working_space_m) * (width_m + 2 * working_space_m) * factor)
 
 

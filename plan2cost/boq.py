@@ -7,7 +7,7 @@ from pathlib import Path
 from plan2cost.tools.substructure import (blinding_foundations_m3, disposal_and_backfill, formwork_foundation_sides_m2, levelling_compaction_m2,
                                           topsoil_strip_m2, void_filling_m3)
 from plan2cost.tools.walls import Opening, blockwork_area_m2
-from plan2cost.tools.foundation import PadBase, StripSection, ground_bed_takeoff, pad_concrete_m3, pad_rebar_kg
+from plan2cost.tools.foundation import PadBase, StripSection, ground_bed_takeoff, pad_concrete_m3, pad_rebar_kg, whole_units
 
 
 @dataclass
@@ -118,6 +118,7 @@ def substructure_extras(t: dict, s: StripSection, pads: list[PadBase], trench_gi
     fdn_block = t[f"fdn_blockwork_{s.block_mm}_m2"]
     rows = [
         ("topsoil_strip_m2", "Excavate topsoil for preservation; average depth 150mm", "m2", top),
+        ("topsoil_disposal_m3", "Topsoil excavated as above; off site; transported away and deposited in spoil heaps", "m3", whole_units(top * s.topsoil_m)),
         ("excavated_surface_treatment_m2", "Anti-termite treatment applied to excavated surfaces", "m2", int(math.ceil(t["earthwork_support_m2"]))),
         ("levelling_compaction_m2", "Level and compact the bottom of excavations", "m2", levelling_compaction_m2(trench_girth_m, width, pads)),
         ("blinding_foundations_m3", "Plain in situ concrete (1:3:6); blinding 50mm thick under strip footings and 100mm under column bases; poured against earth", "m3", blind),

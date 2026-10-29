@@ -1,5 +1,5 @@
 {
-  "_note": "Quantities from the author's plan2 BOQs sheet, Substructure element (numbers only). Trench excavation is 58 on the sheet (it used 0.69m width); 57 with the 0.68 rule. Column base types 4 and 5 are 250 mm thick (the author corrected the sheet on Oct 29); column_base_concrete_m3, rebar_column_bases_12mm_kg, blinding_total_m3 and formwork_foundation_sides_m2 below were taken before that fix and need the corrected sheet's values.",
+  "_note": "Quantities from the author's plan2 BOQs sheet, Substructure element (numbers only). Trench excavation is 58 on the sheet (it used 0.69m width); 57 with the 0.68 rule. Column base types 4 and 5 are 250 mm thick (the author corrected the sheet on Oct 29); column_base_concrete_m3, rebar_column_bases_12mm_kg, blinding_total_m3 and formwork_foundation_sides_m2 below were taken before that fix and need the corrected sheet's values. topsoil_strip_m2 226 includes a manual x0.95 the author chose at the time (not a rule); the rule area is 238. topsoil disposal is that area x 0.15 m.",
   "topsoil_strip_m2": 226,
   "pit_excavation_column_bases_m3": 48,
   "trench_excavation_strip_m3": 58,
@@ -27,5 +27,7 @@
   "concrete_filling_blockwork_voids_m3": 10.26,
   "dpm_polythene_m2": 200,
   "fdn_wall_render_m2": 89,
-  "fdn_wall_paint_m2": 90
+  "fdn_wall_paint_m2": 90,
+  "topsoil_strip_m2_rule": 238,
+  "topsoil_disposal_m3": 36
 }
