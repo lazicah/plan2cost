@@ -43,7 +43,7 @@ code runs on it: overlapping runs (possible double count), runs past the last jo
 nothing, building size against the printed overall dimensions, weak scale evidence, and external-versus-outline convention. Before that review, a model-checked pass (facts/verify_walls.py) asks closed questions about crops: a run past the last joint is trimmed to the joint when the model
 sees no wall under it; an overlapping pair is merged when the model says one wall; a wall the model sees with no line is added only if code finds a bar there whose both ends meet walls.
 Each edit is logged as a "model check" issue. On plan 2 (images) it trimmed 3 overshoots on the ground floor and 3 on the first (first floor 129.7 to 124.7 m against 127.6 surveyed), and added one 11.0 m hatched partition on the ground floor (116.1 to 121.1 m against 107.1 surveyed: that
-hatched strip may be a beam or slab edge and not a wall, which only the author can say). Three other places the model pointed to were found as bars but did not meet walls at both ends, so were left as questions. The model
+hatched strip is a wall, the author confirmed: cut walls drawn hatched with lighter faces are real; the remaining excess is elsewhere). Three other places the model pointed to were found as bars but did not meet walls at both ends, so were left as questions. The model
 review of the annotated plan after that can only add questions. Examples: plan 1 (image) is flagged for a missing north wall by both the extents check (11.0 m deep against
 13.5 m printed) and the model review; plan 2's architectural page is flagged for two grid lines merged into walls.
 
