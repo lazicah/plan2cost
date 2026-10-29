@@ -89,7 +89,7 @@ def summary(run: Run) -> dict:
     d = run.dir
     tender = json.loads((d / "tender_audit.json").read_text()) if (d / "tender_audit.json").exists() else None
     files = [f for f in ("bill_priced.xlsx", "bill_priced.pdf", "bill_unpriced.xlsx", "bill_unpriced.pdf", "boq.json", "tender_audit.json") if (d / f).exists()]
-    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "pages": run.pages, "thumbs": sorted(f.name for f in (d / "pages").glob("p*.jpg")) if (d / "pages").is_dir() else [], "built": built(run), "files": files, "tender": tender,
+    return {"id": run.id, "status": run.status, "stages": stages(run, done_turns, now), "now": now, "pages": run.pages, "thumbs": sorted(f.name for f in (d / "pages").glob("p*.jpg")) if (d / "pages").is_dir() else [], "built": built(run), "preview": run.data.get("preview"), "error": run.data.get("error"), "files": files, "tender": tender,
             "structural": run.structural_pdf, "quote": run.quote, "turn": run.turn, "objective": run.objective, "pdf": run.pdf, "checklist": run.checklist,
             "facts": run.facts, "assumptions": run.assumptions, "pending": run.pending, "result": run.result,
             "boq": run.data.get("boq"), "models": run.data.get("models", {}), "audit": run.data.get("audit"), "turns": done_turns}

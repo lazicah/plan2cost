@@ -81,8 +81,9 @@ def _add_review(model: DrawingModel, markup_path: str) -> None:
         model.issues.append(Issue("review_skipped", "info", f"The model review of the plan was skipped ({type(e).__name__}).", [], "", "model review"))
 
 
-def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool = False) -> DrawingModel:
-    """Interpret one page, build the verified drawing model, save it with its annotated plan, and return it."""
+def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool = False, on_measured=None) -> DrawingModel:
+    """Interpret one page, build the verified drawing model, save it with its annotated plan, and return it. `on_measured(model)` is called as soon as the
+    walls are measured and drawn, before the slower model review, so a console can show them."""
     from pathlib import Path
 
     from plan2cost.drawing.model import build_model
@@ -97,6 +98,8 @@ def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool =
     name = f"markup_{floor}_p{page}.jpg"
     draw_markup(model, str(out / name), pdf=pdf, page=page, image=r.get("_image") if r["route"] == "raster" else None)
     model.markup = name
+    if on_measured:
+        on_measured(model)
     if review:
         _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p{page}.json")

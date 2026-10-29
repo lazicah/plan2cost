@@ -109,6 +109,8 @@ class Handler(BaseHTTPRequestHandler):
             if not body.get("answer"):
                 return self._json(400, {"error": "answer is empty"})
             cmd += ["--resume", self.path.split("/")[3], "--answer", body["answer"]]
+        elif self.path.startswith("/api/runs/") and self.path.endswith("/resume") and view.RUN_ID.match(self.path.split("/")[3]):
+            cmd += ["--resume", self.path.split("/")[3]]
         elif self.path.startswith("/api/runs/") and self.path.endswith("/bids") and view.RUN_ID.match(self.path.split("/")[3]):
             bids = [b.strip() for b in body.get("bids", []) if b.strip()]
             if not bids or not all(existing_file(b) for b in bids):

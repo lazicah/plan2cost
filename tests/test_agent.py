@@ -172,3 +172,28 @@ def test_foundation_uses_section_values_printed_on_the_structural_drawing(monkey
     out = TOOLS["compute_foundation"][0](run, 230)
     assert out["trench_width_mm"] == 675  # printed, not 3 x 230
     assert not any(a["name"] in ("foundation_width_mm", "foundation_footing_thickness_m") for a in run.assumptions)
+
+
+def test_a_dropped_connection_is_retried_and_then_pauses_the_run_instead_of_losing_it(monkeypatch):
+    from plan2cost.agent import loop
+
+    monkeypatch.setattr(loop.time, "sleep", lambda s: None)
+    calls = []
+
+    def flaky(messages):
+        calls.append(1)
+        if len(calls) < 3:
+            raise ConnectionError("dropped")
+        return '{"tool": "sum_lengths", "args": {"values_m": [1, 2]}, "reason": "x"}'
+
+    run = state.Run.new("a.pdf", "x")
+    run.id = "retry-test"
+    monkeypatch.setattr(state, "RUNS_DIR", __import__("pathlib").Path(__import__("tempfile").mkdtemp()))
+    loop.step(run, flaky)
+    assert len(calls) == 3 and run.turn == 1
+
+    def dead(messages):
+        raise ConnectionError("down")
+
+    run = loop.run_agent(run, dead, max_turns=2)
+    assert run.status == "paused" and "down" in run.data["error"]

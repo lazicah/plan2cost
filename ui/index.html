@@ -103,6 +103,8 @@ function brief(t) {
 
 function render(run) {
   const done = run.checklist.filter(c => ['proven', 'assumed'].includes(c.status)).length;
+  const stopped = run.status === 'paused' ? `<section class="card q"><h2>The run stopped</h2><div class="small">${esc(run.error || 'It ran out of turns.')} Everything so far is saved.</div>
+      <button id="resume">Continue the run</button></section>` : '';
   const q = run.pending ? `<section class="card q"><h2>The agent needs you</h2>
       <div><b>${esc(run.pending.item)}</b> ${esc(run.pending.question)}</div>
       <textarea id="ans" placeholder="Your answer"></textarea>
@@ -139,9 +141,14 @@ function render(run) {
   const roleOf = n => (run.pages.find(p => p.page === n) || {}).role;
   const gallery = run.thumbs.length ? `<section class="card"><h2>The drawings</h2><div class="thumbs">${run.thumbs.map(f => { const n = Number(f.slice(1, 3));
       return `<a class="thumb ${n === nowPage ? 'active' : ''}" href="/api/runs/${run.id}/pages/${f}" target="_blank"><img src="/api/runs/${run.id}/pages/${f}" alt="page ${n}">${n} ${esc(String(roleOf(n) || '').replace(/_/g, ' '))}</a>`; }).join('')}</div></section>` : '';
-  const reading = run.now && ['read_wall_girth', 'locate_openings'].includes(run.now.tool) && nowPage && thumbFor(nowPage) ? `<section class="card"><h2>Reading page ${nowPage}: ${esc(run.now.args.floor || '')} floor</h2>
+  const pv = run.preview;
+  const reading = pv ? `<section class="card"><h2>Walls measured: ${esc(pv.floor)} floor, page ${esc(pv.page)}</h2>
+      <img src="/api/runs/${run.id}/${esc(pv.markup)}?v=${pv.walls}" alt="the walls measured" style="width:100%;border:1px solid var(--line);border-radius:8px">
+      <div class="small" style="margin-top:6px"><b>${pv.walls} walls, ${money(pv.total_m)} m</b> (external ${money(pv.external_m)}, internal ${money(pv.internal_m)}) by the ${esc(pv.route)} route. Red is external, blue internal; numbers are wall ids.
+        <span class="mute">The model is now reviewing this plan for mistakes.</span></div></section>`
+    : run.now && ['read_wall_girth', 'locate_openings'].includes(run.now.tool) && nowPage && thumbFor(nowPage) ? `<section class="card"><h2>Reading page ${nowPage}: ${esc(run.now.args.floor || '')} floor</h2>
       <div class="live"><img src="${thumbFor(nowPage)}" alt="the plan being read"></div>
-      <div class="small mute" style="margin-top:6px">${run.now.tool === 'read_wall_girth' ? 'Finding the wall lines, fixing the scale from the printed dimensions, then measuring each wall. The numbered plan appears here when it is done.' : 'Looking at each gap in the walls to see if it is a door or a window.'}</div></section>` : '';
+      <div class="small mute" style="margin-top:6px">${run.now.tool === 'read_wall_girth' ? 'Finding the wall lines and fixing the scale from the printed dimensions. The measured walls appear here as soon as they are ready.' : 'Looking at each gap in the walls to see if it is a door or a window.'}</div></section>` : '';
   const b = run.built, wf = Object.entries(b.walls);
   const tile = (on, big, label) => `<div class="tile ${on ? 'on' : 'wait'}"><b>${on ? big : '…'}</b><span>${label}</span></div>`;
   const tiles = `<section class="card"><h2>Built so far</h2><div class="tiles">
@@ -169,11 +176,13 @@ function render(run) {
         ${run.tender.comparison.map(r => `<tr><td>${esc(r.no)}</td><td>${esc(r.description.slice(0, 60))}</td><td class="n">${money(r.qty)} ${esc(r.unit)}</td>${names.map(n => `<td class="n">${money(r.rates[n])}</td>`).join('')}</tr>`).join('')}</table></details></section>`; })() : '';
   $('#main').innerHTML = `<section class="card row"><span class="pill ${run.status}">${esc(run.status.replace('_', ' '))}</span>
       <span>Turn ${run.turn}</span><span class="mute small">${esc(run.pdf.split('/').pop())}</span><span class="spacer"></span>
-      <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${progress}${reading}${tiles}${q}${gallery}
+      <span class="small">${done}/${run.checklist.length} checklist items settled</span></section>${progress}${stopped}${reading}${tiles}${q}${gallery}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
       <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Item</th><th>Name</th><th class="n">Value</th><th>Source, confidence</th><th>Check</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}${downloads}${audit}${bidsBox}${tender}`;
   const ab = $('#auditbids');
+  const rs = $('#resume');
+  if (rs) rs.onclick = async () => { rs.disabled = true; await api(`/api/runs/${run.id}/resume`, {}); };
   const bi = $('#bids');
   if (bi) bi.onchange = () => { $('#bidsname').textContent = [...bi.files].map(f => f.name).join(', ') || 'Choose the returned bills'; };
   if (ab) ab.onclick = async () => {
@@ -194,7 +203,7 @@ async function tick() {
   if (current) sel.value = current;
   if (!current) return;
   const run = await api('/api/runs/' + current);
-  const key = JSON.stringify([run.status, run.turn, run.pending, run.facts.length, run.now, run.files, !!run.tender, run.thumbs.length, run.built]) + document.activeElement?.id;
+  const key = JSON.stringify([run.status, run.turn, run.pending, run.facts.length, run.now, run.files, !!run.tender, run.thumbs.length, run.built, run.preview, run.error]) + document.activeElement?.id;
   if (key !== lastKey || prev !== current) { if (document.activeElement?.id !== 'ans') render(run); lastKey = key; }
 }
 $('#runs').onchange = e => { current = e.target.value; lastKey = ''; tick(); };

@@ -1,5 +1,6 @@
 """The agent loop: plan, act, observe, one tool per turn, until the BoQ is filed or a person is needed."""
 import json
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -21,9 +22,24 @@ def default_llm(messages: list) -> str:
     return resp.choices[0].message.content
 
 
+def _ask(llm: Callable[[list], str], messages: list, tries: int = 3) -> str:
+    """A dropped connection to the model should not end a run: retry a few times with a pause, then let the error through."""
+    for n in range(tries):
+        try:
+            return llm(messages)
+        except (ConnectionError, TimeoutError) as e:
+            err = e
+        except Exception as e:  # the openai client's own connection and rate-limit errors
+            if type(e).__name__ not in ("APIConnectionError", "APITimeoutError", "RateLimitError", "InternalServerError"):
+                raise
+            err = e
+        time.sleep(3 * (n + 1))
+    raise err
+
+
 def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> None:
     tools = tools or TOOLS
-    reply = llm(run.messages)
+    reply = _ask(llm, run.messages)
     run.messages.append({"role": "assistant", "content": reply})
     run.turn += 1
     run.save()  # so the console shows which tool is running while a slow one (a plan read) works
@@ -50,8 +66,13 @@ def run_agent(run: Run, llm: Callable[[list], str] = default_llm, max_turns: int
                         {"role": "user", "content": f"Objective: {run.objective}\nThe drawing set is the PDF at: {run.pdf}" + ("\nA structural drawing set is also given: read_foundation_section, read_pad_bases and read_strip_layout must be called before compute_foundation." if run.structural_pdf else "")
                         + ("\nA contractor quote is also given: after compute_boq call audit_quote, then report its flags in plain words in your summary." if run.quote else "")}]
     start = run.turn
-    while run.status == "running" and run.turn - start < max_turns:
-        step(run, llm, tools)
+    try:
+        while run.status == "running" and run.turn - start < max_turns:
+            step(run, llm, tools)
+    except Exception as e:  # the run is paused, not lost: everything so far is saved and resume continues
+        run.data["error"] = f"{type(e).__name__}: {e}"[:300]
+        run.status = "paused"
+        run.trace(f"## Stopped: {run.data['error']}")
     if run.status == "running":
         run.status = "paused"  # out of turns; resume continues
     run.save()
@@ -72,5 +93,8 @@ def resume(run: Run, answer: str | None = None, llm: Callable[[list], str] = def
         run.pending = None
     elif run.status in ("done", "failed"):
         raise ValueError(f"Run is {run.status}.")
+    if run.messages and run.messages[-1]["role"] == "assistant":  # stopped while a tool was running: tell the model so it can ask again
+        run.messages.append({"role": "user", "content": "Tool result: " + json.dumps({"error": "The run was interrupted before this tool finished. Call it again if you still need it."})})
+    run.data.pop("error", None)
     run.status = "running"
     return run_agent(run, llm, max_turns, tools)

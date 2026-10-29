@@ -13,7 +13,12 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
 
     models_dir = run.dir / "models"
     try:
-        model = model_for_page(run.pdf, int(page), floor, str(models_dir), review=True)
+        def show(m):  # the measured walls, for the console, while the model review runs
+            run.data["preview"] = {"floor": floor, "page": int(page), "markup": f"models/{m.markup}", "walls": len(m.walls()), "total_m": m.totals["total_m"],
+                                   "external_m": m.totals["external_m"], "internal_m": m.totals["internal_m"], "route": m.route}
+            run.save()
+
+        model = model_for_page(run.pdf, int(page), floor, str(models_dir), review=True, on_measured=show)
     except ValueError as e:  # no route kept its walls: fall back to the plain measurement, without a drawing model
         m = interpret_page(run.pdf, int(page), str(run.dir / "scratch"))
         if m.get("error"):
@@ -21,6 +26,7 @@ def read_wall_girth(run: Run, page: int, floor: str) -> dict:
         return {"floor": floor, "ext_girth_m": float(m["external_m"]), "int_girth_m": float(m["internal_m"]), "walls": m["walls"], "junction_ends": m["junction_ends"],
                 "building_length_m": float(m["length_m"]), "building_width_m": float(m["width_m"]), "route": m["route"], "confidence": "low",
                 "note": "no drawing model could be built for this page; treat the girth as a rough estimate"}
+    run.data.pop("preview", None)
     run.data.setdefault("models", {})[floor] = {"file": f"models/drawing_model_{floor}_p{int(page)}.json", "markup": f"models/{model.markup}", **model.summary()}
     open_checks = [i for i in model.issues if i.severity != "info"]
     for i in open_checks:  # open checks travel with the estimate so they cannot be lost at submit
