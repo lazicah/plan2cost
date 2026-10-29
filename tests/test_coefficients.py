@@ -26,3 +26,10 @@ def test_prices_are_labelled_as_sanity_checks_not_rates():
 def test_a_broken_table_is_reported():
     bad = {"sources": {"a": {}}, "entries": [{"id": "x", "group": "g", "unit": "kg", "low": 5, "typical": 2, "high": 9, "sources": ["zz"], "confidence": "meh", "note": ""}]}
     assert len(c.problems(bad)) == 3
+
+
+def test_ratios_derived_from_the_authors_plans_keep_their_per_plan_values():
+    derived = [e for e in c.load()["entries"] if "authorboq" in e["sources"]]
+    assert len(derived) >= 15
+    for e in derived:
+        assert e["n_plans"] == len(e["per_plan"]) and min(e["per_plan"].values()) == e["low"] and max(e["per_plan"].values()) == e["high"]
