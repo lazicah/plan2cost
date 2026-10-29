@@ -125,7 +125,7 @@ def substructure_extras(t: dict, s: StripSection, pads: list[PadBase], trench_gi
         ("formwork_foundation_sides_m2", "Formwork to sides of column bases; plain vertical; height 250-500mm", "m2", formwork_foundation_sides_m2(pads)),
         ("disposal_off_site_m3", "Excavated material; off site; transported away from excavation and deposited in spoil heaps", "m3", db["disposal_off_site_m3"]),
         ("backfill_around_foundations_m3", "Filling to excavations; selected excavated material; compacted around foundations", "m3", db["backfill_around_foundations_m3"]),
-        ("concrete_filling_blockwork_voids_m3", "Plain in situ concrete, grade 15; mass concrete filling the voids in sandcrete blockwork", "m3", void_filling_m3(fdn_block)),
+        ("concrete_filling_blockwork_voids_m3", "Plain in situ concrete, grade 15; mass concrete filling the voids in sandcrete blockwork", "m3", void_filling_m3(fdn_block, s.block_mm)),
         ("fdn_wall_render_m2", "Cement-sand (1:3) rendering to external face of foundation walls; 15mm thick", "m2", fdn_block),
     ]
     return [BoqItem(k, d, u, q) for k, d, u, q in rows]

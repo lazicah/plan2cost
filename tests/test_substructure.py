@@ -27,3 +27,9 @@ def test_columns_disposal_and_backfill():
 
 def test_void_filling_factor():
     assert void_filling_m3(89) == 10.26
+
+
+def test_void_filling_scales_with_block_thickness():
+    assert void_filling_m3(89, 225) == 10.26
+    assert void_filling_m3(100, 150) == 7.69
+    assert void_filling_m3(100, 100) == 5.12
