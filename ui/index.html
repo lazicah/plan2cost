@@ -309,7 +309,8 @@ function loadThree() {
   return threeReady;
 }
 let m3 = null;
-async function open3d(id, hideRoof) {
+async function open3d(id, opt) {
+  opt = opt || {};
   let box = document.getElementById('m3d');
   if (!box) { box = document.createElement('div'); box.id = 'm3d'; document.body.appendChild(box); }
   box.className = 'on'; box.innerHTML = '<div class="bar"><b>3D model</b><span class="small mute" id="m3dmsg">Loading…</span><span class="spacer" style="flex:1"></span><button id="m3dclose" style="background:var(--card);color:var(--accent);border-color:var(--accent)">Close</button></div>';
@@ -317,12 +318,13 @@ async function open3d(id, hideRoof) {
   try {
     const [data] = await Promise.all([api(`/api/runs/${id}/massing`), loadThree()]);
     if (!data.floors) throw new Error('no walls were measured for this run yet');
-    build3d(box, data);
-    if (hideRoof) { $('#m3roof').checked = false; $('#m3roof').onchange({target: $('#m3roof')}); }
+    build3d(box, data, opt);
+    if (opt.hideRoof) { $('#m3roof').checked = false; $('#m3roof').onchange({target: $('#m3roof')}); }
   } catch (e) { $('#m3dmsg').textContent = 'Could not show the model: ' + e.message; }
 }
 function close3d() { const box = document.getElementById('m3d'); if (m3) { cancelAnimationFrame(m3.raf); m3.renderer.dispose(); m3 = null; } if (box) { box.className = ''; box.innerHTML = ''; } }
-function build3d(box, d) {
+function build3d(box, d, opt) {
+  opt = opt || {};
   const T = THREE, H = d.storey_height_m, scene = new T.Scene(), dark = matchMedia('(prefers-color-scheme: dark)').matches;
   scene.background = new T.Color(dark ? 0x14181f : 0xf3f5f8);
   scene.add(new T.AmbientLight(0xffffff, 0.75)); const sun = new T.DirectionalLight(0xffffff, 0.7); sun.position.set(20, 40, 15); scene.add(sun);
@@ -380,9 +382,10 @@ function build3d(box, d) {
   const renderer = new T.WebGLRenderer({antialias: true}); const cv = renderer.domElement; box.insertBefore(cv, null);
   const note = document.createElement('div'); note.className = 'note'; note.innerHTML = d.notes.map(esc).join(' '); box.appendChild(note);
   const camera = new T.PerspectiveCamera(45, 1, 0.1, 500); camera.position.set(cx + span * 0.9, span * 0.8 + top, cz + span * 1.2);
-  const controls = new T.OrbitControls(camera, cv); controls.target.set(cx, top * 0.5, cz); controls.autoRotate = true; controls.autoRotateSpeed = 1.2;
+  if (opt.az !== undefined) { const a = +opt.az * Math.PI / 180; camera.position.set(cx + Math.sin(a) * span * 1.5, span * 0.6 + top, cz + Math.cos(a) * span * 1.5); }
+  const controls = new T.OrbitControls(camera, cv); controls.target.set(cx, top * 0.5, cz); controls.autoRotate = opt.az === undefined; controls.autoRotateSpeed = 1.2;
   const bar = box.querySelector('.bar'); const ctl = document.createElement('span'); ctl.className = 'small';
-  ctl.innerHTML = `<label><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" checked> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
+  ctl.innerHTML = `<label><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" ${opt.az === undefined ? 'checked' : ''}> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
   bar.insertBefore(ctl, bar.querySelector('.spacer'));
   $('#m3roof').onchange = e => { roofGroup.visible = e.target.checked; }; $('#m3spin').onchange = e => { controls.autoRotate = e.target.checked; };
   box.querySelectorAll('.m3fl').forEach(el => el.onchange = e => { groups[+e.target.dataset.i].g.visible = e.target.checked; });
@@ -391,7 +394,7 @@ function build3d(box, d) {
   new ResizeObserver(fit).observe(box); fit();
   m3 = {renderer, raf: 0}; const loop = () => { controls.update(); renderer.render(scene, camera); m3 && (m3.raf = requestAnimationFrame(loop)); }; loop();
 }
-if (/^#3d-\d{8}-\d{6}(-noroof)?$/.test(location.hash)) open3d(location.hash.slice(4, 19), location.hash.endsWith('-noroof'));  // a link straight to the 3D view of a run
+if (/^#3d-\d{8}-\d{6}(-noroof)?(-az\d+)?$/.test(location.hash)) open3d(location.hash.slice(4, 19), {hideRoof: location.hash.includes('-noroof'), az: (location.hash.match(/-az(\d+)/) || [])[1]});  // a link straight to the 3D view of a run: -noroof hides the roof, -az<degrees> sets the viewing direction
 tick(); setInterval(tick, 2000); setInterval(showLog, 3000);
   setInterval(() => document.querySelectorAll('[data-since]').forEach(el => { const s = Math.max(0, Math.round(Date.now() / 1000 - Number(el.dataset.since))); el.textContent = '(' + (s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s') + ')'; }), 1000);
 </script>

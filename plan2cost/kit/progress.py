@@ -49,7 +49,16 @@ class Run:
 
     @classmethod
     def new(cls, floors: list, inputs: dict, objective: str = "Estimate the cost of this building from its floor plans.", quote: str | None = None) -> "Run":
-        return cls(id=time.strftime("%Y%m%d-%H%M%S"), objective=objective, floors=floors, inputs=inputs, quote=quote)
+        stamp = time.time()
+        RUNS_DIR.mkdir(parents=True, exist_ok=True)
+        while True:  # claim the folder at once, so two runs started in the same second do not share it
+            name = time.strftime("%Y%m%d-%H%M%S", time.localtime(stamp))
+            try:
+                (RUNS_DIR / name).mkdir()
+                break
+            except FileExistsError:
+                stamp += 1
+        return cls(id=name, objective=objective, floors=floors, inputs=inputs, quote=quote)
 
     @classmethod
     def load(cls, run_id: str) -> "Run":

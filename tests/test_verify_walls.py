@@ -71,3 +71,17 @@ def test_a_failed_model_call_skips_that_check_and_never_stops_the_run(monkeypatc
 
     monkeypatch.setattr(v, "_ask", lambda *a, **k: (_ for _ in ()).throw(ConnectionError("down")))
     assert verify_walls(m, BLANK, SCALE, path) is False
+
+
+def test_a_pair_of_light_lines_is_not_a_wall_but_a_pair_of_heavy_ones_is():
+    from plan2cost.facts.verify_walls import _bar
+
+    def drawing(weight):
+        img = np.full((300, 1000, 3), 255, np.uint8)
+        for y in (100, 123):  # two lines 230 mm apart at 0.1 px per mm
+            cv2.rectangle(img, (50, y), (950, y + weight - 1), (0, 0, 0), -1)
+        return img
+
+    assert _bar(drawing(5), SCALE, (0, 0, 10000, 3000), "h", min_face_px=3) is not None
+    assert _bar(drawing(1), SCALE, (0, 0, 10000, 3000), "h", min_face_px=3) is None  # a porch edge, a kerb or a dimension chain
+    assert _bar(drawing(1), SCALE, (0, 0, 10000, 3000), "h") is not None  # without the weight rule it would have been taken for a wall

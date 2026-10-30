@@ -112,9 +112,9 @@ def _runs(mask, min_len: int):
     return [(int(a), int(b)) for a, b in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)) if b - a >= min_len]
 
 
-def _bar(img, scale: float, box_mm: tuple, orient: str):
+def _bar(img, scale: float, box_mm: tuple, orient: str, min_face_px: int = 1):
     """The longest wall-like bar of the given orientation inside a box: (start, end, centre, thickness) in mm along and across, or None. A bar is either one solid
-    heavy band 120 to 350 mm thick, or two long face lines 100 to 350 mm apart (a cut wall with hatching or white between its faces). Lines are found from how much of
+    heavy band 120 to 350 mm thick, or two long face lines 100 to 350 mm apart (a cut wall with hatching or white between its faces). The face lines must be as heavy as the faces of the walls already measured (`min_face_px`): a pair of light lines, such as a porch edge, a kerb or a dimension chain, is not a wall. Lines are found from how much of
     each row of the picture (each column, for a vertical wall) is ink after joining gaps of up to 1.3 m, so a door gap does not split a wall."""
     h, w = img.shape[:2]
     x0, y0, x1, y1 = (int(max(v * scale, 0)) for v in box_mm)
@@ -141,7 +141,7 @@ def _bar(img, scale: float, box_mm: tuple, orient: str):
     for i, (s1, e1, c1, t1) in enumerate(lines):
         for s2, e2, c2, t2 in lines[i + 1:]:
             over = min(e1, e2) - max(s1, s2)
-            if t1 / scale < 120 and t2 / scale < 120 and 100 <= abs(c1 - c2) / scale <= 350 and over >= min_px:
+            if t1 / scale < 120 and t2 / scale < 120 and min(t1, t2) >= min_face_px and 100 <= abs(c1 - c2) / scale <= 350 and over >= min_px:
                 found.append((max(s1, s2), min(e1, e2), (c1 + c2) / 2, abs(c1 - c2) + (t1 + t2) / 2))
     if not found:
         return None
@@ -156,6 +156,29 @@ def _extent(model: DrawingModel) -> tuple:
     xs = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "h" else (w.centre_mm,))]
     ys = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "v" else (w.centre_mm,))]
     return min(xs), min(ys), max(xs), max(ys)
+
+
+def face_weight_px(model: DrawingModel, img, scale: float) -> int:
+    """How heavy the face lines of the walls already measured are, in pixels (the median thickness of the heavy line groups across a wall's band), so a candidate wall can be
+    required to be drawn as heavily. Returns 1 when it cannot be told."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+    dark = gray < 140
+    weights = []
+    for e in model.walls():
+        half = int(e.thickness_mm / 2 * scale + 2)
+        if e.orient == "h":
+            a, b = sorted((int(e.x0_mm * scale), int(e.x1_mm * scale)))
+            c = int(e.y0_mm * scale)
+            band = dark[max(c - half, 0):c + half + 1, max(a, 0):b + 1]
+        else:
+            a, b = sorted((int(e.y0_mm * scale), int(e.y1_mm * scale)))
+            c = int(e.x0_mm * scale)
+            band = dark[max(a, 0):b + 1, max(c - half, 0):c + half + 1].T
+        if band.size == 0 or band.shape[1] < 20:
+            continue
+        rows = band.mean(axis=1) >= 0.5
+        weights += [r1 - r0 for r0, r1 in _runs(rows, 1)]
+    return max(1, int(np.median(weights))) if weights else 1
 
 
 def _meets(model: DrawingModel, orient: str, centre: float, end: float, tol: float = 250) -> bool:
@@ -179,6 +202,7 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
     r = ask(MISSED, mimg)
     log: list[Issue] = []
     walls = [_wall(e) for e in model.walls()]
+    face_px = face_weight_px(model, img, scale)
     for m in (r.get("missed") or [])[:6]:
         try:
             bx0, by0, bx1, by1 = (float(v) for v in m["box"])
@@ -192,7 +216,7 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
         pad = 300
         ex0, ey0, ex1, ey1 = _extent(model)  # search along the whole building, so a wall the model marked in two pieces is found whole (a door gap does not split it)
         box = (ex0, ay - pad, ex1, by + pad) if orient == "h" else (ax - pad, ey0, bx + pad, ey1)
-        found = _bar(img, scale, box, orient)
+        found = _bar(img, scale, box, orient, max(1, int(face_px * 0.6)))
         what = m.get("what", "")
         if not found:
             log.append(Issue("missed_not_found", "info", f"The model saw a wall with no line ({what}) but no wall-like bar could be found there.", [], "Look at that place on the plan.", "model check"))
