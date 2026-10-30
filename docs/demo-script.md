@@ -21,7 +21,7 @@ Impact 30, Meta tooling 25, Demo 25, Technical depth 20. Bonuses: Open Weights, 
 | Viral bonus: post the demo on X and submit the link | Draft in section 5 | Submit the post link on the platform |
 
 ### Rights (read before recording)
-- **Drawing.** Use a plan you own or have written permission to show. Plan 10's title block carries a client's name: blur it, get permission, or use a different plan. The same goes for any drawing from past jobs.
+- **Drawing.** The demo uses plan 2 (two floors, 3.0 m, hip roof). Use it only if you own it or have written permission to show it, and make sure no title block or name from a client is visible; if one is, blur it. Plan 10's title block carries a client's name, so keep it out of the video.
 - **Rates.** Say they are the user's and editable. Do not show the bill PDFs they came from; show the app.
 - **Published numbers.** `data/rates.json`, `data/coefficients.json` and `data/materials_labour.json` hold numbers derived from bills and calculators the author supplied (they name the Owerri and Asaba bills and nigeriabuildingcost.ng as sources), and `eval/cases` holds numbers from the author's own workbooks. The bills, drawings and workbooks themselves are not in the repo. **Confirm you are allowed to publish the derived rates**, or say so in the README if they are the author's own practice.
 - **Books and standards** (BESMM4, the nigeriabuildingcost calculators): do not show pages or screens of them. The README names them as sources of the numbers.
@@ -57,6 +57,8 @@ Record the screen at 1080p, one take per scene, and cut the waiting. Times are t
 > "Built this week with Muse Spark, Muse Spark Open, Muse Voice Transcribe and Muse Image. It is a budget estimate, not a bill for tender, and it says so." *(about 30 words)*
 
 ## 3. What to prepare before recording
+0. **The demo run (plan 2), checked end to end through the console path** (upload, start, progress, files): run `20261030-120925` took 335 s and made the priced bill and the materials-and-labour bill (Excel and PDF), the 3D view and the estimate of about 84.8M naira (range 73.0M to 108.8M, 41% estimated). Make your own on the day with the same inputs.
+   - **The quote for the audit scene:** `python -m eval.make_demo_quote <run id> workspace/demo_quote.pdf` builds a synthetic quote from the run's own bill with six errors planted (a rate 25% over, a quantity 20% over, a line total that does not multiply, one item charged twice, the roof covering left out, and a total 150,000 too high). The audit on that run found all six; show two of them. The quote says on its page that it is synthetic; say so in the video too.
 1. `git pull`, run `python -m pytest -q` (all pass), restart the console: `pkill -f ui/server.py; python ui/server.py`. A stale server broke the 3D view once.
 2. Start the run for the demo plan **in advance** and keep the finished run: a live read takes about 3.5 minutes (one floor) to 5 minutes (two). Film the start, speed up the wait, and show the finished run. Say "sped up" on screen if you cut time.
 3. Make one picture from the 3D view beforehand and keep a second try, since the image model takes 30 to 60 seconds and can differ between tries.
