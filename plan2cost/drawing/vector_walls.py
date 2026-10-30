@@ -156,14 +156,14 @@ def bar_walls(lines: list[Line], mm_per_unit: float, min_weight: float = 0.0, pa
 def class_network(lines: list[Line], weight: float, mm_per_pt: float, bridge_mm: float = 3600, primitive: str = "pair", dominant_bar: float | None = None) -> tuple[list[Wall], dict]:
     """The wall network one line weight would make: pair its lines, merge into runs, keep the biggest connected group, and report how
     building-like it is (length, joints between perpendicular runs)."""
-    from plan2cost.drawing.walls_cv import _merge, junctions
+    from plan2cost.drawing.walls_cv import merge_runs, junctions
 
     cls = [l for l in bridge_lines([l for l in lines if round(l.w, 2) >= weight - 1e-6], mm_per_pt, bridge_mm) if l.length * mm_per_pt >= 600]
     if len(cls) < 4 and primitive == "pair":
         return [], {"length_m": 0.0, "joints": 0}
     pairs = to_walls(drop_centreline_halves(pair_walls(cls, mm_per_pt, min_run_mm=600)), mm_per_pt) if primitive == "pair" else []
     base = pairs + (bar_walls(lines, mm_per_pt, weight, pairs, dominant_bar) if primitive == "bar" else [])
-    walls = largest_cluster([m for n in sorted({b.thickness_mm for b in base}) for m in _merge([b for b in base if b.thickness_mm == n], bridge_mm=bridge_mm)])
+    walls = largest_cluster([m for n in sorted({b.thickness_mm for b in base}) for m in merge_runs([b for b in base if b.thickness_mm == n], bridge_mm=bridge_mm)])
     return walls, {"length_m": round(sum(w.length_mm for w in walls) / 1000, 1), "joints": junctions(walls)}
 
 
@@ -215,11 +215,11 @@ def find_walls_vector(lines: list[Line], mm_per_pt: float, bridge_mm: float = 36
     bridged = bridge_lines([l for l in lines if round(l.w, 2) >= w - 1e-6], mm_per_pt, bridge_mm)  # a corner stub next to a window joins its wall first
     heavy = [l for l in bridged if l.length * mm_per_pt >= 600]  # then a face line is long; hatch and fixture strokes are not
     pieces = drop_centreline_halves(pair_walls(heavy, mm_per_pt, min_run_mm=350)) if primitive == "pair" else []
-    from plan2cost.drawing.walls_cv import _merge
+    from plan2cost.drawing.walls_cv import merge_runs
 
     pairs = to_walls(pieces, mm_per_pt)
     base = pairs + (bar_walls(lines, mm_per_pt, w, pairs, dominant_bar) if primitive == "bar" else [])
-    walls = extend_to_centrelines([m for n in sorted({b.thickness_mm for b in base}) for m in _merge([b for b in base if b.thickness_mm == n], bridge_mm=bridge_mm)])
+    walls = extend_to_centrelines([m for n in sorted({b.thickness_mm for b in base}) for m in merge_runs([b for b in base if b.thickness_mm == n], bridge_mm=bridge_mm)])
     walls = largest_cluster(walls)
     return walls, {"wall_weight": w, "pieces": len(pieces), "networks": nets}
 

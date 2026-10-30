@@ -55,17 +55,16 @@ def apply_space_context(model: DrawingModel, rooms: list, img, scale: float) -> 
         for i, s in drop.items():
             log.append(Issue("wall_removed_open_space", "info", f"{i} removed: an external wall cannot cross the {s['name']}, which is open air.", [i], "", "space names"))
         refresh(model)
-        _recompute_external(model, img.shape[:2], scale)
+        recompute_external(model, img.shape[:2], scale)
     return log
 
 
-def _recompute_external(model: DrawingModel, shape: tuple, scale: float) -> None:
-    from plan2cost.drawing.qc import _wall
-    from plan2cost.drawing.model import compute_totals
+def recompute_external(model: DrawingModel, shape: tuple, scale: float) -> None:
+    from plan2cost.drawing.model import compute_totals, wall_of
     from plan2cost.drawing.walls_cv import building_size_m, external_fractions
 
     els = model.walls()
-    walls = [_wall(e) for e in els]
+    walls = [wall_of(e) for e in els]
     for e, f in zip(els, external_fractions(walls, shape, 1 / scale)):
         e.external_share, e.subtype = round(float(f), 2), "external" if f >= 0.5 else "internal"
     model.totals = compute_totals(els, building_size_m(walls))

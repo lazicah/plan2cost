@@ -116,10 +116,10 @@ def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, in
             nominal = _nominal(width * mm_per_px * 1.15, windows)  # a drawn band is a little narrower than the wall it stands for
             if nominal and width >= lo_px:
                 pieces.append(Wall(orient, across * mm_per_px, s1 * mm_per_px, e1 * mm_per_px, float(nominal)))
-    return _merge(pieces, bridge_mm)
+    return merge_runs(pieces, bridge_mm)
 
 
-def _merge(pieces: list[Wall], bridge_mm: float, tol_mm: float = 60) -> list[Wall]:
+def merge_runs(pieces: list[Wall], bridge_mm: float, tol_mm: float = 60) -> list[Wall]:
     """Collinear pieces (same orientation, centre lines within `tol_mm`) are one run when the gap between them is an opening. Centre
     lines are clustered by distance, not by rounding, so a tiny shift in scale cannot split a wall in two."""
     merged: list[Wall] = []

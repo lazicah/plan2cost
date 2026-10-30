@@ -10,8 +10,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from plan2cost.drawing.model import DrawingModel, Element, Issue, refresh
-from plan2cost.drawing.qc import _joints, _wall
+from plan2cost.drawing.model import DrawingModel, Element, Issue, refresh, wall_of
+from plan2cost.drawing.qc import joints
 
 MAGENTA, CYAN = (255, 0, 255), (255, 200, 0)  # BGR
 
@@ -48,15 +48,11 @@ def _crop(img, scale: float, box_mm: tuple, draw: list, min_side: int = 700, max
     return cv2.resize(out, None, fx=k, fy=k, interpolation=cv2.INTER_AREA if k < 1 else cv2.INTER_CUBIC)
 
 
-def _log(model: DrawingModel, code: str, message: str, ids: list) -> None:
-    model.issues.append(Issue(code, "info", message, ids, "", "model check"))
-
-
 def trim_overshoots(model: DrawingModel, img, scale: float, ask=_ask) -> list[Issue]:
     """Runs that go more than 0.6 m past the last joint of the building: ask whether the stretch is on a wall, trim it back if not."""
     els = model.walls()
-    walls = [_wall(e) for e in els]
-    pts = _joints(walls)
+    walls = [wall_of(e) for e in els]
+    pts = joints(walls)
     if len(pts) < 4:
         return []
     x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
@@ -96,8 +92,8 @@ def merge_duplicates(model: DrawingModel) -> list[Issue]:
         a, b = (byid.get(i) for i in issue.elements[:2])
         if not a or not b:
             continue
-        short, long_ = (a, b) if _wall(a).length_mm <= _wall(b).length_mm else (b, a)
-        ws, wl = _wall(short), _wall(long_)
+        short, long_ = (a, b) if wall_of(a).length_mm <= wall_of(b).length_mm else (b, a)
+        ws, wl = wall_of(short), wall_of(long_)
         if min(ws.end_mm, wl.end_mm) - max(ws.start_mm, wl.start_mm) < 0.9 * ws.length_mm:
             continue
         byid.pop(short.id)
@@ -152,7 +148,7 @@ def _bar(img, scale: float, box_mm: tuple, orient: str, min_face_px: int = 1):
 
 def _extent(model: DrawingModel) -> tuple:
     """The box the measured walls span, in mm."""
-    ws = [_wall(e) for e in model.walls()]
+    ws = [wall_of(e) for e in model.walls()]
     xs = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "h" else (w.centre_mm,))]
     ys = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "v" else (w.centre_mm,))]
     return min(xs), min(ys), max(xs), max(ys)
@@ -186,7 +182,7 @@ def _meets(model: DrawingModel, orient: str, centre: float, end: float, tol: flo
     for e in model.walls():
         if e.orient == orient:
             continue
-        v = _wall(e)
+        v = wall_of(e)
         if abs(v.centre_mm - end) <= v.thickness_mm / 2 + tol and v.start_mm - tol <= centre <= v.end_mm + tol:
             return True
     return False
@@ -201,7 +197,7 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
     mh, mw = mimg.shape[:2]
     r = ask(MISSED, mimg)
     log: list[Issue] = []
-    walls = [_wall(e) for e in model.walls()]
+    walls = [wall_of(e) for e in model.walls()]
     face_px = face_weight_px(model, img, scale)
     for m in (r.get("missed") or [])[:6]:
         try:
@@ -234,7 +230,7 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
         new = Element(f"W-{n:03d}", "wall", "internal", model.page, model.floor, orient, round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1), round((end - start) / 1000, 3), float(thickness),
                       evidence="geometrically measured", confidence="low", notes=["added after the model saw a wall with no line here; found by code and joined to walls at both ends"])
         model.elements.append(new)
-        walls.append(_wall(new))
+        walls.append(wall_of(new))
         log.append(Issue("added", "info", f"{new.id} added ({(end - start) / 1000:.1f} m internal): the model saw a wall here ({what}) and code found it joining walls at both ends.", [new.id], "", "model check"))
     return log
 
@@ -246,7 +242,7 @@ def _reach_wall(model: DrawingModel, orient: str, centre: float, end: float, sig
     for e in model.walls():
         if e.orient == orient:
             continue
-        v = _wall(e)
+        v = wall_of(e)
         if not (v.start_mm - tol <= centre <= v.end_mm + tol):
             continue
         face = v.centre_mm - sign * v.thickness_mm / 2
@@ -280,7 +276,7 @@ def add_walls_at_tags(model: DrawingModel, unplaced: list, img, scale: float) ->
         if not best:
             continue
         lo, hi, centre, thick, orient = best
-        walls = [_wall(e) for e in model.walls()]
+        walls = [wall_of(e) for e in model.walls()]
         if any(w.orient == orient and abs(w.centre_mm - centre) <= max(w.thickness_mm, thick) and min(w.end_mm, hi) - max(w.start_mm, lo) > 0.5 * (hi - lo) for w in walls):
             continue
         t = float(np.median([e.thickness_mm for e in model.walls()])) if model.walls() else thick

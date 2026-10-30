@@ -1,16 +1,12 @@
 """Quality checks on a drawing model. Each check looks for one way the interpretation can be wrong and says what a person should look at; none of
 them changes a measurement. A result with open warnings is reported as such, never tidied into a clean total."""
-from plan2cost.drawing.model import DrawingModel, Element, Issue
+from plan2cost.drawing.model import DrawingModel, Issue, wall_of
 from plan2cost.drawing.walls_cv import Wall
 
 STANDARD_MM = (100, 150, 200, 225, 230, 300)
 
 
-def _wall(e: Element) -> Wall:
-    return Wall(e.orient, e.y0_mm if e.orient == "h" else e.x0_mm, e.x0_mm if e.orient == "h" else e.y0_mm, e.x1_mm if e.orient == "h" else e.y1_mm, e.thickness_mm)
-
-
-def _joints(walls: list[Wall], tol_mm: float = 150) -> list[tuple[float, float]]:
+def joints(walls: list[Wall], tol_mm: float = 150) -> list[tuple[float, float]]:
     from plan2cost.drawing.model import touching
 
     pts = []
@@ -29,7 +25,7 @@ def check_double_counting(model: DrawingModel) -> list[Issue]:
         for b in els[i + 1:]:
             if a.orient != b.orient:
                 continue
-            wa, wb = _wall(a), _wall(b)
+            wa, wb = wall_of(a), wall_of(b)
             if abs(wa.centre_mm - wb.centre_mm) > 1.05 * max(a.thickness_mm, b.thickness_mm):  # centre lines closer than a wall thickness: the faces would overlap, so it is one wall
                 continue
             over = min(wa.end_mm, wb.end_mm) - max(wa.start_mm, wb.start_mm)
@@ -43,8 +39,8 @@ def check_double_counting(model: DrawingModel) -> list[Issue]:
 def check_dangling(model: DrawingModel) -> list[Issue]:
     """A run that extends well beyond the last joint of the building is usually a grid, extension or dimension line merged into a wall."""
     els = model.walls()
-    walls = [_wall(e) for e in els]
-    pts = _joints(walls)
+    walls = [wall_of(e) for e in els]
+    pts = joints(walls)
     if len(pts) < 4:
         return []
     x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
@@ -59,19 +55,19 @@ def check_dangling(model: DrawingModel) -> list[Issue]:
     return out
 
 
-def _end_meets_wall(w: Wall, end: float, walls: list[Wall], tol_mm: float = 150) -> bool:
+def end_meets_wall(w: Wall, end: float, walls: list[Wall], tol_mm: float = 150) -> bool:
     """Does the end of run `w` (at position `end` along it) land on a perpendicular run?"""
     return any(v.orient != w.orient and abs(v.centre_mm - end) <= v.thickness_mm / 2 + tol_mm and v.start_mm - tol_mm <= w.centre_mm <= v.end_mm + tol_mm for v in walls)
 
 
 def check_free_ends(model: DrawingModel) -> list[Issue]:
     """In a building most wall ends meet another wall. Many ends meeting nothing means walls were missed or split."""
-    walls = [_wall(e) for e in model.walls()]
+    walls = [wall_of(e) for e in model.walls()]
     free = total = 0
     for w in walls:
         for end in (w.start_mm, w.end_mm):
             total += 1
-            free += not _end_meets_wall(w, end, walls)
+            free += not end_meets_wall(w, end, walls)
     if total >= 8 and free / total > 0.45:
         return [Issue("free_ends", "warn", f"{free} of {total} wall ends meet no other wall; walls may have been missed or split by openings.", [],
                       "Compare the plan against the markup for missing walls, especially short partitions.")]
@@ -80,8 +76,8 @@ def check_free_ends(model: DrawingModel) -> list[Issue]:
 
 def check_extents(model: DrawingModel, printed_mm: list) -> list[Issue]:
     """The building the walls make should be as large as the overall dimensions printed on the sheet, on both axes."""
-    walls = [_wall(e) for e in model.walls()]
-    pts = _joints(walls)
+    walls = [wall_of(e) for e in model.walls()]
+    pts = joints(walls)
     if len(pts) < 4:
         return [Issue("extents", "warn", "Too few joints to measure the building's size, so it could not be checked against the printed overall dimensions.", [], "Confirm the building size.")]
     vals = [v / 1000 for v in printed_mm if v >= 3000]
@@ -119,8 +115,8 @@ def check_scale(model: DrawingModel) -> list[Issue]:
 def check_convention(model: DrawingModel) -> list[Issue]:
     """External girth here is the walls with the outdoors on one side. Many surveyors take the building outline instead, which leaves out recesses,
     porches and terraces; when the two differ a person has to say which parts count."""
-    walls = [_wall(e) for e in model.walls()]
-    pts = _joints(walls)
+    walls = [wall_of(e) for e in model.walls()]
+    pts = joints(walls)
     if len(pts) < 4:
         return []
     lx, ly = (max(p[0] for p in pts) - min(p[0] for p in pts)) / 1000, (max(p[1] for p in pts) - min(p[1] for p in pts)) / 1000

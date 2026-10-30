@@ -52,6 +52,11 @@ class Element:
     width_mm: float = 0.0  # measured from the drawing, for an opening
 
 
+def wall_of(e: Element) -> Wall:
+    """A wall element as the plain `Wall` run the geometry code works with: its centre line across (y for a horizontal run, x for a vertical one), start and end along it, and thickness."""
+    return Wall(e.orient, e.y0_mm if e.orient == "h" else e.x0_mm, e.x0_mm if e.orient == "h" else e.y0_mm, e.x1_mm if e.orient == "h" else e.y1_mm, e.thickness_mm)
+
+
 @dataclass
 class Issue:
     code: str
@@ -171,10 +176,10 @@ def compute_totals(elements: list, size: tuple) -> dict:
 
 def refresh(model: DrawingModel) -> None:
     """After walls were trimmed, removed or added: the joints, totals and code checks again from the walls as they now are."""
-    from plan2cost.drawing.qc import _wall, run_checks
+    from plan2cost.drawing.qc import run_checks
 
     els = model.walls()
-    walls = [_wall(e) for e in els]
+    walls = [wall_of(e) for e in els]
     for e, w in zip(els, walls):
         e.connected = sorted(o.id for o, v in zip(els, walls) if o is not e and touching(w, v))
         e.length_m = round(w.length_mm / 1000, 3)

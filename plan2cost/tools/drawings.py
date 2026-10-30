@@ -111,14 +111,14 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
         locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)
         if model.unplaced_tags:  # tags with no opening near them: a wall drawn with light lines may stand there; if one is found, the openings are looked for again with it in place
             from plan2cost.drawing.model import refresh
-            from plan2cost.facts.spaces import _recompute_external
+            from plan2cost.facts.spaces import recompute_external
             from plan2cost.facts.verify_walls import add_walls_at_tags
 
             added = add_walls_at_tags(model, model.unplaced_tags, img, scale)
             if added:
                 model.elements = [e for e in model.elements if e.category == "wall"]
                 refresh(model)
-                _recompute_external(model, img.shape[:2], scale)
+                recompute_external(model, img.shape[:2], scale)
                 model.issues += added
                 before = len(model.issues)
                 locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)

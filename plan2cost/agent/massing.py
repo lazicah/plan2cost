@@ -1,10 +1,9 @@
 """Data for the 3D massing view: the walls and openings of the drawing models, lined up floor on floor, with the storey height, roof type, pitch and overhang. The view is
 illustrative, built from the same models the bill is measured from so the two cannot disagree. It is never a source of quantities: door and window heights are standard
 sizes, the sill height is assumed, and the roof is a plain shape of the chosen type over the walls' outline."""
-from plan2cost.drawing.model import DrawingModel
+from plan2cost.drawing.model import DrawingModel, wall_of
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff import coefficients as C
-from plan2cost.drawing.qc import _wall
 from plan2cost.drawing.walls_cv import outline_polygon_mm
 from plan2cost.takeoff.rough import pitch_range
 
@@ -29,7 +28,7 @@ def massing_from(models: list[DrawingModel], inputs: dict) -> dict:
         x0, y0, _, _ = _bounds(m)
         dx, dy = (gx - x0) / 1000, (gy - y0) / 1000
         f = lambda e: {"x0": e.x0_mm / 1000 + dx, "y0": e.y0_mm / 1000 + dy, "x1": e.x1_mm / 1000 + dx, "y1": e.y1_mm / 1000 + dy}
-        poly = outline_polygon_mm([_wall(e) for e in m.walls()])
+        poly = outline_polygon_mm([wall_of(e) for e in m.walls()])
         if not poly:  # the walls do not close a building: a slab over the rectangle that holds them
             x0_, y0_, x1_, y1_ = _bounds(m)
             poly = [(x0_, y0_), (x1_, y0_), (x1_, y1_), (x0_, y1_)]

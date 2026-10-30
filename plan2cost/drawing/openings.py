@@ -78,14 +78,15 @@ def end_gap_candidates(model: DrawingModel, have: list, reach_mm: float = 2400, 
     """A door is often a gap between the end of a wall and the wall it would meet (or the next wall on the same line), not a gap inside one run. For each wall end that
     meets nothing, the stretch from that end to the nearest wall ahead of it (450 to 2400 mm of clear space) is a candidate. Most will not be openings (a partition that
     simply stops), so the model decides from a crop; stretches that overlap a gap already found are left out."""
-    from plan2cost.drawing.qc import _end_meets_wall, _wall
+    from plan2cost.drawing.model import wall_of
+    from plan2cost.drawing.qc import end_meets_wall
 
     els = model.walls()
-    walls = [_wall(e) for e in els]
+    walls = [wall_of(e) for e in els]
     out: list[dict] = []
     for e, w in zip(els, walls):
         for sign, end in ((1, w.end_mm), (-1, w.start_mm)):
-            if _end_meets_wall(w, end, walls, tol_mm):
+            if end_meets_wall(w, end, walls, tol_mm):
                 continue
             best = None
             for o, v in zip(els, walls):
