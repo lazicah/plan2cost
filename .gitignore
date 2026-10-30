@@ -7,3 +7,6 @@ reference/
 workspace/
 .DS_Store
 docs/transcripts/
+# private working notes: the demo checklist, and rule-book notes not read by the code
+docs/demo-script.md
+docs/notes/
