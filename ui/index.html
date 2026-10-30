@@ -308,9 +308,10 @@ function loadThree() {
   threeReady = threeReady || loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js').then(() => loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'));
   return threeReady;
 }
-let m3 = null;
+let m3 = null, m3run = '';
 async function open3d(id, opt) {
   opt = opt || {};
+  m3run = id;
   let box = document.getElementById('m3d');
   if (!box) { box = document.createElement('div'); box.id = 'm3d'; document.body.appendChild(box); }
   box.className = 'on'; box.innerHTML = '<div class="bar"><b>3D model</b><span class="small mute" id="m3dmsg">Loading…</span><span class="spacer" style="flex:1"></span><button id="m3dclose" style="background:var(--card);color:var(--accent);border-color:var(--accent)">Close</button></div>';
@@ -385,8 +386,20 @@ function build3d(box, d, opt) {
   if (opt.az !== undefined) { const a = +opt.az * Math.PI / 180; camera.position.set(cx + Math.sin(a) * span * 1.5, span * 0.6 + top, cz + Math.cos(a) * span * 1.5); }
   const controls = new T.OrbitControls(camera, cv); controls.target.set(cx, top * 0.5, cz); controls.autoRotate = opt.az === undefined; controls.autoRotateSpeed = 1.2;
   const bar = box.querySelector('.bar'); const ctl = document.createElement('span'); ctl.className = 'small';
-  ctl.innerHTML = `<label><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" ${opt.az === undefined ? 'checked' : ''}> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
+  ctl.innerHTML = `<button id="m3render" type="button">Make a realistic picture of this view</button> <label style="margin-left:10px"><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" ${opt.az === undefined ? 'checked' : ''}> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
   bar.insertBefore(ctl, bar.querySelector('.spacer'));
+  $('#m3render').onclick = async () => {
+    const b = $('#m3render'), msg = $('#m3dmsg'); b.disabled = true; const spin = $('#m3spin'); controls.autoRotate = false; if (spin) spin.checked = false;
+    msg.textContent = 'Making the picture with Muse Image: about 30 seconds…';
+    try {
+      renderer.render(scene, camera); const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+      const r = await fetch(`/api/runs/${m3run}/render`, {method: 'POST', body: png}), j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'failed');
+      const ov = document.createElement('div'); ov.style.cssText = 'position:absolute;inset:60px 0 34px 0;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;overflow:auto;z-index:5';
+      ov.innerHTML = `<img src="${j.url}" alt="a realistic picture of the house" style="max-width:100%;max-height:calc(100% - 60px);border-radius:8px;border:1px solid var(--line)"><div class="small mute" style="max-width:820px;text-align:center">An illustration made by Muse Image from this view. The finishes, proportions and the exact positions of windows are the model's interpretation: it is not to scale, and the bill comes from the measured plans, not from this picture.</div><div><a class="dl" href="${j.url}" download="house.webp">Save the picture</a> <button id="m3back" style="background:var(--card);color:var(--accent);border-color:var(--accent)">Back to the 3D model</button></div>`;
+      box.appendChild(ov); $('#m3back').onclick = () => ov.remove(); msg.textContent = 'Illustration made.';
+    } catch (e) { msg.textContent = 'Could not make the picture: ' + e.message; } finally { b.disabled = false; }
+  };
   $('#m3roof').onchange = e => { roofGroup.visible = e.target.checked; }; $('#m3spin').onchange = e => { controls.autoRotate = e.target.checked; };
   box.querySelectorAll('.m3fl').forEach(el => el.onchange = e => { groups[+e.target.dataset.i].g.visible = e.target.checked; });
   $('#m3dmsg').textContent = `${d.floors.length} floor${d.floors.length > 1 ? 's' : ''}, ${esc(r.type)} roof at ${r.pitch_deg}°`;

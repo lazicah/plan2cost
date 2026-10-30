@@ -65,6 +65,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(f.read_bytes())
             else:
                 self._json(404, {"error": "no such file"})
+        elif re.match(r"^/api/runs/\d{8}-\d{6}/renders/render_\d+\.webp$", self.path):  # the illustrations Muse Image made from the 3D view
+            f = progress.RUNS_DIR / self.path.split("/")[3] / "renders" / self.path.split("/")[5]
+            self._send(200, f.read_bytes(), "image/webp") if f.is_file() else self._json(404, {"error": "no such file"})
         elif re.match(r"^/api/runs/\d{8}-\d{6}/pages/p\d+\.jpg$", self.path):  # page thumbnails
             f = progress.RUNS_DIR / self.path.split("/")[3] / "pages" / self.path.split("/")[5]
             self._send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self._json(404, {"error": "no such file"})
@@ -106,9 +109,27 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, RuntimeError, KeyError) as e:
             self._json(400, {"error": str(e)})
 
+    def _render(self) -> None:
+        """A PNG screenshot of the 3D view in; the realistic illustration Muse Image makes from it out."""
+        from plan2cost.agent.render import render_view
+
+        run_id = self.path.split("/")[3]
+        png = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        if png[:8] != b"\x89PNG\r\n\x1a\n" or len(png) > 12 * 1024 * 1024:
+            return self._json(400, {"error": "send the 3D view as a PNG picture"})
+        try:
+            rel = render_view(Run.load(run_id), png)
+            self._json(200, {"url": f"/api/runs/{run_id}/{rel}"})
+        except OSError:
+            self._json(404, {"error": "no such run"})
+        except Exception as e:  # a content-safety block, a busy backend, a lost connection: say so, the 3D view is unaffected
+            self._json(502, {"error": f"the picture could not be made ({type(e).__name__}: {str(e)[:160]})"})
+
     def do_POST(self) -> None:
         if self.path.startswith("/api/upload?name="):
             return self._upload()
+        if self.path.startswith("/api/runs/") and self.path.endswith("/render") and view.RUN_ID.match(self.path.split("/")[3]):
+            return self._render()
         if self.path == "/api/voice":
             return self._voice()
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
