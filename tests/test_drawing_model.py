@@ -81,3 +81,17 @@ def test_the_model_review_only_adds_issues_and_ignores_ids_it_does_not_know(monk
     assert {i.code for i in issues} == {"review_missed", "review_not_wall", "review_duplicate", "review_side"}
     assert all(i.source == "model review" for i in issues) and all(i.elements == [] or all(e in {x.id for x in m.elements} for e in i.elements) for i in issues)
     assert (m.totals["total_m"], len(m.elements)) == before  # a review never changes a measurement
+
+def test_a_saved_model_with_fields_this_version_does_not_know_still_loads(tmp_path):
+    import json
+
+    from plan2cost.drawing.model import DrawingModel
+
+    m = build_model(result_for(box_walls()), "ground", 1)
+    path = tmp_path / "m.json"
+    m.save(path)
+    d = json.loads(path.read_text())
+    d["from_the_future"] = 1
+    d["elements"][0]["also_new"] = "x"
+    path.write_text(json.dumps(d))
+    assert len(DrawingModel.load(path).walls()) == len(m.walls())

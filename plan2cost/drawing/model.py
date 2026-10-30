@@ -97,8 +97,9 @@ class DrawingModel:
     @classmethod
     def load(cls, path: str | Path) -> "DrawingModel":
         d = json.loads(Path(path).read_text())
-        return cls(**{**d, "calibrations": [Calibration(**c) for c in d["calibrations"]], "elements": [Element(**e) for e in d["elements"]],
-                      "issues": [Issue(**i) for i in d["issues"]]})
+        keep = lambda klass, row: {k: v for k, v in row.items() if k in klass.__dataclass_fields__}  # a model saved by a newer or older version still loads
+        return cls(**{**keep(cls, d), "calibrations": [Calibration(**keep(Calibration, c)) for c in d["calibrations"]], "elements": [Element(**keep(Element, e)) for e in d["elements"]],
+                      "issues": [Issue(**keep(Issue, i)) for i in d["issues"]]})
 
 
 def touching(a: Wall, b: Wall, tol_mm: float = 150) -> bool:
