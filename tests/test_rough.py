@@ -54,9 +54,18 @@ def test_a_pitch_entered_by_the_user_removes_the_pitch_range():
     assert spread(fixed["roof_covering_m2"]) < spread(free["roof_covering_m2"]) and fixed["roof_covering_m2"].qty_low == fixed["roof_covering_m2"].qty_high
 
 
-def test_a_single_storey_building_gets_a_ring_beam_and_no_slab_or_stairs():
-    by, _, _, _ = run_estimate([ground()])
-    assert "suspended_slab_concrete_m3" not in by and "staircase_concrete_m3" not in by and "frame_beams_concrete_m3" in by
+def test_a_single_storey_building_has_no_beams_columns_slab_or_stairs_only_strip_foundation_and_lintels():
+    by, ass, _, _ = run_estimate([ground()])
+    assert not {"suspended_slab_concrete_m3", "staircase_concrete_m3", "frame_beams_concrete_m3", "frame_columns_concrete_m3", "frame_steel_t"} & set(by)
+    assert "strip_footing_concrete_m3" in by and "column_base_concrete_m3" not in by and any(a["name"] == "frame_single_storey" for a in ass)
+
+
+def test_lintels_are_concrete_formwork_and_steel_by_length_not_pieces():
+    by, ass, _, _ = run_estimate([ground()])
+    assert not [k for k in by if k.endswith("_nr") and k.startswith("lintel")]
+    assert {"lintel_concrete_m3", "lintel_formwork_m2", "lintel_steel_kg"} <= set(by)
+    assert by["lintel_steel_kg"].basis == "estimated" and by["lintel_concrete_m3"].rate == 153950 and by["lintel_steel_kg"].rate == 1699.13  # 1,699,135 a tonne
+    assert any(a["name"] == "lintel_bearing_mm" for a in ass)
 
 
 def test_wet_rooms_set_the_sanitary_fittings_and_openings_are_priced_from_their_size():
@@ -73,7 +82,7 @@ def test_no_column_base_lines_appear_when_the_plans_cannot_show_column_bases():
 def test_openings_the_plan_reader_missed_are_added_as_estimated_lines_and_flagged():
     sparse = FloorData("ground", 80.0, 80.0, 39, 10.4, 17.2, 25.0, [Opening("W1200", 1.2, 1.2, 2, "window", True, True)], [])
     by, ass, _, _ = run_estimate([sparse, first()])
-    assert by["windows_estimated_nr"].basis == "estimated" and by["windows_estimated_nr"].qty > 20 and "lintels_estimated_nr" in by
+    assert by["windows_estimated_nr"].basis == "estimated" and by["windows_estimated_nr"].qty > 20 and "lintel_concrete_m3" in by and by["lintel_concrete_m3"].basis == "estimated"  # the lintels over estimated openings are in the lintel lines
     assert any(a["name"] == "windows_estimated" for a in ass)
     by, ass, _, _ = run_estimate([ground(), first()])  # 12 windows and 11 doors found on 329 m2: not enough either, but the full set below is
     full = FloorData("ground", 80.0, 80.0, 39, 10.4, 17.2, 25.0, [Opening("W1200", 1.2, 1.2, 20, "window", True, True), Opening("D900", 0.9, 2.1, 10, "door", False, True)], [])

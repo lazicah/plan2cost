@@ -146,7 +146,7 @@ def price_boq(items: list[BoqItem], rates: dict) -> dict:
     unpriced = []
     codes = json.loads(Path("data/besmm_codes.json").read_text())["codes"]
     for i in items:
-        i.besmm = codes.get(i.key, "") or (codes["lintel_nr"] if i.key.startswith("lintel_") else "")
+        i.besmm = codes.get(i.key, "") or (codes["lintel_nr"] if i.key.startswith("lintel_") and i.unit == "nr" else "")
         r = rates["rates"].get(i.key) or i.rate  # a rate set by the take-off (a window by its area) stands when the table has none for the key
         if r:
             i.rate, i.amount = r, round(i.qty * r, 2)

@@ -1,5 +1,5 @@
 from plan2cost.facts.rooms import to_rooms
-from plan2cost.takeoff.finishes import deductible, external_finish_area, lintel_items
+from plan2cost.takeoff.finishes import deductible, external_finish_area, lintel_items, lintel_length_m
 from plan2cost.takeoff.walls import Opening
 
 TEXT = "KITCHEN 4500 4038 BEDROOM 3850 3600 PORCH 900 2750 STORE 1275"
@@ -24,8 +24,11 @@ def test_only_a_void_over_one_square_metre_comes_off_a_finish():
     assert external_finish_area(100, ops) == 97  # the two 1.8 m2 windows come off, the seven small ones and the internal doors do not
 
 
-def test_lintels_are_one_per_opening_and_wait_for_the_bearing():
-    ops = [Opening("W2", 1.2, 1.5, 2), Opening("W2", 1.2, 1.5, 1, "window", False)]
-    assert lintel_items(ops, None)[1]
-    items, ask = lintel_items(ops, 225)
-    assert not ask and items[0].qty == 3 and "1650mm long" in items[0].description
+def test_lintels_are_concrete_formwork_and_steel_over_each_opening_plus_its_bearing():
+    ops = [Opening("W2", 1.2, 1.5, 2), Opening("D2", 0.9, 2.1, 1, "door", False)]
+    length = lintel_length_m(ops, 225)
+    assert abs(length - (2 * (1.2 + 0.45) + (0.9 + 0.45))) < 1e-9  # 4.65 m
+    items = {i.key: i for i in lintel_items((length,) * 3, length, 0.23, 225, (120, 157, 195), 225)}
+    assert items["lintel_concrete_m3"].qty == 1 and items["lintel_concrete_m3"].basis == "measured"  # 4.65 x 0.23 x 0.225 = 0.24 m3, whole units
+    assert items["lintel_formwork_m2"].qty == 4 and items["lintel_steel_kg"].basis == "estimated" and items["lintel_steel_kg"].qty_low <= items["lintel_steel_kg"].qty <= items["lintel_steel_kg"].qty_high
+    assert lintel_items((0, 0, 0), 0, 0.23, 225, (120, 157, 195), 225) == []

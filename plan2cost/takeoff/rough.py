@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from plan2cost.takeoff import coefficients as C
 from plan2cost.takeoff.boq import (BoqItem, foundation_boq, foundation_extras, strip_inputs, substructure_extras, superstructure_boq)
 from plan2cost.takeoff.sections import order
-from plan2cost.takeoff.finishes import deductible, lintel_items, whole
+from plan2cost.takeoff.finishes import deductible, lintel_items, lintel_length_m, whole
 from plan2cost.takeoff.foundation import GridLine, foundation_takeoff
 from plan2cost.takeoff.walls import Opening
 
@@ -105,21 +105,19 @@ def frame_items(floors: list[FloorData]) -> tuple[list[BoqItem], dict]:
                  _est("staircase_concrete_m3", "Reinforced in situ concrete (1:2:4); sloping work in staircases", "m3", stairs, ["plans_staircase_concrete_m3_per_flight"]),
                  _est("frame_formwork_soffit_m2", "Plain formwork to soffits of horizontal work; suspended slabs", "m2", tuple([upper * C.value("suspended_slab_soffit_formwork_m2_per_m2")] * 3), ["suspended_slab_soffit_formwork_m2_per_m2"]),
                  _est("frame_formwork_beams_columns_m2", "Plain formwork to sides of beams and columns", "m2", form, ["frame_formwork_m2_per_m3"])]
-    else:  # a single-storey building: a ring beam on the walls
-        g = floors[0]
-        beams = _rng("ring_beam_section_m2", g.ext_m + g.int_m)
-        conc, items = beams, [_est("frame_beams_concrete_m3", "Reinforced in situ concrete (1:2:4); ring beam 230 x 450", "m3", beams, ["ring_beam_section_m2"])]
+    else:  # a single-storey building has no frame to estimate: strip foundation and load-bearing walls (the author's rule); lintels are measured from the openings
+        return [], {"upper_floor_area_m2": 0.0, "frame_concrete_m3": [0.0, 0.0, 0.0]}
     steel = tuple(conc[i] * steel_kg[i] / 1000 for i in range(3))
     items.append(_est("frame_steel_t", "High yield steel bar reinforcement; straight and bent; frame, slabs and stairs", "t", steel, ["plans_steel_kg_per_m3_structural_concrete"], whole_units=False))
     return items, {"upper_floor_area_m2": round(upper, 1), "frame_concrete_m3": [round(x, 1) for x in conc]}
 
 
-def missing_openings(floors: list[FloorData], rates: dict) -> tuple[list[BoqItem], list[dict]]:
+def missing_openings(floors: list[FloorData], rates: dict, bearing_mm: float) -> tuple[list[BoqItem], list[dict], tuple[float, float, float]]:
     """A plan read can miss openings (a wall the reader lost has none). When far fewer windows or doors are found than the author's own plans have per m2 of floor, the rest are
     added as estimated lines, at a standard size, and the estimate says so. Lintels follow the openings."""
     gfa = sum(f.footprint_m2 for f in floors)
     ops = [o for f in floors for o in f.openings]
-    items, notes, extra_total = [], [], (0.0, 0.0, 0.0)
+    items, notes, extra_len = [], [], (0.0, 0.0, 0.0)
     for kind, coef, label, key, w, h, side in (("window", "plans_windows_per_m2_floor", "Windows", "windows_estimated_nr", 1.2, 1.2, True),
                                                ("door", "plans_doors_per_m2_floor", "Doors", "doors_estimated_nr", 0.9, 2.1, False)):
         found = sum(o.count for o in ops if o.kind == kind)
@@ -131,13 +129,10 @@ def missing_openings(floors: list[FloorData], rates: dict) -> tuple[list[BoqItem
         r = rates.get("window_base_nr", 0) + rates.get("window_per_m2", 0) * w * h if kind == "window" else rates.get("door_internal_nr")
         it.rate = round(r, -2) if r else None
         items.append(it)
-        extra_total = tuple(a + b for a, b in zip(extra_total, extra))
+        if kind == "door":  # estimated windows sit under the chain lintel along the external walls; a door gets its own lintel
+            extra_len = tuple(a + b * (w + 2 * bearing_mm / 1000) for a, b in zip(extra_len, extra))
         notes.append({"name": f"{kind}s_estimated", "value": f"{found:g} found, about {want[1]:.0f} expected", "basis": f"only {found:g} {kind}s were found on the plans for {gfa:.0f} m2 of floor; the rest are estimated from the author's own plans"})
-    if items:
-        lint = _est("lintels_estimated_nr", "Lintels over the estimated openings; precast concrete", "nr", extra_total, ["plans_windows_per_m2_floor", "plans_doors_per_m2_floor"])
-        lint.rate = rates.get("lintel_nr")
-        items.append(lint)
-    return items, notes
+    return items, notes, extra_len
 
 
 def service_items(floors: list[FloorData]) -> list[BoqItem]:
@@ -209,12 +204,15 @@ def foundation_items_from(floors: list[FloorData], block_mm: int = 230) -> tuple
     return items, assumptions
 
 
+LINTEL_RATES = {"lintel_concrete_m3": ("frame_beams_concrete_m3", 1), "lintel_formwork_m2": ("frame_formwork_beams_columns_m2", 1), "lintel_steel_kg": ("frame_steel_t", 0.001)}
+
+
 def set_opening_rates(items: list[BoqItem], openings: list[Opening], rates: dict) -> None:
-    """Doors, windows and lintels are priced per piece from the rates in the author's bill: a window by its area, a door by the side of the wall it is in."""
+    """Doors and windows are priced per piece from the rates in the author's bill: a window by its area, a door by the side of the wall it is in. Lintels take the concrete, formwork and steel rates."""
     for i in items:
         o = next((x for x in openings if i.key == f"opening_{x.label.lower()}_nr" and f"{'external' if x.external else 'internal'}" in i.description), None)
-        if i.key.startswith("lintel_") and rates.get("lintel_nr"):
-            i.rate = rates["lintel_nr"]
+        if i.key in LINTEL_RATES and rates.get(LINTEL_RATES[i.key][0]):  # lintels are priced as the concrete, formwork and steel they are, at the frame's rates
+            i.rate = round(rates[LINTEL_RATES[i.key][0]] * LINTEL_RATES[i.key][1], 2)
         elif o and o.kind == "window" and rates.get("window_per_m2"):
             i.rate = round(rates.get("window_base_nr", 0) + rates["window_per_m2"] * o.width_m * o.height_m, -2)
         elif o and o.kind == "door" and rates.get("door_external_nr"):
@@ -232,19 +230,22 @@ def estimate(floors: list[FloorData], inputs: dict, rates: dict | None = None) -
     fin, fw = finishes_items(floors, h, by_floor, t_wall)
     items += fin
     bearing = C.value("lintel_bearing_mm")
-    lint, _ = lintel_items(allops, bearing)
-    items += lint
-    if lint:
-        assumptions.append({"name": "lintel_bearing_mm", "value": bearing, "basis": "lintel bearing is not on a floor plan; assumed (see coefficients)"})
     found, fa = foundation_items_from(floors)
     items += found
     assumptions += fa
+    more, notes, extra_len = missing_openings(floors, rates or {}, bearing)
+    measured_len = sum(f.ext_m for f in floors) + lintel_length_m([o for o in allops if not o.external], bearing)  # a chain lintel along the external walls (the author's practice), and a lintel over each internal opening
+    lint = lintel_items(tuple(measured_len + x for x in extra_len), measured_len, t_wall, C.value("lintel_depth_mm"), C.spread("lintel_steel_kg_per_m3"), bearing)
+    items += lint
+    if lint:
+        assumptions.append({"name": "lintel_bearing_mm", "value": bearing, "basis": "lintel bearing is not on a floor plan; assumed (see coefficients). A chain lintel runs along the external walls, so every external window and door is covered; each internal opening has its own lintel bearing on the wall at both ends"})
     set_opening_rates(items, allops, rates or {})
-    more, notes = missing_openings(floors, rates or {})
     items += more
     assumptions += notes
     fr, frw = frame_items(floors)
     items += fr
+    if len(floors) == 1:
+        assumptions.append({"name": "frame_single_storey", "value": "no beams or columns", "basis": "a one-storey building: strip foundation and load-bearing walls, no ring beam or columns estimated. Corner columns with pads would be added only for very long wall spans"})
     rf, rw = roof_items(floors, inputs)
     items += rf
     items += service_items(floors)

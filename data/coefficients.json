@@ -131,6 +131,11 @@
    "name": "NigeriaBuildingCost rebar calculator, worked examples for a column, beam, slab and pad (author pasted the pages)",
    "url": "https://nigeriabuildingcost.ng/rebar-calculator",
    "checked": "worked examples checked by hand: column 18.7 kg, beam 57.3 kg, slab 145.1 kg"
+  },
+  "plan10bill": {
+   "name": "The author's own bill for plan 10 (one-storey bungalow, unpriced bill of quantities; reference only, not in the repo)",
+   "url": "",
+   "checked": "lintels over 10 windows and an external door: 2 m3 of concrete, 23 m2 of formwork, 128 kg of Y12 and 112.6 kg of Y10; over 3 internal doors: 0.55 m3, 7 m2, 44 kg of Y12 and 63 kg of Y10; blocks 225 x 450 nominal"
   }
  },
  "entries": [
@@ -2223,6 +2228,36 @@
    ],
    "confidence": "medium",
    "note": "The calculator page says add 5 to 10%. The coefficients above are net weights, before this allowance."
+  },
+  {
+   "id": "lintel_depth_mm",
+   "group": "openings",
+   "what": "Depth of a lintel: one course of 225 x 450 block",
+   "unit": "mm",
+   "per": "lintel",
+   "low": 225,
+   "typical": 225,
+   "high": 225,
+   "sources": [
+    "plan10bill"
+   ],
+   "confidence": "medium",
+   "note": "The author's bill lays 225 x 450 nominal blocks; a lintel as deep as one course, as wide as the wall."
+  },
+  {
+   "id": "lintel_steel_kg_per_m3",
+   "group": "reinforcement",
+   "what": "Reinforcement in lintels",
+   "unit": "kg",
+   "per": "m3 of lintel concrete",
+   "low": 120,
+   "typical": 157,
+   "high": 195,
+   "sources": [
+    "plan10bill"
+   ],
+   "confidence": "low",
+   "note": "One bill: 120 kg per m3 over the external openings (240.6 kg in 2 m3) and 195 over the internal doors (107 kg in 0.55 m3). Formwork follows from the section (sides and soffit: about 13 m2 per m3, the bill has 11.5 to 12.7)."
   }
  ]
 }

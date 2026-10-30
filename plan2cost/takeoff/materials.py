@@ -18,6 +18,7 @@ RECIPES = {
     "blinding_foundations_m3": ("blinding_per_m3", "Blinding"), "blinding_on_hardcore_m3": ("blinding_per_m3", "Blinding under the ground floor slab"),
     "frame_steel_t": ("steel_per_t", "Reinforcement (columns, beams, slabs and stairs)"), "rebar_y12_foundations_t": ("steel_per_t", "Reinforcement (foundation)"),
     "rebar_y8_foundations_t": ("steel_per_t", "Reinforcement (foundation links)"),
+    "lintel_concrete_m3": ("concrete", "Lintel concrete"), "lintel_formwork_m2": ("formwork_per_m2", "Formwork to lintels"), "lintel_steel_kg": ("steel_per_t", "Reinforcement (lintels)"),
     "frame_formwork_soffit_m2": ("formwork_per_m2", "Formwork to soffits of slabs"), "frame_formwork_beams_columns_m2": ("formwork_per_m2", "Formwork to beams and columns"),
     "fdn_blockwork_230_m2": ("block_per_m2", "Blockwork in foundation"), "ext_blockwork_230_m2": ("block_per_m2", "Blockwork in external walls"), "int_blockwork_230_m2": ("block_int_per_m2", "Blockwork in internal walls"),
     "external_wall_render_m2": ("plaster_per_m2", "Rendering to external walls"), "fdn_wall_render_m2": ("plaster_per_m2", "Rendering to foundation walls"), "internal_wall_finish_m2": ("plaster_per_m2", "Plastering to internal walls"),
@@ -52,6 +53,8 @@ def recipe_lines(item: dict, element: str, family: str, key: str = "") -> list[d
     t = table()
     ratios, mats, labs = t["ratios"][family], t["materials"], t["labour"]
     q = (item.get("qty_low") if item.get("qty_low") is not None else item["qty"], item["qty"], item.get("qty_high") if item.get("qty_high") is not None else item["qty"])
+    if item.get("unit") == "kg" and family == "steel_per_t":
+        q = tuple(x / 1000 for x in q)  # the steel recipes are per tonne
     short = element.split(" (")[0]
     out = []
     for m, per in ratios.items():
