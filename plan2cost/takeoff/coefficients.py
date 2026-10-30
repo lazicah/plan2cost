@@ -11,10 +11,12 @@ CONFIDENCE = ("high", "medium", "low")
 
 @lru_cache(maxsize=1)
 def load() -> dict:
+    """The whole coefficient table."""
     return json.loads(PATH.read_text())
 
 
 def entry(id: str) -> dict:
+    """One coefficient by id; an unknown id is an error."""
     for e in load()["entries"]:
         if e["id"] == id:
             return e
@@ -27,11 +29,13 @@ def value(id: str, which: str = "typical") -> float:
 
 
 def spread(id: str) -> tuple[float, float, float]:
+    """A coefficient's (low, typical, high)."""
     e = entry(id)
     return e["low"], e["typical"], e["high"]
 
 
 def group(name: str) -> list[dict]:
+    """All the coefficients in a group (concrete, roof, frame...)."""
     return [e for e in load()["entries"] if e["group"] == name]
 
 

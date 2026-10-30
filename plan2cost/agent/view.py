@@ -77,6 +77,7 @@ def built(run: Run) -> dict:
 
 
 def summary(run: Run) -> dict:
+    """Everything the console shows about a run in one dict: progress stages, what is being worked on now, facts and open checks, the BoQ and bills, files, audits and the turns so far."""
     done_turns, now = turns(run), in_flight(run)
     d = run.dir
     tender = json.loads((d / "tender_audit.json").read_text()) if (d / "tender_audit.json").exists() else None
@@ -89,6 +90,7 @@ def summary(run: Run) -> dict:
 
 
 def list_runs() -> list[dict]:
+    """The runs on disk, newest first, with status, turns and floors, for the console's run list; a run that cannot be read is skipped."""
     if not progress.RUNS_DIR.exists():
         return []
     rows = []

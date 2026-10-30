@@ -93,6 +93,7 @@ def massing_from(models: list[DrawingModel], inputs: dict) -> dict:
 
 
 def massing(run: Run) -> dict:
+    """The 3D view's data for a run: the saved drawing model of each floor, lowest first, with the run's inputs."""
     models = []
     for f in run.floors:
         info = (run.data.get("models") or {}).get(f["name"])

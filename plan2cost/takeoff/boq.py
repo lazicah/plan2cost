@@ -13,6 +13,7 @@ from plan2cost.takeoff.foundation import PadBase, StripSection, ground_bed_takeo
 
 @dataclass
 class Assumption:
+    """A value the estimate had to assume, and why."""
     name: str
     value: float
     basis: str
@@ -21,6 +22,7 @@ class Assumption:
 
 @dataclass
 class BoqItem:
+    """One line of the bill: its key, description, unit and quantity, whether it was measured from the plans or estimated (with a low to high range and the coefficient ids behind it), its rate and amounts, and the bill it belongs to."""
     key: str  # take-off / rate key, e.g. trench_excavation_strip_m3
     description: str
     unit: str
@@ -38,6 +40,7 @@ class BoqItem:
 
 
 def load_defaults(path: str = "data/defaults.json") -> dict:
+    """The foundation defaults (trench, footing, blockwork) from data/defaults.json."""
     return json.loads(Path(path).read_text())["foundation_strip"]
 
 
@@ -61,6 +64,7 @@ def strip_inputs(drawn: dict | None = None, defaults: dict | None = None) -> tup
 
 
 def foundation_boq(t: dict, s: StripSection, grade: float) -> list[BoqItem]:
+    """The strip foundation lines from a take-off and its section: excavation, filling, concrete, formwork, blockwork and the rest."""
     depth = f"maximum depth not exceeding 2.00m; commencing surface {int(s.topsoil_m * 1000)}mm below existing ground level"
     block = f"{s.block_mm}mm thick; 225 x 450 nominal blocks; laid stretcher bond; cement mortar (1:6); filled solid with weak concrete"
     rows = [

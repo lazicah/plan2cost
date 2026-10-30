@@ -31,6 +31,7 @@ def display_rows(bm: dict) -> list[dict]:
 
 
 def write_xlsx(path: str | Path, bm: dict, currency: str, title: str, run_id: str) -> None:
+    """Write the bill of materials and labour as an Excel workbook, sectioned like the BoQ, with a low to high range on estimated lines."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Materials and labour"
@@ -92,6 +93,7 @@ def write_xlsx(path: str | Path, bm: dict, currency: str, title: str, run_id: st
 
 
 def write_pdf(path: str | Path, bm: dict, currency: str, title: str, run_id: str) -> None:
+    """Write the bill of materials and labour as a PDF."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib.styles import getSampleStyleSheet

@@ -10,6 +10,7 @@ from plan2cost.kit.pdf import pdftoppm
 
 @dataclass
 class DimToken:
+    """A printed dimension from a PDF's text layer: its value in millimetres and its place on the page in points. Rotated text (taller than wide) belongs to a vertical dimension chain."""
     value: int
     x0: float
     y0: float
@@ -32,6 +33,7 @@ class DimToken:
 
 
 def dimension_tokens(pdf: str, page: int) -> list[DimToken]:
+    """Every number of three to five digits on a PDF page with its place, from the text layer: the candidates for printed dimensions."""
     exe = pdftoppm().replace("pdftoppm", "pdftotext")
     html = subprocess.run([exe, "-f", str(page), "-l", str(page), "-bbox", pdf, "-"], capture_output=True, text=True).stdout
     return [DimToken(int(w), float(a), float(b), float(c), float(d))

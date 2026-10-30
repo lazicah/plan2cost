@@ -18,6 +18,7 @@ ENCODINGS = {"~": "lossless", "!": "one_bit"}
 
 @dataclass
 class Segment:
+    """One object SAM found: its id, its box in source pixels, and its pixel mask."""
     object_id: int
     box: tuple[int, int, int, int]  # x1, y1, x2, y2 (inclusive) in source pixels
     mask: np.ndarray  # bool, source-sized (frame w x h)
@@ -28,6 +29,7 @@ class Segment:
 
 
 def parse(text: str) -> list[Segment]:
+    """Decode SAM's special-token text reply into segments with full-size masks."""
     segs = []
     for oid, x1, y1, x2, y2, w, h, mh, mw, enc, payload in RECORD.findall(text):
         raster = decode_mask_to_raster(SegmentationMask(ENCODINGS[enc], enc + payload, int(mw), int(mh)))

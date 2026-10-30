@@ -15,6 +15,7 @@ Return only JSON: {"scale": 100 or null, "horizontal_mm": [numbers], "vertical_m
 
 
 def read_page_facts(image_path: str, max_side: int = 2600) -> dict:
+    """Ask the model for the two printed facts code cannot get from an image: the stated scale and the overall dimensions. The picture is shrunk to `max_side` first."""
     from plan2cost.kit.client import chat_json
 
     img = cv2.imread(image_path)

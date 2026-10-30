@@ -35,6 +35,7 @@ def _system() -> str:
 
 
 def default_llm(messages: list) -> str:
+    """One chat call to the model the active profile names (the Meta Model API or Muse Spark Open); returns the reply text."""
     from plan2cost.kit.client import get_client, model_name
 
     resp = get_client().chat.completions.create(model=model_name(), temperature=0, messages=messages)
@@ -57,6 +58,7 @@ def _ask(llm: Callable[[list], str], messages: list, tries: int = 3) -> str:
 
 
 def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> None:
+    """One turn: ask the model for its next action, run the tool it names, add the result to the conversation, then save the run and write the trace. A reply that is not a valid tool call gets an error back so the model can correct itself."""
     tools = tools or TOOLS
     reply = _ask(llm, run.messages)
     run.messages.append({"role": "assistant", "content": reply})
@@ -80,6 +82,7 @@ def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> Non
 
 
 def run_agent(run: Run, llm: Callable[[list], str] = default_llm, max_turns: int = 30, tools: dict | None = None) -> Run:
+    """Drive the agent on a run until it is done, needs the user, or runs out of turns. The first call seeds the checklist and the opening message; a failure pauses the run with everything so far saved, so it can be resumed."""
     if not run.messages:
         seed_checklist(run)
         make_thumbs(run)

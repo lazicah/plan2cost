@@ -12,6 +12,7 @@ THICKNESS_MM = {100: (85, 135), 150: (135, 190), 230: (195, 270)}  # nominal blo
 
 @dataclass
 class Line:
+    """A horizontal or vertical run of line work after collinear segments are merged: its direction, its position across (points), its start and end along it, and its stroke width (or the measured thickness for a raster line)."""
     orient: str  # "h" or "v"
     pos: float  # y for "h", x for "v" (points)
     a: float
@@ -87,6 +88,7 @@ def pair_walls(lines: list[Line], mm_per_pt: float, min_run_mm: float = 350, win
 
 
 def to_walls(pieces: list[dict], mm_per_pt: float) -> list[Wall]:
+    """Wall pieces in points as `Wall` runs in millimetres."""
     return [Wall(p["orient"], p["centre_pt"] * mm_per_pt, p["a_pt"] * mm_per_pt, p["b_pt"] * mm_per_pt, p["nominal"],
                  [(a * mm_per_pt, b * mm_per_pt) for a, b in p.get("gaps_pt", [])]) for p in pieces]
 

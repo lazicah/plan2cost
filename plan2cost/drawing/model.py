@@ -13,6 +13,7 @@ EVIDENCE = ("directly labelled", "geometrically measured", "inferred", "approxim
 
 @dataclass
 class Calibration:
+    """How a drawing's units become millimetres: the method, the scale, what it was checked against and how far to trust it."""
     id: str
     view: str
     method: str
@@ -28,6 +29,7 @@ class Calibration:
 
 @dataclass
 class Element:
+    """One thing found on the plan: a wall, or a door, window or opening in a wall. It carries its place on the sheet in millimetres, its size, how it is known (the evidence label), how far to trust it, and notes on how it was found or changed."""
     id: str
     category: str  # wall
     subtype: str  # external, internal
@@ -59,6 +61,7 @@ def wall_of(e: Element) -> Wall:
 
 @dataclass
 class Issue:
+    """Something a person should look at: a code, a severity (error, warn, info), what is wrong, the elements involved, what to check, and who raised it (code, the model review, a model check, the space names)."""
     code: str
     severity: str  # error, warn, info
     message: str
@@ -69,6 +72,7 @@ class Issue:
 
 @dataclass
 class DrawingModel:
+    """What was found on one floor plan page: the calibration, the elements, the issues raised, the totals, the named spaces and the opening tags. It is saved as JSON next to the annotated plan and read by the take-off, the console and the 3D view."""
     page: int
     floor: str
     route: str  # vector, raster
@@ -166,6 +170,7 @@ def build_model(result: dict, floor: str, page: int, printed_mm: list | None = N
 
 
 def compute_totals(elements: list, size: tuple) -> dict:
+    """Wall lengths from the elements (total, external by share, internal, by thickness) with the building's size between the outermost joints."""
     ext = sum(e.length_m * e.external_share for e in elements)
     total = sum(e.length_m for e in elements)
     by_thickness: dict = {}

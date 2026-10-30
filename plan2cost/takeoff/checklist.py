@@ -9,16 +9,19 @@ DEFAULT = "reference/trades_checklist.json"
 
 
 def path() -> str | None:
+    """Path of the trades checklist (`P2C_TRADES_CHECKLIST` or the default), or None when it is not there."""
     p = os.environ.get("P2C_TRADES_CHECKLIST") or DEFAULT
     return p if Path(p).exists() else None
 
 
 def load() -> dict | None:
+    """The trades checklist, or None."""
     p = path()
     return json.loads(Path(p).read_text()) if p else None
 
 
 def building_type(floors: int) -> str:
+    """Duplex (two floors or more) or bungalow, which picks the checklist section."""
     return "duplex" if floors >= 2 else "bungalow"
 
 

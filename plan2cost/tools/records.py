@@ -12,6 +12,7 @@ def seed_checklist(run: Run) -> None:
 
 
 def settle(run: Run, item: str, status: str = "proven") -> None:
+    """Mark a checklist item as settled (proven or assumed) unless it is already."""
     entry = next((c for c in run.checklist if c["id"] == item), None)
     if entry and entry["status"] in ("open", "escalated"):
         entry["status"] = status

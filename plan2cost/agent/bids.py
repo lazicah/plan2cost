@@ -6,6 +6,7 @@ from plan2cost.tools.audit import audit_bids
 
 
 def main() -> None:
+    """Audit the returned tender bills named on the command line against the bill the run issued, and print the flags for each."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--run", required=True, help="the run that issued the bill")
     ap.add_argument("bids", nargs="+", help="returned bills: .xlsx (read directly), or PDF/image")

@@ -12,6 +12,7 @@ UNITS = {"m2": "m2", "m²": "m2", "sqm": "m2", "sq.m": "m2", "sm": "m2", "m3": "
 
 @dataclass
 class QuoteLine:
+    """One line of a contractor's quote as printed, and the key of the BoQ line it was matched to."""
     no: str
     description: str
     unit: str
@@ -23,6 +24,7 @@ class QuoteLine:
 
 
 def unit_of(u: str) -> str:
+    """A unit as written (m2, sq.m, m²...) in the form our BoQ uses."""
     return UNITS.get(re.sub(r"[\s.]+$", "", str(u).strip().lower()), str(u).strip().lower())
 
 
@@ -36,10 +38,12 @@ def number_printed(value: float | None, text: str) -> bool:
 
 
 def flag(code: str, severity: str, line: str, message: str, ask: str, **extra) -> dict:
+    """One audit finding: what it is, how serious, which line, the message, and what to ask."""
     return {"code": code, "severity": severity, "line": line, "message": message, "ask": ask, **extra}
 
 
 def check_arithmetic(lines: list[QuoteLine], stated_total: float | None) -> list[dict]:
+    """Quantity times rate against the amount on each line, and the lines against the stated total."""
     out = []
     for l in lines:
         if l.qty is not None and l.rate is not None and l.amount is not None:
@@ -106,6 +110,7 @@ def missing(lines: list[QuoteLine], items: dict, rates: dict, show: int = 5) -> 
 
 
 def audit(lines: list[QuoteLine], stated_total: float | None, items: dict, rates: dict) -> dict:
+    """Every check of a quote against the BoQ and the user's rates, errors first, with counts and totals."""
     flags = check_arithmetic(lines, stated_total) + compare(lines, items, rates) + missing(lines, items, rates)
     order = {"error": 0, "warn": 1, "info": 2}
     flags.sort(key=lambda f: order[f["severity"]])

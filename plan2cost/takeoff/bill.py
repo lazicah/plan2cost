@@ -38,6 +38,7 @@ def by_bill(rows: list[dict]) -> list[tuple[int, str, str, list[dict]]]:
 
 
 def write_xlsx(path: str | Path, rows: list[dict], priced: bool, currency: str, title: str, run_id: str) -> None:
+    """Write the bill as an Excel workbook: a sheet of items under their bill headings with subtotals, and a summary sheet. Priced bills carry rates and amounts (with a low to high range when lines are estimated); unpriced bills leave the rate blank and the amount a formula, for contractors to tender on."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Bill"

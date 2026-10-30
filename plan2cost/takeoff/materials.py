@@ -35,6 +35,7 @@ LABOUR = {"concrete": [("casting_per_bag", "cement_bag")], "blinding_per_m3": [(
 
 @lru_cache(maxsize=1)
 def table() -> dict:
+    """The material and labour recipes (data/materials_labour.json)."""
     return json.loads(Path("data/materials_labour.json").read_text())
 
 

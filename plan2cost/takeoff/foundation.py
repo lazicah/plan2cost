@@ -18,6 +18,7 @@ def whole_units(x: float) -> int:
 
 @dataclass
 class GridLine:
+    """One grid line's trench runs (length in metres, how many) and the deductions from them (pad-base widths, wall overlaps)."""
     name: str
     runs: list[tuple[float, int]] = field(default_factory=list)  # (length_m, number) full trench runs
     deductions: list[tuple[float, int]] = field(default_factory=list)  # pad-base widths, wall overlaps
@@ -25,6 +26,7 @@ class GridLine:
 
 @dataclass
 class PadBase:
+    """A pad foundation under a column: its type, size, thickness and how many."""
     type: str
     length_m: float
     width_m: float
@@ -59,10 +61,12 @@ class StripSection:
 
 
 def trench_girth(lines: list[GridLine]) -> float:
+    """Total length of trench: the runs less the deductions."""
     return sum(l * n for g in lines for l, n in g.runs) - sum(l * n for g in lines for l, n in g.deductions)
 
 
 def blockwork_girth(lines: list[GridLine]) -> float:
+    """Total length of foundation blockwork: the full runs."""
     return sum(l * n for g in lines for l, n in g.runs)
 
 
@@ -76,6 +80,7 @@ def pit_excavation_m3(pads: list[PadBase], depth_m: float, round_each: bool = Tr
 
 
 def foundation_takeoff(lines: list[GridLine], pads: list[PadBase], s: StripSection) -> dict:
+    """The quantities of a strip foundation from its grid lines, pads and section: trench and blockwork girth, excavation, filling and concrete."""
     t_girth, b_girth = whole_units(trench_girth(lines)), whole_units(blockwork_girth(lines))
     depth = s.dig_depth_m
     pad_perimeter = [(2 * (p.length_m + p.width_m), p.count) for p in pads]
@@ -94,6 +99,7 @@ def foundation_takeoff(lines: list[GridLine], pads: list[PadBase], s: StripSecti
 
 
 def pad_concrete_m3(pads: list[PadBase]) -> int:
+    """Concrete in the pad bases, rounded up to whole cubic metres."""
     return whole_units(sum(p.length_m * p.width_m * p.thickness_m * p.count for p in pads))
 
 

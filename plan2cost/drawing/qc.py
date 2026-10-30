@@ -7,6 +7,7 @@ STANDARD_MM = (100, 150, 200, 225, 230, 300)
 
 
 def joints(walls: list[Wall], tol_mm: float = 150) -> list[tuple[float, float]]:
+    """The points where a horizontal and a vertical run cross or touch (within `tol_mm`): the corners and T-joints of the building."""
     from plan2cost.drawing.model import touching
 
     pts = []
@@ -94,6 +95,7 @@ def check_extents(model: DrawingModel, printed_mm: list) -> list[Issue]:
 
 
 def check_thickness(model: DrawingModel) -> list[Issue]:
+    """Walls that are mostly 100 mm thick are unusual; some may be fixtures or window frames."""
     total = sum(e.length_m for e in model.walls()) or 1
     thin = sum(e.length_m for e in model.walls() if e.thickness_mm <= 100)
     if thin / total > 0.3:
@@ -103,6 +105,7 @@ def check_thickness(model: DrawingModel) -> list[Issue]:
 
 
 def check_scale(model: DrawingModel) -> list[Issue]:
+    """A weak scale estimate is flagged, since every length depends on it; a scale from grid bubbles is noted."""
     out = []
     for c in model.calibrations:
         if c.confidence == "low":
@@ -129,6 +132,7 @@ def check_convention(model: DrawingModel) -> list[Issue]:
 
 
 def check_plausibility(model: DrawingModel) -> list[Issue]:
+    """A building with rooms has partitions: almost no internal wall means some were missed."""
     total = model.totals.get("total_m", 0)
     if total and model.totals.get("internal_m", 0) < 0.1 * total:
         return [Issue("no_internal", "warn", "Almost no internal wall was found; a building with rooms has partitions.", [], "Check that internal walls were not missed.")]
@@ -136,6 +140,7 @@ def check_plausibility(model: DrawingModel) -> list[Issue]:
 
 
 def run_checks(model: DrawingModel, printed_mm: list) -> list[Issue]:
+    """Every check on a drawing model, errors first. The building size is checked against the printed overall dimensions (millimetres)."""
     issues: list[Issue] = []
     for check in (check_double_counting, check_dangling, check_free_ends, check_thickness, check_scale, check_convention, check_plausibility):
         issues += check(model)

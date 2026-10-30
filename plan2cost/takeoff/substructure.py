@@ -7,6 +7,7 @@ from plan2cost.takeoff.foundation import PadBase, whole_units
 
 
 def roundup(x: float) -> int:
+    """Round up to a whole number, ignoring floating point dust."""
     return int(math.ceil(round(x, 6)))
 
 
@@ -20,6 +21,7 @@ def topsoil_strip_m2(length_m: float, width_m: float, working_space_m: float = 0
 
 
 def levelling_compaction_m2(trench_girth_m: float, trench_width_m: float, pads: list[PadBase]) -> int:
+    """Area of the trench bottoms and pad bases to level and compact."""
     return roundup(trench_girth_m * trench_width_m + sum(p.length_m * p.width_m * p.count for p in pads))
 
 

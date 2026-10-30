@@ -12,6 +12,7 @@ import numpy as np
 
 @dataclass
 class Wall:
+    """A wall run in millimetres on the sheet: its direction, its centre line across, its start and end along it, its thickness, and the stretches along it that were bridged (openings, or places the faces were not found)."""
     orient: str  # "h" or "v"
     centre_mm: float  # position across the wall (y for "h", x for "v"), from the sheet origin
     start_mm: float
@@ -67,6 +68,7 @@ def _solid_runs(mask: np.ndarray, orient: str, min_len_px: int, min_w_px: int, m
 
 def find_walls(gray: np.ndarray, mm_per_px: float, region_px: tuple[int, int, int, int], windows: dict[int, tuple[int, int]] | None = None,
                min_run_mm: float = 350, bridge_mm: float = 3600, dark: int = 200) -> list[Wall]:
+    """Find the walls in a raster page: horizontal and vertical bands of dark pixels whose width matches a block thickness, merged across gaps up to `bridge_mm`. Returns runs in millimetres."""
     windows = windows or THICKNESS_WINDOWS_MM
     x0, y0, x1, y1 = region_px
     mask = np.zeros_like(gray, dtype=np.uint8)

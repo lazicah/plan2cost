@@ -7,6 +7,7 @@ POPPLER_FALLBACKS = ("/opt/local/bin", "/opt/homebrew/bin", "/usr/local/bin")  #
 
 
 def pdftoppm() -> str:
+    """Path of poppler's pdftoppm (on the PATH or in a known folder); the other poppler tools are found next to it."""
     exe = shutil.which("pdftoppm") or next((str(Path(d) / "pdftoppm") for d in POPPLER_FALLBACKS if (Path(d) / "pdftoppm").exists()), None)
     if not exe:
         raise RuntimeError("pdftoppm not found; install poppler (brew install poppler or port install poppler)")
@@ -25,6 +26,7 @@ def render_pages(pdf: str, pages: list[int], out_dir: str, dpi: int = 130) -> li
 
 
 def page_count(pdf: str) -> int:
+    """Number of pages in a PDF."""
     exe = pdftoppm().replace("pdftoppm", "pdfinfo")
     out = subprocess.run([exe, pdf], capture_output=True, text=True, check=True).stdout
     return int(next(l.split()[-1] for l in out.splitlines() if l.startswith("Pages:")))

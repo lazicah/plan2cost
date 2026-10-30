@@ -16,6 +16,7 @@ door is a door). Return only JSON: {"windows": number, "doors": number}"""
 
 
 def render_prompt(m: dict, visible: dict | None = None, feedback: str = "") -> str:
+    """The prompt for the picture: what the building is (storeys, roof type) and which windows and doors the view shows (those seen from the camera, or the whole building when no counts are given); `feedback` says what a previous try got wrong."""
     n = len(m["floors"])
     storeys = "a single-storey" if n == 1 else f"a {n}-storey"
     if visible and "windows" in visible and "doors" in visible:

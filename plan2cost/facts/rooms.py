@@ -23,6 +23,7 @@ WET_WORDS = ("bath", "wc", "toilet", "shower", "vis.", "w.c", "powder", "ensuite
 
 @dataclass
 class Room:
+    """A room or space as named on the plan, with its two internal dimensions when both are printed, whether it is open air, a wet room, and where it is on the picture. `kind` says what the name means."""
     name: str
     a_mm: float | None
     b_mm: float | None
@@ -65,6 +66,7 @@ def valid_box(b) -> tuple | None:
 
 
 def printed(value: float, text: str) -> bool:
+    """Is this number printed on the page, as a whole number and not part of a longer one?"""
     return bool(re.search(rf"(?<![\d.]){int(value)}(?![\d])", text))
 
 
@@ -93,4 +95,5 @@ def to_rooms(data: dict, text: str, floor: str) -> list[Room]:
 
 
 def read_rooms(image_path: str, text: str, floor: str) -> list[Room]:
+    """The rooms of a floor plan picture: the model copies the names, printed sizes and rough places; code checks the numbers against the text layer."""
     return to_rooms(chat_json([{"type": "text", "text": PROMPT}, image_part(image_path)]), text, floor)

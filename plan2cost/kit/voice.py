@@ -7,6 +7,7 @@ MAX_BYTES = 32 * 1024 * 1024  # the API's limit on a request body (a recording m
 
 
 def is_wav(data: bytes) -> bool:
+    """Does this look like a WAV file (RIFF header with a WAVE tag)?"""
     return len(data) > 44 and data[:4] == b"RIFF" and data[8:12] == b"WAVE"
 
 

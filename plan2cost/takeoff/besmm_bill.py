@@ -11,6 +11,7 @@ STOP = {"the", "of", "and", "to", "a", "in", "for", "on", "with", "from", "by"}
 
 
 def path() -> str | None:
+    """Path of the BESMM4 bill spreadsheet (`P2C_BESMM_XLSX` or the default), or None when it is not there."""
     p = os.environ.get("P2C_BESMM_XLSX") or DEFAULT
     return p if Path(p).exists() else None
 
@@ -49,4 +50,5 @@ def find(query: str, top: int = 8) -> list[dict]:
 
 
 def get(code: str) -> dict | None:
+    """The BESMM4 item with this code, or None."""
     return next((it for it in items() if it["code"] == code), None)

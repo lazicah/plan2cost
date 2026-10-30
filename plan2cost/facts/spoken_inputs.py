@@ -32,6 +32,7 @@ def clean(raw: dict) -> dict:
 
 
 def read_spoken_inputs(transcript: str) -> dict:
+    """Ask the model for the estimate's inputs in a transcript, and keep only what is in range. Nothing said means no call and nothing filled."""
     from plan2cost.kit.client import chat_json
 
     if not transcript.strip():

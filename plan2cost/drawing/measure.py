@@ -16,6 +16,7 @@ THICKNESS_WINDOWS_PT = {100: (1.9, 2.9), 150: (2.9, 4.5), 230: (4.6, 6.0)}
 
 
 def measure_walls(pdf: str, page: int, dpi: int = 150, margin_mm: float = 2500) -> dict:
+    """The older measurement tuned to one drawing style (a vector PDF page with a grid and a text layer: the scale from the grid and the printed dimensions, the walls from the rendered page). It is the last fallback, used only when neither the vector nor the raster route can read a page, and its result is flagged low confidence."""
     grid = calibrate(find_grid(pdf, page), [t.value for t in dimension_tokens(pdf, page)])
     if grid.mm_per_pt is None or len(grid.verticals) < 2 or len(grid.horizontals) < 2:
         return {"error": "No grid and scale could be read from this page's text layer (a scanned plan?).", "confidence": "none"}

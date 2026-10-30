@@ -9,6 +9,7 @@ from plan2cost.kit.pdf import pdftoppm
 
 @dataclass
 class Seg:
+    """A straight stroke from a PDF page, in points: its ends, its stroke width (0 for the edge of a filled shape), and whether it is dashed or came from a filled shape."""
     x0: float
     y0: float
     x1: float
@@ -24,6 +25,7 @@ class Seg:
 
 @dataclass
 class Page:
+    """A PDF page's size in points and its straight segments; curves (door swings, round fixtures) are only counted."""
     width: float
     height: float
     segs: list[Seg]
@@ -31,6 +33,7 @@ class Page:
 
 
 def read_page(pdf: str, page: int) -> Page:
+    """Read the vector line work of a PDF page (through pdftocairo's SVG output) into straight segments with their stroke widths."""
     exe = pdftoppm().replace("pdftoppm", "pdftocairo")
     svg = subprocess.run([exe, "-svg", "-f", str(page), "-l", str(page), pdf, "-"], capture_output=True, text=True).stdout
     size = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg)

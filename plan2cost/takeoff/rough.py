@@ -17,6 +17,7 @@ WET = ("bath", "wc", "toilet", "shower", "vis.", "w.c", "powder", "ensuite", "en
 
 @dataclass
 class FloorData:
+    """What the estimate needs from one measured floor: wall girth, the building's outer size, wall area, the openings found, the room names, the void area, and what the plan's opening tags say."""
     name: str
     ext_m: float  # external wall girth
     int_m: float  # internal wall girth
@@ -61,6 +62,7 @@ def _mul(a: tuple[float, float, float], b: tuple[float, float, float]) -> tuple[
 
 
 def pitch_range(inputs: dict, n_floors: int) -> tuple[float, float, float]:
+    """The roof pitch (low, typical, high): the one the user gave, else the coefficient for a bungalow or a duplex."""
     if inputs.get("pitch_deg"):
         p = float(inputs["pitch_deg"])
         return p, p, p

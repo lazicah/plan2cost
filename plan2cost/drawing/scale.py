@@ -58,6 +58,7 @@ def line_votes(tokens: list[DimToken], lines, min_value_mm: int = 600, min_len_p
 
 
 def _mode(v: list[float], bin_pct: float = 0.012) -> dict:
+    """The most common scale among the votes (binned by `bin_pct`): the scale, how many votes, the share that agree and how clearly it beats the next."""
     if len(v) < 4:
         return {"mm_per_pt": None, "votes": len(v), "agree": 0.0, "dominance": 0.0}
     key = lambda x: int(math.log(x) / math.log(1 + bin_pct))

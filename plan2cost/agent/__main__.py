@@ -1,3 +1,4 @@
+"""Command line for an estimate: `python -m plan2cost.agent --floor ground=plan.pdf --floor first=first.jpg --storey-height 3.0 --roof hip`. A run that stops (out of turns, a dropped connection, a question for the user) is continued with `--resume <id>` and, for a question, `--answer "..."`."""
 import argparse
 
 from plan2cost.agent.loop import resume, run_agent
@@ -15,6 +16,7 @@ def parse_floor(arg: str) -> dict:
 
 
 def main() -> None:
+    """Read the arguments, start a new run or resume one, drive the agent, and print where the run stands (and the question, if it is waiting for an answer)."""
     ap = argparse.ArgumentParser(description="Estimate a building from its floor plans.")
     ap.add_argument("--floor", action="append", help="a floor plan: name=file or name=file.pdf:page; repeat for each floor, lowest first", default=[])
     ap.add_argument("--storey-height", type=float, help="floor to floor, in metres")

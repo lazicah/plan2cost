@@ -1,3 +1,4 @@
+"""The tool that reads a floor plan: walls, rooms, opening tags and openings in one call. Walls and openings are measured by code from the lines; the model reads only what is printed (scale, overall dimensions, room names, opening tags) and looks at crops to say what a gap in a wall is."""
 import tempfile
 import threading
 import time
@@ -192,6 +193,7 @@ def _record(run: Run, floor: str, m: dict) -> dict:
 
 
 def _preview(run: Run):
+    """A callback that puts the measured walls in the run as soon as they are drawn, so the console shows them while the model review and the openings are still working."""
     def show(m):  # the measured walls, for the console, while the model review runs
         with LOCK:
             run.data["preview"] = {"floor": m.floor, "markup": f"models/{m.markup}", "walls": len(m.walls()), "total_m": m.totals["total_m"], "external_m": m.totals["external_m"],

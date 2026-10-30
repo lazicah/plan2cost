@@ -10,6 +10,7 @@ VOID_M2 = 1.00  # BESMM4 1.28 M3
 
 
 def whole(x: float) -> int:
+    """Round up to whole units, at least 1 for anything above zero (BESMM4 1.5)."""
     return max(1, math.ceil(round(x, 6))) if x > 0 else 0
 
 

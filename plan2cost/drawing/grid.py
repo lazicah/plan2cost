@@ -12,6 +12,7 @@ PT_MM = 25.4 / 72  # one PDF point on paper, in mm
 
 @dataclass
 class GridLine:
+    """One grid line of a drawing: its label (1, 2... or A, B...), its position in points, and its axis."""
     label: str
     pos_pts: float  # x for numbered (vertical) lines, y for lettered (horizontal) lines
     axis: str  # "x" or "y"
@@ -19,6 +20,7 @@ class GridLine:
 
 @dataclass
 class Grid:
+    """The grid of a drawing: the numbered vertical lines, the lettered horizontal lines, and the scale found from them (millimetres per point) with how it was found."""
     verticals: list[GridLine]  # numbered, ordered left to right
     horizontals: list[GridLine]  # lettered, ordered top to bottom
     mm_per_pt: float | None = None

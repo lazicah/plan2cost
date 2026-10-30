@@ -23,17 +23,20 @@ def active_profile() -> str:
 
 
 def get_client(profile: str | None = None) -> OpenAI:
+    """An OpenAI-compatible client for the active profile (or the one named). It always times out after two minutes and retries."""
     prefix = PROFILES[profile or active_profile()]
     # a call that has not answered in two minutes is a dead connection, not a slow model: give up and retry (the default is ten minutes, which hangs a whole floor)
     return OpenAI(base_url=os.environ[prefix + "BASE_URL"], api_key=os.environ[prefix + "API_KEY"], timeout=120.0, max_retries=2)
 
 
 def model_name(profile: str | None = None) -> str:
+    """The model id for the profile: `P2C_MODEL`, or `P2C_OPEN_MODEL` for Muse Spark Open, with defaults."""
     prefix = PROFILES[profile or active_profile()]
     return os.environ.get(prefix + "MODEL", "meta-models/muse-spark-open-1026" if prefix == "P2C_OPEN_" else "muse-spark-1.3")
 
 
 def image_part(path: str) -> dict:
+    """A picture file as the image part of a chat message (base64 data URL)."""
     mime = mimetypes.guess_type(path)[0] or "image/png"
     with open(path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()

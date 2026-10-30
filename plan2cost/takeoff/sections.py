@@ -6,6 +6,7 @@ from pathlib import Path
 
 @lru_cache(maxsize=1)
 def structure() -> dict:
+    """The bill's structure (data/bill_structure.json): bill numbers and names, groups, and which key goes where."""
     return json.loads(Path("data/bill_structure.json").read_text())
 
 
@@ -18,10 +19,12 @@ def bill_of(key: str) -> int:
 
 
 def bill_name(n: int) -> str:
+    """The name of a bill number (Substructure, Frame...)."""
     return structure()["bills"][str(n)]
 
 
 def group_of(n: int) -> str:
+    """The group (SUBSTRUCTURE, SUPERSTRUCTURE...) a bill number belongs to."""
     return next((g for g, bills in structure()["groups"] if n in bills), "EXTERNAL WORKS")
 
 

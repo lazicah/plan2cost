@@ -105,6 +105,7 @@ def _block_for(factor: float, tol: float = 0.07) -> int | None:  # a solid bar i
 
 
 def interpret_image(path: str, facts: dict | None = None, dark: int = 150, keep_walls: bool = False) -> dict:
+    """Read a raster plan (a photo or a scan): find the wall thickness from the line work, try each candidate scale against the model-read page facts (stated scale, overall dimensions) and keep the best believable reading. Returns the totals, the scale basis and the confidence; with `keep_walls` the walls and their outdoors share are kept for the drawing model."""
     gray = cv2.imread(path, 0)
     lines = vectorise_multi(gray, dark=dark)
     for l in lines:

@@ -7,6 +7,7 @@ DEFAULT_STOREY_HEIGHT_M = 3.0  # used when no elevation or section gives the hei
 
 @dataclass
 class Opening:
+    """A type of door or window on a floor: label, width, height, how many, kind, whether it is in an external wall, and whether the height is the standard (not on the plan)."""
     label: str
     width_m: float
     height_m: float
@@ -21,6 +22,7 @@ class Opening:
 
 
 def facade_area_m2(girth_by_floor: dict[str, float], height_by_floor: dict[str, float] | None = None) -> float:
+    """Wall area of the facade: girth times height for each floor (the default storey height where none is given)."""
     heights = height_by_floor or {}
     return sum(g * heights.get(floor, DEFAULT_STOREY_HEIGHT_M) for floor, g in girth_by_floor.items())
 

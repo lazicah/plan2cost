@@ -15,6 +15,7 @@ FLOOR_NAMES = ("ground", "first", "second", "third", "fourth")
 
 @dataclass
 class Run:
+    """A run of the agent on one set of floor plans: its inputs, the model's conversation, the checklist, facts, assumptions and results, saved as run.json in its folder so it can pause for a person and resume. `data` holds what the tools produce (floors, models, BoQ, materials, steps)."""
     id: str
     objective: str = ""
     floors: list = field(default_factory=list)  # [{"name": "ground", "file": "plan.pdf", "page": 1}], lowest floor first

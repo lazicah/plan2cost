@@ -60,6 +60,7 @@ def apply_space_context(model: DrawingModel, rooms: list, img, scale: float) -> 
 
 
 def recompute_external(model: DrawingModel, shape: tuple, scale: float) -> None:
+    """Work out again which walls have the outdoors on one side (after a wall was removed or added) and refresh the totals."""
     from plan2cost.drawing.model import compute_totals, wall_of
     from plan2cost.drawing.walls_cv import building_size_m, external_fractions
 

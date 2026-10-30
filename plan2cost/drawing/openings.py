@@ -41,10 +41,12 @@ def tag_kind(tag: str) -> str | None:
 
 
 def snap(width_mm: float, sizes: tuple) -> int:
+    """The nearest of the standard sizes to a measured width (a drawn gap is rarely exactly 900 or 1200)."""
     return min(sizes, key=lambda s: abs(s - width_mm))
 
 
 def _crop(img, scale: float, c: dict, out_dir: str, i: int, side_mm: float = 3600) -> str:
+    """A 640 px crop of the plan around a candidate with an orange bar drawn on it, written to `out_dir`; the picture the model judges. Returns its path (empty when the candidate is off the page)."""
     cx, cy = (c["x0"] + c["x1"]) / 2, (c["y0"] + c["y1"]) / 2
     half = max(side_mm, c["width_mm"] + 2000) / 2
     x0, y0, x1, y1 = int((cx - half) * scale), int((cy - half) * scale), int((cx + half) * scale), int((cy + half) * scale)
@@ -62,6 +64,7 @@ def _crop(img, scale: float, c: dict, out_dir: str, i: int, side_mm: float = 360
 
 
 def _verify(path: str) -> dict:
+    """Ask the model what a candidate is: door, window, opening or not an opening, with the tag beside it and the door leaf. A failed call is reported as 'unverified', never guessed."""
     from plan2cost.kit.client import image_part
     from plan2cost.kit.client import chat_json
 
