@@ -57,19 +57,29 @@ The code was written with Claude Code (Anthropic's coding assistant), directed a
 ## Layout
 
 Model reads, code measures: a model never overrides a measurement, and every line says whether it was measured from the plans or estimated from coefficients.
+Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`.
 
 ```
 plan2cost/
-  kit/        primitives with no domain logic: model client (Meta Model API / Muse Spark Open), PDF reading, the saved run (progress.py)
-  drawing/    reading geometry: vector and raster line work, wall bands, scale, the verified drawing model, quality checks, annotated markup, openings tied to walls
-  facts/      what the model reads that is printed or visible: room names, page facts for scale, review of the markup, quote lines, SAM 3.1 for site photos
-  takeoff/    quantities and rules: walls, foundation, finishes, the estimator (rough.py), coefficients, BoQ and pricing, bills, quote and tender audit
+  kit/        primitives with no domain logic: model client (Meta Model API / Muse Spark Open), Muse Voice Transcribe (voice.py), Muse Image (imagegen.py),
+              PDF reading, the saved run (progress.py)
+  drawing/    reading geometry, no model calls except the closed questions about crops:
+                vector.py, vector_walls.py, raster_lines.py, walls_cv.py   line work and wall bands (vector PDF exactly, raster by morphology)
+                scale.py, grid.py, dims.py                                   scale from printed dimensions and grid bubbles
+                interpret.py, measure.py                                     one entry point per page: the best route, with its confidence
+                model.py, qc.py, markup.py                                   the verified drawing model, its quality checks, the annotated plan
+                opening_candidates.py, openings.py                           where openings may be (five finders) and what they are (the model judges a crop, tags are evidence)
+  facts/      what the model reads or judges, always checked by code: page facts (scale, overall dimensions), room names and spaces (rooms.py, spaces.py),
+              opening tags (tags.py), wall checks (verify_walls.py, review.py), spoken inputs (spoken_inputs.py), quote lines (quote.py), SAM 3.1 (sam.py, not in the flow)
+  takeoff/    quantities and rules: walls, foundation, finishes, the estimator (rough.py), coefficients, BoQ and pricing, bills, bill of materials and labour, quote and tender audit
   tools/      what the agent can call, one file per group (drawings, estimate, records, audit, submit)
-  agent/      loop.py, system_instructions.md (the prompt), verify.py (the submit gate), view.py, CLI (python -m plan2cost.agent)
-data/         editable rates, defaults, BESMM code map, coefficients (sourced ranges), coverage map
-eval/         ground-truth cases, the scripts that score the wall and opening readings, and the one that derives coefficients from the author's own BOQs sheets
-ui/           console: new estimate form, live progress, annotated plans, BoQ with ranges, bills, quote and bid audit
-tests/        unit tests
+  agent/      loop.py, system_instructions.md (the prompt), verify.py (the submit gate), view.py (what the console shows), massing.py and render.py (the 3D view and its picture),
+              CLI (python -m plan2cost.agent) and the tender audit (bids.py)
+data/         editable rates, defaults, BESMM code map, coefficients (sourced ranges), material and labour recipes, bill structure, coverage map
+eval/         ground-truth cases, the scripts that score the wall and opening readings, and those that derive coefficients and recipes from the author's own sheets
+ui/           console (server.py, index.html): new estimate form with voice input, live progress, annotated plans, BoQ with ranges, bills, 3D view, quote and bid audit
+docs/         the demo script and checklists (demo-script.md), the measurement strategy, and notes kept for reference (notes/, not read by the code)
+tests/        unit tests (python -m pytest -q)
 ```
 
 ## Setup
