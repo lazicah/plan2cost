@@ -174,7 +174,7 @@ def _outdoors(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close
     return reach[1:-1, 1:-1] > 0
 
 
-def outline_polygon_mm(walls: list[Wall], cell_mm: float = 100, close_mm: float = 2500, simplify_mm: float = 300) -> list[tuple[float, float]] | None:
+def outline_polygon_mm(walls: list[Wall], cell_mm: float = 100, close_mm: float = 2500, simplify_mm: float = 300, grow_mm: float = 150) -> list[tuple[float, float]] | None:
     """The outline of what the walls enclose (walls included), as a polygon in the walls' own millimetres, or None when the walls do not enclose a building (a wall missing leaks
     the outdoors in, and the enclosed part is then too small against the walls' bounding box to trust). Used for slabs in the 3D view; never for a quantity."""
     if not walls:
@@ -188,6 +188,9 @@ def outline_polygon_mm(walls: list[Wall], cell_mm: float = 100, close_mm: float 
     inside = (~_outdoors(shifted, shape, cell_mm, close_mm)).astype(np.uint8)
     k = max(3, int(1200 / cell_mm))  # stubs and wall ends that stick out of the building are thinner than 1.2 m: an opening removes them
     inside = cv2.morphologyEx(inside, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k)))
+    g = int(grow_mm / cell_mm)  # a slab edge shows a little outside the wall faces
+    if g:
+        inside = cv2.dilate(inside, cv2.getStructuringElement(cv2.MORPH_RECT, (2 * g + 1, 2 * g + 1)))
     contours, _ = cv2.findContours(inside, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return None

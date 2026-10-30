@@ -330,7 +330,7 @@ function build3d(box, d, opt) {
   scene.background = new T.Color(dark ? 0x14181f : 0xf3f5f8);
   scene.add(new T.AmbientLight(0xffffff, 0.75)); const sun = new T.DirectionalLight(0xffffff, 0.7); sun.position.set(20, 40, 15); scene.add(sun);
   const mat = (c, o) => new T.MeshLambertMaterial(Object.assign({color: c, side: T.DoubleSide}, o || {}));
-  const M = {ext: mat(0xd9cdb8), int: mat(0xece6da), glass: mat(0x4aa3b5, {transparent: true, opacity: 0.45}), door: mat(0x8a5a3a), roof: mat(0xa6513f), slab: mat(0xbdbdbd)};
+  const M = {ext: mat(0xd9cdb8), int: mat(0xece6da), glass: mat(0x4aa3b5, {transparent: true, opacity: 0.45}), door: mat(0x8a5a3a), roof: mat(0xa6513f), slab: mat(0x8f9399)};
   const edge = new T.LineBasicMaterial({color: dark ? 0x000000 : 0x555555, transparent: true, opacity: 0.35});
   const groups = [], roofGroup = new T.Group(); let minx = 1e9, minz = 1e9, maxx = -1e9, maxz = -1e9;
   const box3 = (g, a, b, y0, y1, c, t, m) => { // a segment from a to b along the wall at cross position c, thickness t, from height y0 to y1; m = orient
@@ -347,12 +347,12 @@ function build3d(box, d, opt) {
       if (o === 'h') { a -= w.t / 2; b += w.t / 2; } // fill the corners
       const m = {o, base, mat: w.external ? M.ext : M.int};
       minx = Math.min(minx, o === 'h' ? a : c); maxx = Math.max(maxx, o === 'h' ? b : c); minz = Math.min(minz, o === 'h' ? c : a); maxz = Math.max(maxz, o === 'h' ? c : b);
-      const ops = fl.openings.filter(p => p.parent === w.id).map(p => ({k: p.kind, s: o === 'h' ? Math.min(p.x0, p.x1) : Math.min(p.y0, p.y1), e: o === 'h' ? Math.max(p.x0, p.x1) : Math.max(p.y0, p.y1)})).sort((p, q) => p.s - q.s);
+      const ops = fl.openings.filter(p => p.parent === w.id).map(p => ({k: p.kind, tall: p.tall, tall_from_above: p.tall_from_above, s: o === 'h' ? Math.min(p.x0, p.x1) : Math.min(p.y0, p.y1), e: o === 'h' ? Math.max(p.x0, p.x1) : Math.max(p.y0, p.y1)})).sort((p, q) => p.s - q.s);
       let cur = a;
       ops.forEach(p => {
         const s = Math.max(p.s, cur), e = Math.min(p.e, b); if (e - s < 0.2) return;
         box3(g, cur, s, 0, H, c, w.t, m);
-        if (p.k === 'window') { const sill = d.sill_m, top = Math.min(sill + d.window_height_m, H); box3(g, s, e, 0, sill, c, w.t, m); box3(g, s, e, top, H, c, w.t, m); box3(g, s, e, sill, top, c, 0.04, {o, base, mat: M.glass}); }
+        if (p.k === 'window') { const sill = p.tall ? 0 : d.sill_m, top = p.tall_from_above ? H : Math.min(d.sill_m + d.window_height_m, H), lo = p.tall_from_above ? d.sill_m : sill; if (!p.tall_from_above) box3(g, s, e, 0, sill, c, w.t, m); if (!p.tall_from_above || true) box3(g, s, e, top, H, c, w.t, m); box3(g, s, e, lo, top, c, 0.04, {o, base, mat: M.glass}); if (p.tall_from_above) box3(g, s, e, 0, d.sill_m, c, w.t, m); }
         else { const top = Math.min(d.door_height_m, H); box3(g, s, e, top, H, c, w.t, m); if (p.k === 'door') box3(g, s, e, 0, top, c, 0.05, {o, base, mat: M.door}); }
         cur = e;
       });
@@ -361,7 +361,7 @@ function build3d(box, d, opt) {
     if (fl.outline && fl.outline.length >= 3) { // the floor slab: the outline the walls enclose, with a hole for each void (a space named Void has no slab)
       const shape = new T.Shape(fl.outline.map(p => new T.Vector2(p[0], -p[1])));
       (fl.voids || []).forEach(v => { const hole = new T.Path([new T.Vector2(v[0], -v[1]), new T.Vector2(v[2], -v[1]), new T.Vector2(v[2], -v[3]), new T.Vector2(v[0], -v[3])].reverse()); shape.holes.push(hole); });
-      const slab = new T.Mesh(new T.ExtrudeGeometry(shape, {depth: 0.2, bevelEnabled: false}), M.slab); slab.rotation.x = -Math.PI / 2; slab.position.y = base - 0.2;
+      const slab = new T.Mesh(new T.ExtrudeGeometry(shape, {depth: 0.25, bevelEnabled: false}), M.slab); slab.rotation.x = -Math.PI / 2; slab.position.y = base - 0.25;
       slab.add(new T.LineSegments(new T.EdgesGeometry(slab.geometry), edge)); g.add(slab);
     }
     scene.add(g);
@@ -389,7 +389,7 @@ function build3d(box, d, opt) {
   const renderer = new T.WebGLRenderer({antialias: true}); const cv = renderer.domElement; box.insertBefore(cv, null);
   const note = document.createElement('div'); note.className = 'note'; note.innerHTML = d.notes.map(esc).join(' '); box.appendChild(note);
   const camera = new T.PerspectiveCamera(45, 1, 0.1, 500); camera.position.set(cx + span * 0.9, span * 0.8 + top, cz + span * 1.2);
-  if (opt.az !== undefined) { const a = +opt.az * Math.PI / 180; camera.position.set(cx + Math.sin(a) * span * 1.5, span * 0.6 + top, cz + Math.cos(a) * span * 1.5); }
+  if (opt.az !== undefined) { const a = +opt.az * Math.PI / 180; const e = opt.el !== undefined ? +opt.el * Math.PI / 180 : Math.atan2(span * 0.6 + top, span * 1.5); camera.position.set(cx + Math.sin(a) * Math.cos(e) * span * 1.7, Math.sin(e) * span * 1.7 + (opt.el !== undefined ? 0 : 0), cz + Math.cos(a) * Math.cos(e) * span * 1.7); }
   const controls = new T.OrbitControls(camera, cv); controls.target.set(cx, top * 0.5, cz); controls.autoRotate = opt.az === undefined; controls.autoRotateSpeed = 1.2;
   const bar = box.querySelector('.bar'); const ctl = document.createElement('span'); ctl.className = 'small';
   ctl.innerHTML = `<button id="m3render" type="button">Make a realistic picture of this view</button> <label style="margin-left:10px"><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" ${opt.az === undefined ? 'checked' : ''}> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
@@ -434,7 +434,7 @@ function build3d(box, d, opt) {
   new ResizeObserver(fit).observe(box); fit();
   m3 = {renderer, raf: 0}; const loop = () => { controls.update(); renderer.render(scene, camera); m3 && (m3.raf = requestAnimationFrame(loop)); }; loop();
 }
-if (/^#3d-\d{8}-\d{6}(-noroof)?(-az\d+)?$/.test(location.hash)) open3d(location.hash.slice(4, 19), {hideRoof: location.hash.includes('-noroof'), az: (location.hash.match(/-az(\d+)/) || [])[1]});  // a link straight to the 3D view of a run: -noroof hides the roof, -az<degrees> sets the viewing direction
+if (/^#3d-\d{8}-\d{6}(-noroof)?(-az\d+)?(-el\d+)?$/.test(location.hash)) open3d(location.hash.slice(4, 19), {hideRoof: location.hash.includes('-noroof'), az: (location.hash.match(/-az(\d+)/) || [])[1], el: (location.hash.match(/-el(\d+)/) || [])[1]});  // a link straight to the 3D view of a run: -noroof hides the roof, -az<degrees> sets the viewing direction, -el<degrees> its height
 tick(); setInterval(tick, 2000); setInterval(showLog, 3000);
   setInterval(() => document.querySelectorAll('[data-since]').forEach(el => { const s = Math.max(0, Math.round(Date.now() / 1000 - Number(el.dataset.since))); el.textContent = '(' + (s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s') + ')'; }), 1000);
 </script>

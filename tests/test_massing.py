@@ -26,3 +26,18 @@ def test_a_pitch_and_overhang_the_user_gave_are_used_and_nothing_measured_gives_
     d = massing_from([model("ground")], {"storey_height_m": 2.8, "roof_type": "gable", "pitch_deg": 20, "overhang_m": 0.6})
     assert d["roof"]["pitch_deg"] == 20 and d["roof"]["overhang_m"] == 0.6 and d["storey_height_m"] == 2.8
     assert massing_from([], {"storey_height_m": 3, "roof_type": "flat"}) == {}
+
+
+def test_a_window_on_the_wall_of_a_void_is_glazing_from_the_floor_below():
+    ground, first = model("ground"), model("first")
+    top = lambda m: next(e for e in m.walls() if e.orient == "h" and e.y0_mm == 0)
+    first.elements.append(Element("WN-001", "window", "external", 1, "first", "h", 2000, 0, 3200, 0, 1.2, 230, parent=top(first).id, width_mm=1200))
+    first.spaces = [{"name": "Void Over Lounge", "kind": "void", "box_mm": [1000.0, 0.0, 5000.0, 4000.0]}]
+    far = Element("WN-002", "window", "external", 1, "first", "h", 6500, 0, 7500, 0, 1.0, 230, parent=top(first).id, width_mm=1000)  # beyond reach of the void
+    first.elements.append(far)
+    d = massing_from([ground, first], {"storey_height_m": 3.0, "roof_type": "gable"})
+    g, f = d["floors"]
+    wins = {o["x0"]: o for o in f["openings"]}
+    assert wins[2.0].get("tall") is True and not wins[6.5].get("tall")
+    assert any(o.get("tall_from_above") and o["x0"] == 2.0 for o in g["openings"])  # the wall below is opened to match
+    assert f["voids"] == [[1.0, 0.0, 5.0, 4.0]] and any("void" in n and "assumed" in n for n in d["notes"])

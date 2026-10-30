@@ -29,6 +29,12 @@ TAGGED_MIN = 4  # fewer tags than this and the drawing is not taken to tag its o
 WEAK_SOURCES = ("between jamb lines", "between a wall end and the next wall", "where the wall faces are drawn lighter")  # detectors that need a tag to back them up on a tagged drawing
 
 
+def near_void(c: dict, model: DrawingModel, reach_mm: float = 1500) -> bool:
+    """Is the opening within reach of a space named Void? Windows on the walls of a void are often a glass facade from one floor to the next, and then have no tag of their own."""
+    cx, cy = (c["x0"] + c["x1"]) / 2, (c["y0"] + c["y1"]) / 2
+    return any(s["kind"] == "void" and s["box_mm"][0] - reach_mm <= cx <= s["box_mm"][2] + reach_mm and s["box_mm"][1] - reach_mm <= cy <= s["box_mm"][3] + reach_mm for s in model.spaces)
+
+
 def tag_kind(tag: str) -> str | None:
     """door or window from the printed letters of a tag (D1, SD2, W3, AW1), else None."""
     return "door" if re.match(r"^[STP]?D\d", tag) else "window" if re.match(r"^[AST]?W\d", tag) else None
@@ -330,7 +336,9 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         crop_tag = lambda v: bool(re.match(TAG, (v.get("tag") or "").strip().upper()))  # a tag the model read beside the opening in its crop is evidence too: the tag positions are coarse
         kept2 = [(c, v) for gi, (c, v) in enumerate(kept)
                  if not (c.get("source") in WEAK_SOURCES or (v["kind"] == "window" and c["width_mm"] > 1900))
-                 or crop_tag(v) or (gi in gap_tag and not (v["kind"] == "window" and c["width_mm"] > 1900 and gap_dist[gi] > 1000))]
+                 or crop_tag(v)
+                 or (v["kind"] == "window" and c["width_mm"] <= 2400 and near_void(c, model))  # glazing to a void runs from one floor to the next and carries no tag
+                 or (gi in gap_tag and not (v["kind"] == "window" and c["width_mm"] > 1900 and gap_dist[gi] > 1000))]
         untagged = len(kept) - len(kept2)
         kept = kept2
         gap_tag, used_tags, gap_dist = pair(kept)
