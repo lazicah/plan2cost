@@ -109,3 +109,20 @@ def test_a_stretch_drawn_with_heavy_faces_is_wall_and_an_empty_gap_is_not():
     wall = {"orient": "h", "x0": 1000.0, "y0": 1000.0, "x1": 2500.0, "y1": 1000.0, "thickness": 400.0}  # 0.1 px per mm: x 100 to 250 px
     gap = {**wall, "x0": 3200.0, "x1": 5000.0}
     assert stretch_ink(img, 0.1, wall) > 0.9 and stretch_ink(img, 0.1, gap) < 0.05
+
+
+def test_a_door_narrower_than_650_mm_is_a_window_whatever_tag_was_matched_but_a_wider_one_stays_a_door(monkeypatch):
+    import numpy as np
+
+    import plan2cost.drawing.openings as O
+
+    cand = lambda x, w: {"wall": "W-001", "orient": "h", "x0": x, "y0": 0.0, "x1": x + w, "y1": 0.0, "width_mm": w, "external": False, "thickness": 230.0, "source": "gap in the wall"}
+    m = build_model(result_for(box_walls()), "ground", 1)
+    monkeypatch.setattr(O, "candidates", lambda model: [cand(1000.0, 560), cand(4000.0, 800)])
+    monkeypatch.setattr(O, "jamb_candidates", lambda *a, **k: [])
+    monkeypatch.setattr(O, "thin_face_candidates", lambda *a, **k: [])
+    monkeypatch.setattr(O, "end_gap_candidates", lambda *a, **k: [])
+    monkeypatch.setattr(O, "_crop", lambda *a, **k: "x")
+    monkeypatch.setattr(O, "_verify", lambda path: {"kind": "door", "tag": None, "leaf": "single"})
+    O.locate_openings(m, np.zeros((10, 10, 3), np.uint8), 0.1, tags=[("D2", 1300.0, 500.0)])  # a door tag beside the narrow one
+    assert sorted((o.category, round(o.width_mm)) for o in m.openings()) == [("door", 800), ("window", 560)]

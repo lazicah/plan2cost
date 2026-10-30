@@ -398,7 +398,8 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         tag, how = (text_tag, f"directly labelled ({tag_source})") if text_tag else ((v.get("tag") or "").strip().upper() or None, "directly labelled (read from the crop)")
         by_tag = tag_kind(text_tag) if text_tag else None  # the printed letter is stronger evidence than a look at a crop
         kind = by_tag or v["kind"]
-        if kind == "door" and not by_tag and c["width_mm"] < 700:  # no door is narrower than 700 mm clear (the author's smallest is 750): a small window symbol with a neighbour's arc beside it
+        crop_door = tag_kind((v.get("tag") or "").strip().upper()) == "door"
+        if kind == "door" and c["width_mm"] < 650 and not crop_door:  # no door is narrower than 650 mm clear (the author's smallest is 750): a small window symbol with a neighbour's arc or tag beside it, whatever tag position was matched
             kind = "window"
         made.append({**c, "kind": kind, "tag": tag, "how": how if tag else "inferred"})
     # a type the schedule knows, by tag; else by width when exactly one schedule type of that kind fits
