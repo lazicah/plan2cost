@@ -5,8 +5,10 @@ import tempfile
 import cv2
 
 from plan2cost.drawing.model import DrawingModel
+from plan2cost.drawing.openings import DOOR_WIDTHS_MM, WINDOW_WIDTHS_MM, snap
 
 RED, BLUE, ORANGE = (40, 40, 220), (200, 90, 20), (0, 150, 255)  # BGR
+OPENING_COLOUR = {"door": (170, 0, 170), "window": (170, 150, 0), "opening": (60, 170, 60)}  # purple doors, teal windows, green bare openings
 
 
 def plan_image(model: DrawingModel, pdf: str | None, page: int | None, image: str | None, dpi: int = 150):
@@ -39,9 +41,9 @@ def draw_markup(model: DrawingModel, out_path: str, pdf: str | None = None, page
         cv2.line(img, p1, p2, colour, thick)
         xs += [p1[0], p2[0]]
         ys += [p1[1], p2[1]]
-    for o in model.openings():  # openings: a green bar across the wall at the gap
+    for o in model.openings():  # a bar across the wall at each opening: purple doors, teal windows, green bare openings
         p1, p2 = (int(o.x0_mm * scale), int(o.y0_mm * scale)), (int(o.x1_mm * scale), int(o.y1_mm * scale))
-        cv2.line(img, p1, p2, (60, 170, 60), thick + 4)
+        cv2.line(img, p1, p2, OPENING_COLOUR.get(o.category, (60, 170, 60)), thick + 6)
         xs += [p1[0], p2[0]]
         ys += [p1[1], p2[1]]
     for e in model.walls():  # labels last so they sit on top of every line
@@ -53,10 +55,12 @@ def draw_markup(model: DrawingModel, out_path: str, pdf: str | None = None, page
         cv2.putText(img, label, pos, cv2.FONT_HERSHEY_SIMPLEX, font, RED if e.subtype == "external" else BLUE, 2)
     for o in model.openings():
         mid = (int((o.x0_mm + o.x1_mm) / 2 * scale), int((o.y0_mm + o.y1_mm) / 2 * scale))
-        label = o.id + (f" {o.mark}" if o.mark else "")
+        colour = OPENING_COLOUR.get(o.category, (60, 170, 60))
+        std = snap(o.width_mm, DOOR_WIDTHS_MM if o.category == "door" else WINDOW_WIDTHS_MM) if o.category in ("door", "window") else int(round(o.width_mm / 50) * 50)
+        label = {"door": "D", "window": "W", "opening": "O"}[o.category] + str(std) + (f" {o.mark}" if o.mark else "")
         (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font * 0.8, 2)
         cv2.rectangle(img, (mid[0] + 6, mid[1] - th - 8), (mid[0] + tw + 10, mid[1] + 2), (255, 255, 255), -1)
-        cv2.putText(img, label, (mid[0] + 8, mid[1] - 4), cv2.FONT_HERSHEY_SIMPLEX, font * 0.8, (40, 130, 40), 2)
+        cv2.putText(img, label, (mid[0] + 8, mid[1] - 4), cv2.FONT_HERSHEY_SIMPLEX, font * 0.8, colour, 2)
     m = int(margin_m * 1000 * scale)
     x0, y0, x1, y1 = max(min(xs) - m, 0), max(min(ys) - m, 0), min(max(xs) + m, w), min(max(ys) + m, h)
     crop = img[y0:y1, x0:x1].copy()
@@ -64,7 +68,7 @@ def draw_markup(model: DrawingModel, out_path: str, pdf: str | None = None, page
     model.markup_frame = [x0, y0, min(k, 1.0), scale]
     if k < 1:
         crop = cv2.resize(crop, (int(crop.shape[1] * k), int(crop.shape[0] * k)), interpolation=cv2.INTER_AREA)
-    legend = f"{model.floor} floor, page {model.page}: red external, blue internal, orange has an open issue, green openings. Numbers are wall ids (W-nnn)."
+    legend = f"{model.floor} floor, page {model.page}: red external walls, blue internal, orange has an open issue; purple doors (D), teal windows (W) with widths in mm, green openings (O). Numbers are wall ids."
     cv2.rectangle(crop, (0, 0), (crop.shape[1], 34), (255, 255, 255), -1)
     cv2.putText(crop, legend, (8, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (30, 30, 30), 1)
     cv2.imwrite(out_path, crop)
@@ -91,7 +95,7 @@ def _add_review(model: DrawingModel, markup_path: str) -> None:
         model.issues.append(Issue("review_skipped", "info", f"The model review of the plan was skipped ({type(e).__name__}).", [], "", "model review"))
 
 
-def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool = False, on_measured=None) -> DrawingModel:
+def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool = False, on_measured=None, on_step=None) -> DrawingModel:
     """Interpret one page, build the verified drawing model, save it with its annotated plan, and return it. `on_measured(model)` is called as soon as the
     walls are measured and drawn, before the slower model review, so a console can show them."""
     from pathlib import Path
@@ -99,8 +103,10 @@ def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool =
     from plan2cost.drawing.model import build_model
     from plan2cost.drawing.interpret import interpret_page
 
+    step = on_step or (lambda text: None)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    step("Tracing the walls and fixing the scale from the printed dimensions")
     r = interpret_page(pdf, page, str(out / "scratch"), keep=True)
     if "error" in r or "_walls" not in r:
         raise ValueError(r.get("error", "no walls were kept for the drawing model (the legacy detector does not keep them)"))
@@ -111,12 +117,14 @@ def model_for_page(pdf: str, page: int, floor: str, out_dir: str, review: bool =
     if on_measured:
         on_measured(model)
     if review:
+        step("Checking the walls with the model: overshoots, duplicates, missed walls")
         _verify(model, str(out / name), pdf, page, r.get("_image") if r["route"] == "raster" else None)
+        step("The model is reviewing the annotated plan")
         _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p{page}.json")
     return model
 
-def model_for_image(path: str, floor: str, out_dir: str, review: bool = False, on_measured=None) -> DrawingModel:
+def model_for_image(path: str, floor: str, out_dir: str, review: bool = False, on_measured=None, on_step=None) -> DrawingModel:
     """The same for a plan supplied as an image. The model reads the printed facts (stated scale, overall dimensions) that code cannot, then code measures."""
     from pathlib import Path
 
@@ -124,9 +132,12 @@ def model_for_image(path: str, floor: str, out_dir: str, review: bool = False, o
     from plan2cost.drawing.model import build_model
     from plan2cost.facts.page_facts import read_page_facts
 
+    step = on_step or (lambda text: None)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    step("Reading the printed scale and overall dimensions")
     facts = read_page_facts(path)
+    step("Tracing the walls and fixing the scale from the printed dimensions")
     r = interpret_image(path, facts, keep_walls=True)
     if "error" in r:
         raise ValueError(r["error"])
@@ -139,14 +150,16 @@ def model_for_image(path: str, floor: str, out_dir: str, review: bool = False, o
     if on_measured:
         on_measured(model)
     if review:
+        step("Checking the walls with the model: overshoots, duplicates, missed walls")
         _verify(model, str(out / name), None, None, path)
+        step("The model is reviewing the annotated plan")
         _add_review(model, str(out / name))
     model.save(out / f"drawing_model_{floor}_p1.json")
     return model
 
 
-def model_for_floor(file: str, page: int, floor: str, out_dir: str, review: bool = False, on_measured=None) -> DrawingModel:
+def model_for_floor(file: str, page: int, floor: str, out_dir: str, review: bool = False, on_measured=None, on_step=None) -> DrawingModel:
     """A floor plan given as a PDF page or an image becomes a drawing model."""
     if file.lower().endswith(".pdf"):
-        return model_for_page(file, page, floor, out_dir, review, on_measured)
-    return model_for_image(file, floor, out_dir, review, on_measured)
+        return model_for_page(file, page, floor, out_dir, review, on_measured, on_step)
+    return model_for_image(file, floor, out_dir, review, on_measured, on_step)

@@ -175,6 +175,7 @@ function render(run) {
   const q = run.pending ? `<section class="card q"><h2>The agent needs you</h2><div>${esc(run.pending.question)}</div><textarea id="ans" placeholder="Your answer"></textarea><button id="answer">Answer and continue</button></section>` : '';
   const progress = `<section class="card"><div class="stages">${run.stages.map(s => `<span class="stage ${s.done ? 'done' : s.active ? 'active' : ''}">${s.done ? '✓ ' : s.active && run.status === 'running' ? '<span class="spin"></span>' : ''}${esc(s.label)}${s.of ? ' ' + s.count + '/' + s.of : ''}</span>`).join('')}</div>
       ${run.now ? `<div class="small" style="margin-top:10px"><span class="spin"></span><b>Working on:</b> <span class="tool">${esc(run.now.tool)}</span> ${esc(Object.values(run.now.args).join(', '))}</div>` : ''}
+      ${run.status === 'running' && run.steps && Object.keys(run.steps).length && run.now && ['read_floor', 'read_all_floors'].includes(run.now.tool) ? `<div class="small steps" style="margin-top:8px">${Object.entries(run.steps).filter(([, s]) => s.text !== 'Done').map(([f, s]) => `<div><b>${esc(f)} floor:</b> ${esc(s.text)} <span class="mute" data-since="${s.since}">…</span></div>`).join('')}</div>` : ''}
       <div class="small mute" style="margin-top:8px">Storey height ${esc(inp.storey_height_m)} m, ${esc(inp.roof_type)} roof, ${esc(inp.finish_level || 'standard')} finish${inp.pitch_deg ? ', pitch ' + esc(inp.pitch_deg) + '°' : ''}${inp.overhang_m ? ', overhang ' + esc(inp.overhang_m) + ' m' : ''}</div></section>`;
   const pv = run.preview;
   const reading = pv ? `<section class="card"><h2>Walls measured: ${esc(pv.floor)} floor</h2><img src="/api/runs/${run.id}/${esc(pv.markup)}?v=${pv.walls}" alt="the walls measured" style="width:100%;border:1px solid var(--line);border-radius:8px">
@@ -245,13 +246,14 @@ async function tick() {
   if (!current) { mode = 'form'; return renderForm(); }
   const run = await api('/api/runs/' + current);
   if (run.error && !run.stages) return;
-  const key = JSON.stringify([run.status, run.turn, run.pending, run.facts.length, run.now, run.files, run.thumbs.length, run.built, run.preview, run.error]) + document.activeElement?.id;
+  const key = JSON.stringify([run.status, run.turn, run.pending, run.facts.length, run.now, run.files, run.thumbs.length, run.built, run.preview, run.steps, run.error]) + document.activeElement?.id;
   if (key !== lastKey) { if (document.activeElement?.id !== 'ans') render(run); lastKey = key; }
 }
 $('#runs').onchange = e => { current = e.target.value; mode = 'run'; lastKey = ''; tick(); };
 $('#newbtn').onclick = () => { mode = 'form'; formFloors = [{name: 'ground', file: null}]; formRoof = ''; formQuote = null; formFinish = 'standard'; renderForm(); };
 async function showLog() { if ($('#logbox').open) $('#log').textContent = (await api('/api/log')).tail || '(empty)'; }
 tick(); setInterval(tick, 2000); setInterval(showLog, 3000);
+  setInterval(() => document.querySelectorAll('[data-since]').forEach(el => { const s = Math.max(0, Math.round(Date.now() / 1000 - Number(el.dataset.since))); el.textContent = '(' + (s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s') + ')'; }), 1000);
 </script>
 </body>
 </html>

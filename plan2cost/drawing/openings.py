@@ -7,10 +7,13 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
 import cv2
+import numpy as np
 
 from plan2cost.drawing.model import DrawingModel, Element, Issue
 
 TAG = re.compile(r"^(?:[A-Z]{1,3}\d{1,2}[A-Za-z]?)$")
+DOOR_WIDTHS_MM = (750, 900, 1050, 1200, 1800)  # the door and window sizes that recur in the author's own plans; a measured gap is snapped to the nearest
+WINDOW_WIDTHS_MM = (600, 750, 900, 1200, 1500, 1800, 2400)
 MIN_MM, MAX_MM = 450, 3700  # narrower is a jamb or a break in a face line, wider is a gap in the detection
 
 PROMPT = """This is a crop of a floor plan. A thick orange bar marks a gap that was found in a wall. Say what the gap is:
@@ -20,6 +23,10 @@ PROMPT = """This is a crop of a floor plan. A thick orange bar marks a gap that 
 - "not_opening": the bar is not on a gap in a wall (a stair, furniture, a wall end, a column, a text label, two walls meeting).
 Also read the tag printed next to it if there is one (like W3, D2, SD1, AW1, TD2), exactly as printed, else null.
 Judge only what you can see. Return only JSON: {"kind": "door|window|opening|not_opening", "tag": "W3" or null, "leaf": "single|double|sliding|none|unclear"}"""
+
+
+def snap(width_mm: float, sizes: tuple) -> int:
+    return min(sizes, key=lambda s: abs(s - width_mm))
 
 
 def candidates(model: DrawingModel) -> list[dict]:
@@ -32,6 +39,100 @@ def candidates(model: DrawingModel) -> list[dict]:
             x0, y0, x1, y1 = (a, e.y0_mm, b, e.y0_mm) if e.orient == "h" else (e.x0_mm, a, e.x0_mm, b)
             out.append({"wall": e.id, "orient": e.orient, "x0": x0, "y0": y0, "x1": x1, "y1": y1, "width_mm": round(b - a), "external": e.external_share >= 0.5,
                         "thickness": e.thickness_mm})
+    return out
+
+
+def end_gap_candidates(model: DrawingModel, have: list, reach_mm: float = 2400, tol_mm: float = 150) -> list[dict]:
+    """A door is often a gap between the end of a wall and the wall it would meet (or the next wall on the same line), not a gap inside one run. For each wall end that
+    meets nothing, the stretch from that end to the nearest wall ahead of it (450 to 2400 mm of clear space) is a candidate. Most will not be openings (a partition that
+    simply stops), so the model decides from a crop; stretches that overlap a gap already found are left out."""
+    from plan2cost.drawing.qc import _end_meets_wall, _wall
+
+    els = model.walls()
+    walls = [_wall(e) for e in els]
+    out: list[dict] = []
+    for e, w in zip(els, walls):
+        for sign, end in ((1, w.end_mm), (-1, w.start_mm)):
+            if _end_meets_wall(w, end, walls, tol_mm):
+                continue
+            best = None
+            for o, v in zip(els, walls):
+                if o is e:
+                    continue
+                if v.orient != w.orient:  # a wall across the line: its near face is the stop
+                    face = v.centre_mm - sign * v.thickness_mm / 2
+                    covers = v.start_mm - tol_mm <= w.centre_mm <= v.end_mm + tol_mm
+                else:  # the next wall on the same line: where it starts
+                    face = v.start_mm if sign == 1 else v.end_mm
+                    covers = abs(v.centre_mm - w.centre_mm) <= max(v.thickness_mm, w.thickness_mm)
+                clear = (face - end) * sign
+                if covers and 450 <= clear <= reach_mm and (best is None or clear < best[0]):
+                    best = (clear, face)
+            if not best:
+                continue
+            a, b = sorted((end, best[1]))
+            x0, y0, x1, y1 = (a, e.y0_mm, b, e.y0_mm) if e.orient == "h" else (e.x0_mm, a, e.x0_mm, b)
+            mid = ((x0 + x1) / 2, (y0 + y1) / 2)
+            if any(abs((h["x0"] + h["x1"]) / 2 - mid[0]) < 450 and abs((h["y0"] + h["y1"]) / 2 - mid[1]) < 450 for h in have + out):
+                continue
+            out.append({"wall": e.id, "orient": e.orient, "x0": x0, "y0": y0, "x1": x1, "y1": y1, "width_mm": round(best[0]), "external": e.external_share >= 0.5,
+                        "thickness": e.thickness_mm, "source": "between a wall end and the next wall"})
+    return out
+
+
+def _heavy_lines(band, c0: int, c1: int, margin: int = 6) -> int:
+    """How many separate heavy lines run along the wall between two columns of its band (rows of the band mostly ink, groups of adjacent rows counted once)."""
+    rows = band[:, c0 + margin:max(c1 - margin, c0 + margin + 1)].mean(axis=1) >= 0.7
+    return int(np.count_nonzero(np.diff(np.concatenate([[0], rows.astype(np.int8)])) == 1))
+
+
+def jamb_candidates(model: DrawingModel, img, scale: float, have: list, min_px: int = 3) -> list[dict]:
+    """Openings drawn inside the wall with no break in its faces (a window shown as a sill and jamb lines across the wall): the stretches of a wall between two
+    consecutive heavy lines that cross the whole thickness of the wall. Most of these stretches are plain wall, so they are only candidates; the model looks at each
+    and says what it is. Stretches that overlap a gap already found are left out."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+    dark = gray < 140
+    out = []
+    for e in model.walls():
+        half = e.thickness_mm / 2 * scale + 1.5
+        if e.orient == "h":
+            a, b = sorted((int(e.x0_mm * scale), int(e.x1_mm * scale)))
+            r0, r1 = int(e.y0_mm * scale - half), int(e.y0_mm * scale + half)
+            band = dark[max(r0, 0):r1 + 1, max(a, 0):b + 1]
+        else:
+            a, b = sorted((int(e.y0_mm * scale), int(e.y1_mm * scale)))
+            c0, c1 = int(e.x0_mm * scale - half), int(e.x0_mm * scale + half)
+            band = dark[max(a, 0):b + 1, max(c0, 0):c1 + 1].T
+        if band.size == 0 or band.shape[1] < 10:
+            continue
+        full = band.mean(axis=0) >= 0.85  # a column that is ink across the whole wall thickness
+        runs, n = [], band.shape[1]
+        i = 0
+        while i < n:
+            if full[i]:
+                j = i
+                while j + 1 < n and full[j + 1]:
+                    j += 1
+                if j - i + 1 >= min_px:
+                    runs.append((i, j))
+                i = j + 1
+            else:
+                i += 1
+        if len(runs) > 12:
+            continue  # a wall drawn solid, or hatched so densely that every column is full: no jamb lines to read
+        for (s1, e1), (s2, e2) in zip(runs, runs[1:]):
+            lo, hi = (e1 + 1) / scale, s2 / scale  # the stretch between the two lines, in mm along the wall
+            width = hi - lo
+            if not MIN_MM <= width <= MAX_MM:
+                continue
+            if _heavy_lines(band, int(lo * scale), int(hi * scale)) < 3:
+                continue  # two heavy face lines and nothing between them is plain wall; a window symbol has a third line (the sill) between its faces
+            lo, hi = lo + max(a, 0) / scale, hi + max(a, 0) / scale  # the band starts at pixel max(a, 0) of the sheet
+            x0, y0, x1, y1 = (lo, e.y0_mm, hi, e.y0_mm) if e.orient == "h" else (e.x0_mm, lo, e.x0_mm, hi)
+            if any(h["wall"] == e.id and min(hi, h["x1"] if e.orient == "h" else h["y1"]) - max(lo, h["x0"] if e.orient == "h" else h["y0"]) > 0.5 * width for h in have):
+                continue
+            out.append({"wall": e.id, "orient": e.orient, "x0": x0, "y0": y0, "x1": x1, "y1": y1, "width_mm": round(width), "external": e.external_share >= 0.5,
+                        "thickness": e.thickness_mm, "source": "between jamb lines"})
     return out
 
 
@@ -138,6 +239,8 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         c["source"] = "gap in the wall"
     if pdf and page and schedule:
         cands += dimension_candidates(model, pdf, page, {round(s["width_m"] * 1000) for s in schedule}, cands)
+    cands += jamb_candidates(model, img, scale, cands)
+    cands += end_gap_candidates(model, cands)
     tags = text_tags(pdf, page, model) if pdf and page else []
     out_dir = tempfile.mkdtemp()
     paths = [_crop(img, scale, c, out_dir, i) for i, c in enumerate(cands)]

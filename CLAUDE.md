@@ -58,7 +58,9 @@ BoQ line is marked measured or estimated, with the coefficient ids behind an est
 the building envelope less the walls; a flood-filled outline leaks where walls are missing, so it is not used. The roof-plan, section, structural and schedule readers were removed;
 they are in git history (commit 647ba51 and earlier). A budget estimate is not a bill for tender, so the unpriced bill is made only when every line is measured.
 Openings: candidates are gaps where both wall faces are broken; the model checks each crop (door, window, opening, not an opening) and reads its tag; width is measured, height is a
-flagged standard (coefficients door_height_m, window_height_m). Plan 6 ground floor against the author's window counts: 12 of 16 found at 600 mm, doors weaker.
+flagged standard (coefficients door_height_m, window_height_m). Plan 6 ground floor against the author's window counts: 12 of 16 found at 600 mm, doors weaker. Two more candidate sources (Oct 30): windows drawn inside a thick wall (a sill line between the face lines, found between two heavy jamb lines),
+and doors that are a gap between a wall end and the next wall. Plan 10 (one-storey bungalow, a PDF whose page is an image): windows 6 x 1200, 4 x 600, 1 x 750 all found, doors 4 of 4 found (1 x 1200 double, 3 read as 900: the clear gap measures about 870 for both the
+750 and the 900 doors, and only the door leaf would tell them apart). Plan 6 ground with its schedule: windows 23 to 25, 600 mm ones 12 to 13 of 16, 900 mm ones 5 to 6 of 4 (one more over-counted).
 
 ## Code layout
 See README.md. Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`; the prompt lives in `agent/system_instructions.md`.

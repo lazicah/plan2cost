@@ -2,6 +2,7 @@
 printed (scale, overall dimensions, room names) and looks at crops to say what a gap in a wall is."""
 import tempfile
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from plan2cost.drawing.markup import draw_markup, model_for_floor, plan_image
@@ -15,12 +16,7 @@ from plan2cost.tools.records import add_fact, settle
 LOCK = threading.Lock()  # the run is saved from several threads while floors are read together
 
 
-DOOR_WIDTHS_MM = (750, 900, 1050, 1200, 1800)  # the door and window sizes that recur in the author's own plan schedules; a measured gap is snapped to the nearest
-WINDOW_WIDTHS_MM = (600, 900, 1200, 1500, 1800, 2400)
-
-
-def snap(width_mm: float, sizes: tuple) -> int:
-    return min(sizes, key=lambda s: abs(s - width_mm))
+from plan2cost.drawing.openings import DOOR_WIDTHS_MM, WINDOW_WIDTHS_MM, snap  # noqa: F401  (the standard sizes live with the openings; re-exported here)
 
 
 def _openings(model) -> list[dict]:
@@ -38,6 +34,18 @@ def _openings(model) -> list[dict]:
             for (k, w, ext), n in sorted(groups.items())]
 
 
+def _stepper(run: Run, floor: str):
+    """A function that records what a floor is doing now, so the console can show progress during a slow read. Steps are counted as they come, not planned."""
+    n = [0]
+
+    def step(text: str) -> None:
+        n[0] += 1
+        with LOCK:
+            run.data.setdefault("steps", {})[floor] = {"text": text, "n": n[0], "since": time.time()}
+            run.save()
+    return step
+
+
 def _measure(run: Run, floor: str, on_walls) -> dict:
     """The heavy part of reading a floor, with no change to the run except the preview: safe to run for several floors at once."""
     spec = next((f for f in run.floors if f["name"] == floor), None)
@@ -46,8 +54,9 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     file, page = spec["file"], int(spec.get("page") or 1)
     is_pdf = file.lower().endswith(".pdf")
     models_dir = run.dir / "models"
+    step = _stepper(run, floor)
     try:
-        model = model_for_floor(file, page, floor, str(models_dir), review=True, on_measured=on_walls)
+        model = model_for_floor(file, page, floor, str(models_dir), review=True, on_measured=on_walls, on_step=step)
     except ValueError as e:
         return {"error": f"No walls could be measured on the {floor} floor plan ({e}). Ask the user for a clearer plan, or use assume_floor_like_ground."}
     t = model.totals
@@ -55,12 +64,14 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     outer = (max(ext_walls, key=lambda e: e.length_m).thickness_mm / 1000) if ext_walls else 0.23  # joints are on centre lines: add one wall thickness for the outer face
     issues = [i for i in model.issues if i.severity != "info"]
     rooms, note = [], ""
+    step("Reading the room names")
     try:
         image = render_pages(file, [page], tempfile.mkdtemp(), dpi=170)[0] if is_pdf else file
         rooms = read_rooms(image, page_text(file, page) if is_pdf else "", floor)
     except Exception as e:  # the room names are a refinement; a failed read never stops the floor
         note = f"room names could not be read ({type(e).__name__})"
     ops: list[dict] = []
+    step("Finding doors and windows and checking each one with the model")
     try:
         img, scale = plan_image(model, file if is_pdf else None, page if is_pdf else None, None if is_pdf else file, 200)
         before = len(model.issues)
@@ -71,6 +82,7 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     except Exception as e:
         note += f" openings could not be located ({type(e).__name__})"
     model.save(models_dir / f"drawing_model_{floor}_p{page}.json")
+    step("Done")
     data = {"name": floor, "ext_m": float(t["external_m"]), "int_m": float(t["internal_m"]), "junctions": sum(len(e.connected) for e in model.walls()) // 2,
             "length_m": round(float(t["length_m"]) + outer, 2), "width_m": round(float(t["width_m"]) + outer, 2),
             "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "rooms": [r.name for r in rooms],
