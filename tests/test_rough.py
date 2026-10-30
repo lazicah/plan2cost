@@ -105,12 +105,12 @@ def test_a_void_on_an_upper_floor_comes_off_the_slab_and_the_floor_finish():
     assert any(a["name"] == "voids" for a in ass)
 
 
-def test_on_a_plan_that_tags_its_openings_the_tags_beyond_the_openings_found_are_counted_not_a_guess_from_the_floor_area():
+def test_on_a_plan_that_tags_its_openings_the_tags_with_no_opening_found_near_them_are_counted_instead_of_a_guess_from_the_floor_area():
     sparse = FloorData("ground", 80.0, 80.0, 39, 10.4, 17.2, 25.0, [Opening("W1200", 1.2, 1.2, 2, "window", True, True)], [])
-    sparse.tagged, sparse.tag_totals = True, {"window": 9, "door": 3}  # the plan prints 9 window tags and 3 door tags; two windows and no door were located
+    sparse.tagged, sparse.unplaced = True, {"window": 7, "door": 3}
     by, ass, _, _ = run_estimate([sparse, first()])
     assert by["windows_estimated_nr"].qty == 7 and by["windows_estimated_nr"].qty_low == 5 and by["doors_estimated_nr"].qty == 3  # 0.7 of seven at the low end: a tag can be read twice
     assert "printed tags" in by["windows_estimated_nr"].description and any(a["name"] == "windows_from_tags" for a in ass)
-    sparse.tag_totals = {"window": 2, "door": 0}  # as many tags as openings found: nothing to add, and no guess from the floor area
+    sparse.unplaced = {}
     by, _, _, _ = run_estimate([sparse, first()])
-    assert "windows_estimated_nr" not in by and "doors_estimated_nr" not in by
+    assert "windows_estimated_nr" not in by and "doors_estimated_nr" not in by  # every tag has an opening near it: nothing to add, and no guess from the floor area

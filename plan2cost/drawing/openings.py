@@ -374,10 +374,14 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         gap_tag, used_tags, gap_dist = pair(kept)
         lost = [tags[ti][0] for ti in range(len(tags)) if ti not in used_tags]
         matched = [tags[ti] for ti in used_tags]
-        unplaced = []  # a printed tag is an opening even where its wall was not measured: counted from the tag, at a standard size, unless it is the same tag read twice
+        unplaced = []  # a printed tag is an opening even where its wall was not measured. Counted from the tag, at a standard size, only where no opening of its kind was located near it
+        # (so a tag read twice, or beside an opening that was found, adds nothing), and not when the same tag was read beside a located opening in its crop
+        located = [(tag_kind((v.get("tag") or "").strip().upper()) or v["kind"], (c["x0"] + c["x1"]) / 2, (c["y0"] + c["y1"]) / 2) for c, v in kept]
         for ti, (tg, tx, ty) in enumerate(tags):
             kind = tag_kind(tg)
             if ti in used_tags or not kind or any(m[0] == tg and ((m[1] - tx) ** 2 + (m[2] - ty) ** 2) ** 0.5 <= 3000 for m in matched):
+                continue
+            if any(k == kind and ((x - tx) ** 2 + (y - ty) ** 2) ** 0.5 <= 2500 for k, x, y in located):
                 continue
             unplaced.append({"tag": tg, "kind": kind, "x_mm": round(tx), "y_mm": round(ty)})
         model.unplaced_tags = unplaced
@@ -393,7 +397,10 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         text_tag = gap_tag.get(gi)
         tag, how = (text_tag, f"directly labelled ({tag_source})") if text_tag else ((v.get("tag") or "").strip().upper() or None, "directly labelled (read from the crop)")
         by_tag = tag_kind(text_tag) if text_tag else None  # the printed letter is stronger evidence than a look at a crop
-        made.append({**c, "kind": by_tag or v["kind"], "tag": tag, "how": how if tag else "inferred"})
+        kind = by_tag or v["kind"]
+        if kind == "door" and not by_tag and c["width_mm"] < 700:  # no door is narrower than 700 mm clear (the author's smallest is 750): a small window symbol with a neighbour's arc beside it
+            kind = "window"
+        made.append({**c, "kind": kind, "tag": tag, "how": how if tag else "inferred"})
     # a type the schedule knows, by tag; else by width when exactly one schedule type of that kind fits
     for m in made:
         if m["tag"] and m["tag"] in labels:
