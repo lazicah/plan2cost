@@ -79,7 +79,7 @@ data/         editable rates, defaults, BESMM code map, coefficients (sourced ra
 eval/         ground-truth cases, the scripts that score the wall and opening readings, and those that derive coefficients and recipes from the author's own sheets
 ui/           console: server.py (standard library only), index.html and the scripts it loads in order (app.js: form and run view, voice.js: voice input, view3d.js: 3D view and picture,
               main.js: start-up), style.css; new estimate form with voice input, live progress, annotated plans, BoQ with ranges, bills, 3D view, quote and bid audit
-docs/         the demo script and checklists (demo-script.md), the measurement strategy, and notes kept for reference (notes/, not read by the code)
+docs/         the measurement strategy (measurement-strategy.md)
 tests/        unit tests (python -m pytest -q)
 ```
 
