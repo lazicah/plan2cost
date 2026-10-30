@@ -1,23 +1,25 @@
-"""The tool that reads a floor plan: walls, rooms and openings in one call. Walls and openings are measured by code from the lines; the model reads only what is
-printed (scale, overall dimensions, room names) and looks at crops to say what a gap in a wall is."""
 import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from pathlib import Path
+
+import cv2
 
 from plan2cost.drawing.markup import draw_markup, model_for_floor, plan_image
-from plan2cost.drawing.openings import locate_openings
+from plan2cost.drawing.model import DrawingModel, refresh
+from plan2cost.drawing.openings import DOOR_WIDTHS_MM, WINDOW_WIDTHS_MM, locate_openings, snap  # noqa: F401  (the standard sizes are re-exported for callers and tests)
 from plan2cost.facts.rooms import read_rooms
-from plan2cost.facts.spaces import apply_space_context
+from plan2cost.facts.spaces import apply_space_context, recompute_external
+from plan2cost.facts.tags import has_text_tags, read_tags_fractional
+from plan2cost.facts.verify_walls import add_walls_at_tags
 from plan2cost.kit.pdf import page_text, render_pages
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff import coefficients as C
 from plan2cost.tools.records import add_fact, settle
 
 LOCK = threading.Lock()  # the run is saved from several threads while floors are read together
-
-
-from plan2cost.drawing.openings import DOOR_WIDTHS_MM, WINDOW_WIDTHS_MM, snap  # noqa: F401  (the standard sizes live with the openings; re-exported here)
 
 
 def _openings(model) -> list[dict]:
@@ -47,44 +49,97 @@ def _stepper(run: Run, floor: str):
     return step
 
 
+@dataclass
+class FloorSource:
+    """Where one floor plan is: the file, the page of it, and the floor's name."""
+    file: str
+    page: int
+    floor: str
+
+    @property
+    def is_pdf(self) -> bool:
+        return self.file.lower().endswith(".pdf")
+
+    @property
+    def pdf(self) -> str | None:
+        """The PDF path for the readers that take either a PDF or an image path (None for an image)."""
+        return self.file if self.is_pdf else None
+
+    @property
+    def image(self) -> str | None:
+        return None if self.is_pdf else self.file
+
+    def page_image(self, dpi: int) -> str:
+        """A picture file of the plan: the page of a PDF rendered at `dpi`, or the image itself."""
+        return render_pages(self.file, [self.page], tempfile.mkdtemp(), dpi=dpi)[0] if self.is_pdf else self.file
+
+
+def _read_room_names(src: FloorSource):
+    """The rooms and spaces with their names and rough places. Needs only the picture, so it can run while the walls are traced."""
+    return read_rooms(src.page_image(170), page_text(src.file, src.page) if src.is_pdf else "", src.floor)
+
+
+def _read_opening_tags(src: FloorSource):
+    """The tags printed beside the openings (W1, D2...) as fractions of the page: from the PDF's text layer when it has one (read later, with the walls), else read by the model
+    and put at their true place. Needs only the picture, so it can run while the walls are traced."""
+    if src.is_pdf and has_text_tags(page_text(src.file, src.page)):
+        return None
+    return read_tags_fractional(cv2.imread(src.page_image(200)))
+
+
+def _find_openings(src: FloorSource, model: DrawingModel, img, scale: float, tags, models_dir: Path) -> tuple[list[dict], list]:
+    """Locate the doors and windows on the walls and draw the annotated plan. Tags with no opening near them may stand beside a wall drawn with light lines that no wall detector
+    read: if such a wall is found it is added and the openings are looked for again with it in place. Returns the openings grouped by kind and standard size, and the issues to
+    report (those raised by the last look; what an earlier look raised about a state that no longer exists is not repeated)."""
+    page = src.page if src.is_pdf else None
+    before = len(model.issues)
+    locate_openings(model, img, scale, src.pdf, page, None, tags=tags)
+    if model.unplaced_tags:
+        added = add_walls_at_tags(model, model.unplaced_tags, img, scale)
+        if added:
+            model.elements = [e for e in model.elements if e.category == "wall"]
+            refresh(model)  # replaces the code-made issues, so the count to report from starts again
+            recompute_external(model, img.shape[:2], scale)
+            model.issues += added
+            before = len(model.issues)
+            locate_openings(model, img, scale, src.pdf, page, None, tags=tags)
+    draw_markup(model, str(models_dir / model.markup), pdf=src.pdf, page=page, image=src.image)
+    return _openings(model), [i for i in model.issues[before:] if i.severity != "info"]
+
+
+def _floor_data(floor: str, page: int, model: DrawingModel, ops: list[dict], outer_m: float) -> dict:
+    """What the estimate needs from a measured floor: wall girth, the building's size (outermost joints plus one wall thickness), wall area, openings, rooms are added by the caller."""
+    t = model.totals  # after every edit (space names, walls added at tags): the totals are replaced, not changed in place
+    return {"name": floor, "ext_m": float(t["external_m"]), "int_m": float(t["internal_m"]), "junctions": sum(len(e.connected) for e in model.walls()) // 2,
+            "length_m": round(float(t["length_m"]) + outer_m, 2), "width_m": round(float(t["width_m"]) + outer_m, 2),
+            "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "tagged": model.tagged, "tag_totals": dict(model.tag_totals),
+            "unplaced": {k: sum(1 for u in model.unplaced_tags if u["kind"] == k) for k in ("window", "door")},
+            "void_m2": round(sum((b[2] - b[0]) * (b[3] - b[1]) / 1e6 for b in (s["box_mm"] for s in model.spaces if s["kind"] == "void")), 1),
+            "route": model.route, "confidence": model.confidence, "markup": f"models/{model.markup}", "page": page}
+
+
 def _measure(run: Run, floor: str, on_walls) -> dict:
-    """The heavy part of reading a floor, with no change to the run except the preview: safe to run for several floors at once."""
+    """The heavy part of reading a floor, with no change to the run except the preview: safe to run for several floors at once. The order: start the reads that need only the
+    picture (room names, tags), trace and check the walls, collect the reads, apply what the space names say, find the openings, save the model."""
     spec = next((f for f in run.floors if f["name"] == floor), None)
     if not spec:
         return {"error": f"No floor named {floor}. Floors: {[f['name'] for f in run.floors]}"}
-    file, page = spec["file"], int(spec.get("page") or 1)
-    is_pdf = file.lower().endswith(".pdf")
+    src = FloorSource(spec["file"], int(spec.get("page") or 1), floor)
     models_dir = run.dir / "models"
     step = _stepper(run, floor)
-
-    def read_room_names():
-        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=170)[0] if is_pdf else file
-        return read_rooms(image, page_text(file, page) if is_pdf else "", floor)
-
-    def read_opening_tags():
-        """The tags printed beside the openings (W1, D2...), as fractions of the page: from the PDF's text layer when it has one (read later, with the walls), else read by the model."""
-        import cv2
-
-        from plan2cost.facts.tags import has_text_tags, read_tags_fractional
-
-        if is_pdf and has_text_tags(page_text(file, page)):
-            return None
-        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=200)[0] if is_pdf else file
-        return read_tags_fractional(cv2.imread(image))
     early = ThreadPoolExecutor(2)  # neither read needs the walls, so both start now and run while the walls are traced and checked
-    f_rooms, f_tags = early.submit(read_room_names), early.submit(read_opening_tags)
+    f_rooms, f_tags = early.submit(_read_room_names, src), early.submit(_read_opening_tags, src)
     try:
-        model = model_for_floor(file, page, floor, str(models_dir), review=True, on_measured=on_walls, on_step=step)
+        model = model_for_floor(src.file, src.page, floor, str(models_dir), review=True, on_measured=on_walls, on_step=step)
     except ValueError as e:
         early.shutdown(wait=False, cancel_futures=True)
         return {"error": f"No walls could be measured on the {floor} floor plan ({e}). Ask the user for a clearer plan, or use assume_floor_like_ground."}
-    t = model.totals
     ext_walls = [e for e in model.walls() if e.subtype == "external"]
     outer = (max(ext_walls, key=lambda e: e.length_m).thickness_mm / 1000) if ext_walls else 0.23  # joints are on centre lines: add one wall thickness for the outer face
     issues = [i for i in model.issues if i.severity != "info"]
     rooms, note, tags = [], "", None
     try:
-        img, scale = plan_image(model, file if is_pdf else None, page if is_pdf else None, None if is_pdf else file, 200)
+        img, scale = plan_image(model, src.pdf, src.page if src.is_pdf else None, src.image, 200)
     except Exception as e:
         early.shutdown(wait=False, cancel_futures=True)
         return {"error": f"The {floor} floor plan could not be drawn for the openings ({type(e).__name__})."}
@@ -107,34 +162,15 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
         note += f" the space names could not be applied ({type(e).__name__})"
     step("Finding doors and windows and checking each one with the model")
     try:
-        before = len(model.issues)
-        locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)
-        if model.unplaced_tags:  # tags with no opening near them: a wall drawn with light lines may stand there; if one is found, the openings are looked for again with it in place
-            from plan2cost.drawing.model import refresh
-            from plan2cost.facts.spaces import recompute_external
-            from plan2cost.facts.verify_walls import add_walls_at_tags
-
-            added = add_walls_at_tags(model, model.unplaced_tags, img, scale)
-            if added:
-                model.elements = [e for e in model.elements if e.category == "wall"]
-                refresh(model)
-                recompute_external(model, img.shape[:2], scale)
-                model.issues += added
-                before = len(model.issues)
-                locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)
-        draw_markup(model, str(models_dir / model.markup), pdf=file if is_pdf else None, page=page if is_pdf else None, image=None if is_pdf else file)
-        issues += [i for i in model.issues[before:] if i.severity != "info"]
-        ops = _openings(model)
+        ops, found_issues = _find_openings(src, model, img, scale, tags, models_dir)
+        issues += found_issues
     except Exception as e:
         note += f" openings could not be located ({type(e).__name__})"
-    model.save(models_dir / f"drawing_model_{floor}_p{page}.json")
+    model.save(models_dir / f"drawing_model_{floor}_p{src.page}.json")
     step("Done")
-    t = model.totals  # after every edit (space names, walls added at tags): the totals are replaced, not changed in place
-    data = {"name": floor, "ext_m": float(t["external_m"]), "int_m": float(t["internal_m"]), "junctions": sum(len(e.connected) for e in model.walls()) // 2,
-            "length_m": round(float(t["length_m"]) + outer, 2), "width_m": round(float(t["width_m"]) + outer, 2),
-            "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "tagged": model.tagged, "tag_totals": dict(model.tag_totals), "unplaced": {k: sum(1 for u in model.unplaced_tags if u["kind"] == k) for k in ("window", "door")}, "void_m2": round(sum((b[2] - b[0]) * (b[3] - b[1]) / 1e6 for b in (s["box_mm"] for s in model.spaces if s["kind"] == "void")), 1), "rooms": [r.name for r in rooms],
-            "route": model.route, "confidence": model.confidence, "markup": f"models/{model.markup}", "page": page}
-    return {"data": data, "model": model, "issues": issues, "note": note.strip(), "page": page}
+    data = _floor_data(floor, src.page, model, ops, outer)
+    data["rooms"] = [r.name for r in rooms]
+    return {"data": data, "model": model, "issues": issues, "note": note.strip(), "page": src.page}
 
 
 def _record(run: Run, floor: str, m: dict) -> dict:
