@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plan2Cost Console</title>
 <style>
+#m3d{position:fixed;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column}
+#m3d.on{display:flex}
+#m3d .bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card)}
+#m3d canvas{flex:1;width:100%;min-height:0;display:block}
+#m3d .note{padding:8px 16px;font-size:12px;color:var(--mute);border-top:1px solid var(--line);background:var(--card)}
+
 :root{--bg:#f6f5f1;--card:#fff;--ink:#1c1b19;--mute:#6b675f;--line:#e2dfd7;--accent:#1f6f5c;--ok:#1f7a4d;--warn:#a86a00;--bad:#b3362c;--info:#2f5fa8;--chip:#efece4}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151512;--card:#1e1d1a;--ink:#ecebe6;--mute:#9a968c;--line:#33312c;--accent:#5fc1a6;--ok:#6cc58f;--warn:#e0a54a;--bad:#e5786d;--info:#7fa6e8;--chip:#2a2824}}
 *{box-sizing:border-box}
@@ -225,15 +231,17 @@ function render(run) {
   const models = Object.entries(run.models || {}).map(([f, m]) => `<section class="card"><h2>Walls found: ${esc(f)} floor</h2><div class="small">${m.walls} walls, ${money(m.total_m)} m (external ${money(m.external_m)}, internal ${money(m.internal_m)}) by the ${esc(m.route)} route, ${esc(m.confidence)} confidence.</div>
       ${(m.issues || []).length ? `<ul class="small">${m.issues.map(i => `<li class="${i.severity === 'error' ? 'escalated' : 'assumed'}">${esc(i.message)}</li>`).join('')}</ul>` : '<div class="small proven">All checks passed.</div>'}
       <a href="/api/runs/${run.id}/${esc(m.markup)}?v=${run.turn}" target="_blank"><img src="/api/runs/${run.id}/${esc(m.markup)}?v=${run.turn}" alt="annotated plan" style="width:100%;border:1px solid var(--line);border-radius:8px;margin-top:8px"></a></section>`).join('');
+  const view3d = Object.keys(run.models || {}).length ? `<section class="card row"><button id="open3d">View the house in 3D</button><span class="small mute">An illustrative model from the walls and openings that were measured. It is not used for any quantity.</span></section>` : '';
   const downloads = run.files.length ? `<section class="card"><h2>Files</h2>${run.files.map(f => `<a class="dl" href="/api/runs/${run.id}/files/${esc(f)}">${esc(f.replace(/_/g, ' ').replace('.xlsx', ' (Excel)').replace('.pdf', ' (PDF)').replace('.json', ' (data)'))}</a>`).join('')}
       <div class="small mute" style="margin-top:6px">A budget estimate has estimated lines, so no bill for tender is made from it: quantities must be measured from full drawings first.</div></section>` : '';
   const audit = run.audit ? `<section class="card"><h2>Contractor quote audit</h2><div class="small">${run.audit.lines} quote lines, ${run.audit.matched} matched to our BoQ. On the matched lines the quote totals ${money(run.audit.quote_total_on_matched_lines)} against ${money(run.audit.our_total_on_matched_lines)} at your rates; priced work the quote leaves out is about ${money(run.audit.our_priced_work_not_in_quote)}.</div>
       <table class="small"><tr><th>Line</th><th>What we found</th><th>What to ask</th></tr>${run.audit.flags.map(f => `<tr><td>${esc(f.line)}</td><td class="${f.severity === 'error' ? 'escalated' : f.severity === 'warn' ? 'assumed' : ''}">${esc(f.message)}</td><td class="mute">${esc(f.ask)}</td></tr>`).join('')}</table></section>` : '';
   $('#main').innerHTML = `<section class="card row"><span class="pill ${run.status}">${esc(run.status.replace('_', ' '))}</span><span>Turn ${run.turn}</span><span class="spacer"></span><span class="small">${done}/${run.checklist.length} checklist items settled</span></section>
-    ${progress}${stopped}${reading}${tiles}${q}${gallery}
+    ${progress}${stopped}${reading}${tiles}${view3d}${q}${gallery}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
       <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Name</th><th class="n">Value</th><th>Source</th><th>Basis</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}${mat}${downloads}${audit}`;
+  const o3 = $('#open3d'); if (o3) o3.onclick = () => open3d(run.id);
   const rs = $('#resume'); if (rs) rs.onclick = async () => { rs.disabled = true; await api(`/api/runs/${run.id}/resume`, {}); };
   const btn = $('#answer'); if (btn) btn.onclick = async () => { btn.disabled = true; await api(`/api/runs/${run.id}/answer`, {answer: $('#ans').value}); };
 }
@@ -292,6 +300,98 @@ async function toggleMic() {
     }};
   } catch (e) { msg.textContent = 'The microphone could not be used (' + e.message + '). Fill the fields by hand.'; }
 }
+
+// The 3D massing view: walls with the door and window openings cut out, and a plain roof, from /api/runs/<id>/massing. Illustrative only.
+let threeReady = null;
+function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('could not load ' + src)); document.head.appendChild(s); }); }
+function loadThree() {
+  threeReady = threeReady || loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js').then(() => loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js'));
+  return threeReady;
+}
+let m3 = null;
+async function open3d(id, hideRoof) {
+  let box = document.getElementById('m3d');
+  if (!box) { box = document.createElement('div'); box.id = 'm3d'; document.body.appendChild(box); }
+  box.className = 'on'; box.innerHTML = '<div class="bar"><b>3D model</b><span class="small mute" id="m3dmsg">Loading…</span><span class="spacer" style="flex:1"></span><button id="m3dclose" style="background:var(--card);color:var(--accent);border-color:var(--accent)">Close</button></div>';
+  $('#m3dclose').onclick = close3d;
+  try {
+    const [data] = await Promise.all([api(`/api/runs/${id}/massing`), loadThree()]);
+    if (!data.floors) throw new Error('no walls were measured for this run yet');
+    build3d(box, data);
+    if (hideRoof) { $('#m3roof').checked = false; $('#m3roof').onchange({target: $('#m3roof')}); }
+  } catch (e) { $('#m3dmsg').textContent = 'Could not show the model: ' + e.message; }
+}
+function close3d() { const box = document.getElementById('m3d'); if (m3) { cancelAnimationFrame(m3.raf); m3.renderer.dispose(); m3 = null; } if (box) { box.className = ''; box.innerHTML = ''; } }
+function build3d(box, d) {
+  const T = THREE, H = d.storey_height_m, scene = new T.Scene(), dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  scene.background = new T.Color(dark ? 0x14181f : 0xf3f5f8);
+  scene.add(new T.AmbientLight(0xffffff, 0.75)); const sun = new T.DirectionalLight(0xffffff, 0.7); sun.position.set(20, 40, 15); scene.add(sun);
+  const mat = (c, o) => new T.MeshLambertMaterial(Object.assign({color: c, side: T.DoubleSide}, o || {}));
+  const M = {ext: mat(0xd9cdb8), int: mat(0xece6da), glass: mat(0x4aa3b5, {transparent: true, opacity: 0.45}), door: mat(0x8a5a3a), roof: mat(0xa6513f), slab: mat(0xbdbdbd)};
+  const edge = new T.LineBasicMaterial({color: dark ? 0x000000 : 0x555555, transparent: true, opacity: 0.35});
+  const groups = [], roofGroup = new T.Group(); let minx = 1e9, minz = 1e9, maxx = -1e9, maxz = -1e9;
+  const box3 = (g, a, b, y0, y1, c, t, m) => { // a segment from a to b along the wall at cross position c, thickness t, from height y0 to y1; m = orient
+    if (b - a < 0.005 || y1 - y0 < 0.005) return null;
+    const dims = m.o === 'h' ? [b - a, y1 - y0, t] : [t, y1 - y0, b - a], mesh = new T.Mesh(new T.BoxGeometry(...dims), m.mat);
+    mesh.position.set(m.o === 'h' ? (a + b) / 2 : c, m.base + (y0 + y1) / 2, m.o === 'h' ? c : (a + b) / 2);
+    mesh.add(new T.LineSegments(new T.EdgesGeometry(mesh.geometry), edge)); g.add(mesh); return mesh;
+  };
+  d.floors.forEach(fl => {
+    const g = new T.Group(), base = fl.index * H; groups.push({name: fl.name, g});
+    fl.walls.forEach(w => {
+      const o = Math.abs(w.x1 - w.x0) >= Math.abs(w.y1 - w.y0) && Math.abs(w.y1 - w.y0) < 1e-6 ? 'h' : (Math.abs(w.x1 - w.x0) < 1e-6 ? 'v' : (Math.abs(w.x1 - w.x0) >= Math.abs(w.y1 - w.y0) ? 'h' : 'v'));
+      let a = o === 'h' ? Math.min(w.x0, w.x1) : Math.min(w.y0, w.y1), b = o === 'h' ? Math.max(w.x0, w.x1) : Math.max(w.y0, w.y1); const c = o === 'h' ? w.y0 : w.x0;
+      if (o === 'h') { a -= w.t / 2; b += w.t / 2; } // fill the corners
+      const m = {o, base, mat: w.external ? M.ext : M.int};
+      minx = Math.min(minx, o === 'h' ? a : c); maxx = Math.max(maxx, o === 'h' ? b : c); minz = Math.min(minz, o === 'h' ? c : a); maxz = Math.max(maxz, o === 'h' ? c : b);
+      const ops = fl.openings.filter(p => p.parent === w.id).map(p => ({k: p.kind, s: o === 'h' ? Math.min(p.x0, p.x1) : Math.min(p.y0, p.y1), e: o === 'h' ? Math.max(p.x0, p.x1) : Math.max(p.y0, p.y1)})).sort((p, q) => p.s - q.s);
+      let cur = a;
+      ops.forEach(p => {
+        const s = Math.max(p.s, cur), e = Math.min(p.e, b); if (e - s < 0.2) return;
+        box3(g, cur, s, 0, H, c, w.t, m);
+        if (p.k === 'window') { const sill = d.sill_m, top = Math.min(sill + d.window_height_m, H); box3(g, s, e, 0, sill, c, w.t, m); box3(g, s, e, top, H, c, w.t, m); box3(g, s, e, sill, top, c, 0.04, {o, base, mat: M.glass}); }
+        else { const top = Math.min(d.door_height_m, H); box3(g, s, e, top, H, c, w.t, m); if (p.k === 'door') box3(g, s, e, 0, top, c, 0.05, {o, base, mat: M.door}); }
+        cur = e;
+      });
+      box3(g, cur, b, 0, H, c, w.t, m);
+    });
+    scene.add(g);
+  });
+  // roof: a plain shape over the outline of the ground floor walls
+  const r = d.roof, top = d.floors.length * H, ov = r.overhang_m, x0 = r.bounds[0] - ov, z0 = r.bounds[1] - ov, x1 = r.bounds[2] + ov, z1 = r.bounds[3] + ov, lx = x1 - x0, lz = z1 - z0;
+  if (r.type === 'flat') { const s = new T.Mesh(new T.BoxGeometry(lx, 0.15, lz), M.slab); s.position.set((x0 + x1) / 2, top + 0.075, (z0 + z1) / 2); roofGroup.add(s); }
+  else {
+    const alongX = lx >= lz, uL = alongX ? lx : lz, vL = alongX ? lz : lx, half = vL / 2, rise = half * Math.tan(r.pitch_deg * Math.PI / 180), P = (u, v, y) => alongX ? [x0 + u, y, z0 + v] : [x0 + v, y, z0 + u];
+    const tri = [], quad = (p, q, s2, t2) => tri.push(...p, ...q, ...s2, ...p, ...s2, ...t2), face = (p, q, s2) => tri.push(...p, ...q, ...s2);
+    if (r.type === 'gable') {
+      quad(P(0, 0, top), P(uL, 0, top), P(uL, half, top + rise), P(0, half, top + rise)); quad(P(0, vL, top), P(uL, vL, top), P(uL, half, top + rise), P(0, half, top + rise));
+      face(P(0, 0, top), P(0, vL, top), P(0, half, top + rise)); face(P(uL, 0, top), P(uL, vL, top), P(uL, half, top + rise));
+    } else {
+      const ra = Math.min(half, uL / 2), rb = uL - ra;
+      quad(P(0, 0, top), P(uL, 0, top), P(rb, half, top + rise), P(ra, half, top + rise)); quad(P(0, vL, top), P(uL, vL, top), P(rb, half, top + rise), P(ra, half, top + rise));
+      face(P(0, 0, top), P(0, vL, top), P(ra, half, top + rise)); face(P(uL, 0, top), P(uL, vL, top), P(rb, half, top + rise));
+    }
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(tri, 3)); geo.computeVertexNormals();
+    const rm = new T.Mesh(geo, M.roof); rm.add(new T.LineSegments(new T.EdgesGeometry(geo, 20), edge)); roofGroup.add(rm);
+  }
+  scene.add(roofGroup);
+  const ground = new T.Mesh(new T.PlaneGeometry(200, 200), mat(dark ? 0x1c222b : 0xe4e8ee)); ground.rotation.x = -Math.PI / 2; ground.position.set((minx + maxx) / 2, -0.02, (minz + maxz) / 2); scene.add(ground);
+  const cx = (minx + maxx) / 2, cz = (minz + maxz) / 2, span = Math.max(maxx - minx, maxz - minz, 6);
+  const renderer = new T.WebGLRenderer({antialias: true}); const cv = renderer.domElement; box.insertBefore(cv, null);
+  const note = document.createElement('div'); note.className = 'note'; note.innerHTML = d.notes.map(esc).join(' '); box.appendChild(note);
+  const camera = new T.PerspectiveCamera(45, 1, 0.1, 500); camera.position.set(cx + span * 0.9, span * 0.8 + top, cz + span * 1.2);
+  const controls = new T.OrbitControls(camera, cv); controls.target.set(cx, top * 0.5, cz); controls.autoRotate = true; controls.autoRotateSpeed = 1.2;
+  const bar = box.querySelector('.bar'); const ctl = document.createElement('span'); ctl.className = 'small';
+  ctl.innerHTML = `<label><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" checked> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
+  bar.insertBefore(ctl, bar.querySelector('.spacer'));
+  $('#m3roof').onchange = e => { roofGroup.visible = e.target.checked; }; $('#m3spin').onchange = e => { controls.autoRotate = e.target.checked; };
+  box.querySelectorAll('.m3fl').forEach(el => el.onchange = e => { groups[+e.target.dataset.i].g.visible = e.target.checked; });
+  $('#m3dmsg').textContent = `${d.floors.length} floor${d.floors.length > 1 ? 's' : ''}, ${esc(r.type)} roof at ${r.pitch_deg}°`;
+  const fit = () => { const w = cv.clientWidth || box.clientWidth, h = cv.clientHeight || 500; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  new ResizeObserver(fit).observe(box); fit();
+  m3 = {renderer, raf: 0}; const loop = () => { controls.update(); renderer.render(scene, camera); m3 && (m3.raf = requestAnimationFrame(loop)); }; loop();
+}
+if (/^#3d-\d{8}-\d{6}(-noroof)?$/.test(location.hash)) open3d(location.hash.slice(4, 19), location.hash.endsWith('-noroof'));  // a link straight to the 3D view of a run
 tick(); setInterval(tick, 2000); setInterval(showLog, 3000);
   setInterval(() => document.querySelectorAll('[data-since]').forEach(el => { const s = Math.max(0, Math.round(Date.now() / 1000 - Number(el.dataset.since))); el.textContent = '(' + (s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s') + ')'; }), 1000);
 </script>

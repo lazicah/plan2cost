@@ -70,6 +70,13 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self._json(404, {"error": "no such file"})
         elif self.path == "/api/log":
             self._json(200, {"tail": "\n".join(LOG.read_text().splitlines()[-25:]) if LOG.exists() else ""})
+        elif self.path.startswith("/api/runs/") and self.path.endswith("/massing") and view.RUN_ID.match(self.path.split("/")[3]):
+            try:
+                from plan2cost.agent.massing import massing
+
+                self._json(200, massing(Run.load(self.path.split("/")[3])))
+            except OSError:
+                self._json(404, {"error": "no such run"})
         elif self.path.startswith("/api/runs/") and view.RUN_ID.match(self.path.split("/")[3]):
             try:
                 self._json(200, view.summary(Run.load(self.path.split("/")[3])))
