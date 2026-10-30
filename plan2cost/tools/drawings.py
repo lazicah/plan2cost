@@ -124,6 +124,7 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
         note += f" openings could not be located ({type(e).__name__})"
     model.save(models_dir / f"drawing_model_{floor}_p{page}.json")
     step("Done")
+    t = model.totals  # after every edit (space names, walls added at tags): the totals are replaced, not changed in place
     data = {"name": floor, "ext_m": float(t["external_m"]), "int_m": float(t["internal_m"]), "junctions": sum(len(e.connected) for e in model.walls()) // 2,
             "length_m": round(float(t["length_m"]) + outer, 2), "width_m": round(float(t["width_m"]) + outer, 2),
             "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "tagged": model.tagged, "tag_totals": dict(model.tag_totals), "unplaced": {k: sum(1 for u in model.unplaced_tags if u["kind"] == k) for k in ("window", "door")}, "void_m2": round(sum((b[2] - b[0]) * (b[3] - b[1]) / 1e6 for b in (s["box_mm"] for s in model.spaces if s["kind"] == "void")), 1), "rooms": [r.name for r in rooms],
