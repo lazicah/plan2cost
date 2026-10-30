@@ -24,7 +24,8 @@ def active_profile() -> str:
 
 def get_client(profile: str | None = None) -> OpenAI:
     prefix = PROFILES[profile or active_profile()]
-    return OpenAI(base_url=os.environ[prefix + "BASE_URL"], api_key=os.environ[prefix + "API_KEY"])
+    # a call that has not answered in two minutes is a dead connection, not a slow model: give up and retry (the default is ten minutes, which hangs a whole floor)
+    return OpenAI(base_url=os.environ[prefix + "BASE_URL"], api_key=os.environ[prefix + "API_KEY"], timeout=120.0, max_retries=2)
 
 
 def model_name(profile: str | None = None) -> str:
