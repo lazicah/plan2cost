@@ -174,6 +174,30 @@ def _outdoors(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close
     return reach[1:-1, 1:-1] > 0
 
 
+def outline_polygon_mm(walls: list[Wall], cell_mm: float = 100, close_mm: float = 2500, simplify_mm: float = 300) -> list[tuple[float, float]] | None:
+    """The outline of what the walls enclose (walls included), as a polygon in the walls' own millimetres, or None when the walls do not enclose a building (a wall missing leaks
+    the outdoors in, and the enclosed part is then too small against the walls' bounding box to trust). Used for slabs in the 3D view; never for a quantity."""
+    if not walls:
+        return None
+    xs = [w.start_mm for w in walls if w.orient == "h"] + [w.end_mm for w in walls if w.orient == "h"] + [w.centre_mm for w in walls if w.orient == "v"]
+    ys = [w.start_mm for w in walls if w.orient == "v"] + [w.end_mm for w in walls if w.orient == "v"] + [w.centre_mm for w in walls if w.orient == "h"]
+    pad = 3000
+    x0, y0 = min(xs) - pad, min(ys) - pad
+    shifted = [Wall(w.orient, w.centre_mm - (y0 if w.orient == "h" else x0), w.start_mm - (x0 if w.orient == "h" else y0), w.end_mm - (x0 if w.orient == "h" else y0), w.thickness_mm) for w in walls]
+    shape = (int((max(ys) - min(ys) + 2 * pad) / cell_mm) + 2, int((max(xs) - min(xs) + 2 * pad) / cell_mm) + 2)
+    inside = (~_outdoors(shifted, shape, cell_mm, close_mm)).astype(np.uint8)
+    k = max(3, int(1200 / cell_mm))  # stubs and wall ends that stick out of the building are thinner than 1.2 m: an opening removes them
+    inside = cv2.morphologyEx(inside, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k)))
+    contours, _ = cv2.findContours(inside, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+    c = max(contours, key=cv2.contourArea)
+    if cv2.contourArea(c) * cell_mm ** 2 < 0.35 * (max(xs) - min(xs)) * (max(ys) - min(ys)):
+        return None
+    c = cv2.approxPolyDP(c, simplify_mm / cell_mm, True)
+    return [(float(p[0][0]) * cell_mm + x0, float(p[0][1]) * cell_mm + y0) for p in c]
+
+
 def footprint_area_m2(walls: list[Wall], shape: tuple[int, int], mm_per_px: float, close_mm: float = 2500) -> float:
     """The area enclosed by the outer walls (walls included), in m2: everything that is not outdoors."""
     outdoors = _outdoors(walls, shape, mm_per_px, close_mm)

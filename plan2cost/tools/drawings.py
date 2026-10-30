@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from plan2cost.drawing.markup import draw_markup, model_for_floor, plan_image
 from plan2cost.drawing.openings import locate_openings
 from plan2cost.facts.rooms import read_rooms
+from plan2cost.facts.spaces import apply_space_context
 from plan2cost.kit.pdf import page_text, render_pages
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff import coefficients as C
@@ -63,19 +64,45 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     ext_walls = [e for e in model.walls() if e.subtype == "external"]
     outer = (max(ext_walls, key=lambda e: e.length_m).thickness_mm / 1000) if ext_walls else 0.23  # joints are on centre lines: add one wall thickness for the outer face
     issues = [i for i in model.issues if i.severity != "info"]
-    rooms, note = [], ""
-    step("Reading the room names")
-    try:
-        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=170)[0] if is_pdf else file
-        rooms = read_rooms(image, page_text(file, page) if is_pdf else "", floor)
-    except Exception as e:  # the room names are a refinement; a failed read never stops the floor
-        note = f"room names could not be read ({type(e).__name__})"
-    ops: list[dict] = []
-    step("Finding doors and windows and checking each one with the model")
+    rooms, note, tags = [], "", None
     try:
         img, scale = plan_image(model, file if is_pdf else None, page if is_pdf else None, None if is_pdf else file, 200)
+    except Exception as e:
+        return {"error": f"The {floor} floor plan could not be drawn for the openings ({type(e).__name__})."}
+
+    def read_room_names():
+        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=170)[0] if is_pdf else file
+        return read_rooms(image, page_text(file, page) if is_pdf else "", floor)
+
+    def read_opening_tags():
+        """The tags printed beside the openings (W1, D2...): from the PDF's text layer when it has one (found later), else read by the model."""
+        from plan2cost.drawing.openings import text_tags
+        from plan2cost.facts.tags import read_tags
+
+        if is_pdf and text_tags(file, page, model):
+            return None
+        return read_tags(img, scale)
+    step("Reading the room names and the opening tags")
+    with ThreadPoolExecutor(2) as ex:  # the two reads are independent, so they run together
+        f_rooms, f_tags = ex.submit(read_room_names), ex.submit(read_opening_tags)
+        try:
+            rooms = f_rooms.result()
+        except Exception as e:  # the room names are a refinement; a failed read never stops the floor
+            note = f"room names could not be read ({type(e).__name__})"
+        try:
+            tags = f_tags.result()
+        except Exception as e:  # without tags the openings are found as before
+            note += f" opening tags could not be read ({type(e).__name__})"
+    ops: list[dict] = []
+    step("Using the space names: porches and terraces are open air, voids have no slab")
+    try:
+        issues += [i for i in apply_space_context(model, rooms, img, scale) if i.severity != "info"]
+    except Exception as e:  # the names are a refinement; a failed pass never stops the floor
+        note += f" the space names could not be applied ({type(e).__name__})"
+    step("Finding doors and windows and checking each one with the model")
+    try:
         before = len(model.issues)
-        locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None)
+        locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)
         draw_markup(model, str(models_dir / model.markup), pdf=file if is_pdf else None, page=page if is_pdf else None, image=None if is_pdf else file)
         issues += [i for i in model.issues[before:] if i.severity != "info"]
         ops = _openings(model)
@@ -85,7 +112,7 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     step("Done")
     data = {"name": floor, "ext_m": float(t["external_m"]), "int_m": float(t["internal_m"]), "junctions": sum(len(e.connected) for e in model.walls()) // 2,
             "length_m": round(float(t["length_m"]) + outer, 2), "width_m": round(float(t["width_m"]) + outer, 2),
-            "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "rooms": [r.name for r in rooms],
+            "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "void_m2": round(sum((b[2] - b[0]) * (b[3] - b[1]) / 1e6 for b in (s["box_mm"] for s in model.spaces if s["kind"] == "void")), 1), "rooms": [r.name for r in rooms],
             "route": model.route, "confidence": model.confidence, "markup": f"models/{model.markup}", "page": page}
     return {"data": data, "model": model, "issues": issues, "note": note.strip(), "page": page}
 

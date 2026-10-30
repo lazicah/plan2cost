@@ -64,3 +64,35 @@ def test_a_door_between_a_wall_end_and_the_next_wall_is_a_candidate_and_a_wall_t
     c = end_gap_candidates(m, [])
     assert len(c) == 1 and c[0]["orient"] == "v" and 850 <= c[0]["width_mm"] <= 900 and c[0]["source"] == "between a wall end and the next wall"
     assert end_gap_candidates(m, c) == []  # not doubled when a gap was already found there
+
+
+def test_on_a_drawing_that_tags_its_openings_an_untagged_weak_candidate_is_dropped_and_the_printed_letter_sets_the_kind(monkeypatch):
+    import numpy as np
+
+    import plan2cost.drawing.openings as O
+
+    weak = lambda x: {"wall": "W-001", "orient": "h", "x0": x, "y0": 0.0, "x1": x + 1200, "y1": 0.0, "width_mm": 1200, "external": True, "thickness": 230.0, "source": "between jamb lines"}
+    m = build_model(result_for(box_walls()), "ground", 1)
+    monkeypatch.setattr(O, "jamb_candidates", lambda model, img, scale, have, **k: [weak(1000.0), weak(5000.0)] if not k else [])
+    monkeypatch.setattr(O, "end_gap_candidates", lambda model, have: [])
+    monkeypatch.setattr(O, "_crop", lambda *a, **k: "x")
+    monkeypatch.setattr(O, "_verify", lambda path: {"kind": "window", "tag": None})
+    tags = [("D2", 1600.0, 600.0), ("W1", 9000.0, 9000.0), ("W2", 9500.0, 9000.0), ("W3", 9900.0, 9000.0)]  # D2 is beside the first candidate (1000 to 2200); the others are far from any wall
+    issues = O.locate_openings(m, np.zeros((10, 10, 3), np.uint8), 0.1, tags=tags)
+    ops = m.openings()
+    assert len(ops) == 1 and ops[0].category == "door" and ops[0].x0_mm == 1000.0  # kept because D2 is beside it, and a door because of the letter D, though the model looked at the crop and said window
+    assert any(i.code == "tags_matched" and "1 candidates with no tag" in i.message for i in issues) and any(i.code == "tags_unmatched" and "W1" in i.message for i in issues)
+
+
+def test_a_plan_with_few_tags_is_not_taken_to_tag_its_openings(monkeypatch):
+    import numpy as np
+
+    import plan2cost.drawing.openings as O
+
+    m = build_model(result_for(box_walls()), "ground", 1)
+    monkeypatch.setattr(O, "jamb_candidates", lambda model, img, scale, have, **k: [{"wall": "W-001", "orient": "h", "x0": 1000.0, "y0": 0.0, "x1": 2200.0, "y1": 0.0, "width_mm": 1200, "external": True, "thickness": 230.0, "source": "between jamb lines"}])
+    monkeypatch.setattr(O, "end_gap_candidates", lambda model, have: [])
+    monkeypatch.setattr(O, "_crop", lambda *a, **k: "x")
+    monkeypatch.setattr(O, "_verify", lambda path: {"kind": "window", "tag": None})
+    O.locate_openings(m, np.zeros((10, 10, 3), np.uint8), 0.1, tags=[("W1", 9000.0, 9000.0)])
+    assert len(m.openings()) == 1  # one tag is not a tagged drawing: the weak candidate stays, as before

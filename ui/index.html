@@ -358,6 +358,12 @@ function build3d(box, d, opt) {
       });
       box3(g, cur, b, 0, H, c, w.t, m);
     });
+    if (fl.outline && fl.outline.length >= 3) { // the floor slab: the outline the walls enclose, with a hole for each void (a space named Void has no slab)
+      const shape = new T.Shape(fl.outline.map(p => new T.Vector2(p[0], -p[1])));
+      (fl.voids || []).forEach(v => { const hole = new T.Path([new T.Vector2(v[0], -v[1]), new T.Vector2(v[2], -v[1]), new T.Vector2(v[2], -v[3]), new T.Vector2(v[0], -v[3])].reverse()); shape.holes.push(hole); });
+      const slab = new T.Mesh(new T.ExtrudeGeometry(shape, {depth: 0.2, bevelEnabled: false}), M.slab); slab.rotation.x = -Math.PI / 2; slab.position.y = base - 0.2;
+      slab.add(new T.LineSegments(new T.EdgesGeometry(slab.geometry), edge)); g.add(slab);
+    }
     scene.add(g);
   });
   // roof: a plain shape over the outline of the ground floor walls

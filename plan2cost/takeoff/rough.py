@@ -26,6 +26,7 @@ class FloorData:
     wall_plan_area_m2: float  # sum of wall length x thickness
     openings: list = field(default_factory=list)  # Opening
     rooms: list = field(default_factory=list)  # room names read from the plan
+    void_m2: float = 0.0  # open between floors (a space named Void): no slab, no floor finish; from the rough box the model saw
 
     @property
     def footprint_m2(self) -> float:
@@ -33,7 +34,7 @@ class FloorData:
 
     @property
     def net_area_m2(self) -> float:
-        return max(self.footprint_m2 - self.wall_plan_area_m2, 0.0)
+        return max(self.footprint_m2 - self.wall_plan_area_m2 - self.void_m2, 0.0)
 
     def wet_rooms(self) -> int:
         return sum(1 for r in self.rooms if any(w in r.lower() for w in WET))
@@ -91,7 +92,7 @@ def roof_items(floors: list[FloorData], inputs: dict) -> tuple[list[BoqItem], di
 
 def frame_items(floors: list[FloorData]) -> tuple[list[BoqItem], dict]:
     """Columns, beams, suspended slabs, stairs and their steel and formwork, from the upper floor areas and the author's own ratios."""
-    upper = sum(f.footprint_m2 for f in floors[1:])
+    upper = sum(max(f.footprint_m2 - f.void_m2, 0.0) for f in floors[1:])  # a void has no slab
     steel_kg = C.spread("plans_steel_kg_per_m3_structural_concrete")
     if upper:
         slab = _rng("plans_suspended_slab_m3_per_m2_upper_floor", upper)
@@ -254,6 +255,8 @@ def estimate(floors: list[FloorData], inputs: dict, rates: dict | None = None) -
         if o.assumed_height:
             assumptions.append({"name": f"opening_height_{o.label}", "value": o.height_m, "basis": "no height on the floor plan; the standard height was used"})
             break
+    if any(f.void_m2 for f in floors):
+        assumptions.append({"name": "voids", "value": f"{sum(f.void_m2 for f in floors):.0f} m2", "basis": "spaces named Void are open between floors: no slab and no floor finish there; their size is the rough box the model saw, so it is approximate"})
     assumptions.append({"name": "storey_height_m", "value": h, "basis": "entered by the user: floor to floor"})
     assumptions.append({"name": "wall_finish_height", "value": h, "basis": "wall finish height taken as the storey height; BESMM4 measures it to the finished ceiling"})
     working = {"floors": [{"name": f.name, "envelope_m": [round(f.length_m, 2), round(f.width_m, 2)], "footprint_m2": round(f.footprint_m2, 1), "net_area_m2": round(f.net_area_m2, 1),

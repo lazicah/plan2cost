@@ -94,3 +94,12 @@ def test_a_premium_finish_level_prices_the_same_quantities_higher():
     items, _, _ = estimate([ground(), first()], {"storey_height_m": 3.0, "roof_type": "hip"}, load_rates("premium")["rates"])
     std, pre = run_estimate([ground(), first()])[3], price_boq(items, load_rates("premium"))
     assert pre["total"] > std["total"] * 1.1 and {i.key: i.qty for i in items}["floor_finish_m2"] == run_estimate([ground(), first()])[0]["floor_finish_m2"].qty
+
+
+def test_a_void_on_an_upper_floor_comes_off_the_slab_and_the_floor_finish():
+    g, f = ground(), first()
+    base, _, _, _ = run_estimate([g, f])
+    f.void_m2 = 20.0
+    by, ass, _, _ = run_estimate([g, f])
+    assert by["suspended_slab_concrete_m3"].qty < base["suspended_slab_concrete_m3"].qty and by["floor_finish_m2"].qty < base["floor_finish_m2"].qty
+    assert any(a["name"] == "voids" for a in ass)

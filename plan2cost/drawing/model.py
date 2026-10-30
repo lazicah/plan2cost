@@ -75,6 +75,7 @@ class DrawingModel:
     markup: str = ""  # file name of the annotated plan, relative to the model file
     markup_frame: list = field(default_factory=list)  # [x0, y0, shrink, px_per_mm]: how the annotated plan's pixels map back to the page's, to turn a place on the picture into millimetres
     printed_mm: list = field(default_factory=list)  # the printed overall dimensions the building size is checked against
+    spaces: list = field(default_factory=list)  # named spaces the model saw: {name, kind, box_mm: [x0, y0, x1, y1]}; kind from the name (outdoor, void, circulation, wet, room)
 
     def walls(self) -> list:
         return [e for e in self.elements if e.category == "wall"]
@@ -174,4 +175,4 @@ def refresh(model: DrawingModel) -> None:
         e.connected = sorted(o.id for o, v in zip(els, walls) if o is not e and touching(w, v))
         e.length_m = round(w.length_mm / 1000, 3)
     model.totals = compute_totals(els, building_size_m(walls))
-    model.issues = run_checks(model, model.printed_mm)
+    model.issues = run_checks(model, model.printed_mm) + [i for i in model.issues if i.source != "code"]  # what the model checks and the space names said stays on record

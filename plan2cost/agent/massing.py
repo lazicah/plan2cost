@@ -4,6 +4,8 @@ sizes, the sill height is assumed, and the roof is a plain shape of the chosen t
 from plan2cost.drawing.model import DrawingModel
 from plan2cost.kit.progress import Run
 from plan2cost.takeoff import coefficients as C
+from plan2cost.drawing.qc import _wall
+from plan2cost.drawing.walls_cv import outline_polygon_mm
 from plan2cost.takeoff.rough import pitch_range
 
 SILL_M = 0.9  # not on a floor plan: assumed, for the picture only
@@ -27,7 +29,12 @@ def massing_from(models: list[DrawingModel], inputs: dict) -> dict:
         x0, y0, _, _ = _bounds(m)
         dx, dy = (gx - x0) / 1000, (gy - y0) / 1000
         f = lambda e: {"x0": e.x0_mm / 1000 + dx, "y0": e.y0_mm / 1000 + dy, "x1": e.x1_mm / 1000 + dx, "y1": e.y1_mm / 1000 + dy}
-        floors.append({"name": m.floor, "index": len(floors),
+        poly = outline_polygon_mm([_wall(e) for e in m.walls()])
+        if not poly:  # the walls do not close a building: a slab over the rectangle that holds them
+            x0_, y0_, x1_, y1_ = _bounds(m)
+            poly = [(x0_, y0_), (x1_, y0_), (x1_, y1_), (x0_, y1_)]
+        voids = [[b[0] / 1000 + dx, b[1] / 1000 + dy, b[2] / 1000 + dx, b[3] / 1000 + dy] for b in (sp["box_mm"] for sp in m.spaces if sp["kind"] == "void")]
+        floors.append({"name": m.floor, "index": len(floors), "outline": [[x / 1000 + dx, y / 1000 + dy] for x, y in poly], "voids": voids,
                        "walls": [{"id": e.id, **f(e), "t": e.thickness_mm / 1000, "external": e.subtype == "external"} for e in m.walls()],
                        "openings": [{"kind": o.category, "parent": o.parent, **f(o)} for o in m.openings()]})
     t = max(e.thickness_mm for e in models[0].walls()) / 1000
@@ -38,7 +45,7 @@ def massing_from(models: list[DrawingModel], inputs: dict) -> dict:
                                        "bounds": [gx / 1000 - t / 2, gy / 1000 - t / 2, gx1 / 1000 + t / 2, gy1 / 1000 + t / 2]},
             "notes": ["Illustrative: built from the same walls and openings as the bill, never a source of quantities.",
                       f"Door and window heights are standard sizes ({C.value('door_height_m')} m and {C.value('window_height_m')} m); the sill height is assumed ({SILL_M} m).",
-                      "The roof is a plain shape of the chosen type over the rectangle that holds the walls, so an L-shaped plan gets a roof over its missing corner.", "Floors are lined up by the top-left corner of their walls."]}
+                      "Floor slabs follow the outline the walls enclose, with a hole for each space named Void. The roof is a plain shape of the chosen type over the rectangle that holds the walls, so an L-shaped plan gets a roof over its missing corner.", "Floors are lined up by the top-left corner of their walls."]}
 
 
 def massing(run: Run) -> dict:

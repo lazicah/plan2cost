@@ -25,6 +25,15 @@ Also read the tag printed next to it if there is one (like W3, D2, SD1, AW1, TD2
 Judge only what you can see. Return only JSON: {"kind": "door|window|opening|not_opening", "tag": "W3" or null, "leaf": "single|double|sliding|none|unclear"}"""
 
 
+TAGGED_MIN = 4  # fewer tags than this and the drawing is not taken to tag its openings
+WEAK_SOURCES = ("between jamb lines", "between a wall end and the next wall")  # detectors that need a tag to back them up on a tagged drawing
+
+
+def tag_kind(tag: str) -> str | None:
+    """door or window from the printed letters of a tag (D1, SD2, W3, AW1), else None."""
+    return "door" if re.match(r"^[STP]?D\d", tag) else "window" if re.match(r"^[AST]?W\d", tag) else None
+
+
 def snap(width_mm: float, sizes: tuple) -> int:
     return min(sizes, key=lambda s: abs(s - width_mm))
 
@@ -86,7 +95,7 @@ def _heavy_lines(band, c0: int, c1: int, margin: int = 6) -> int:
     return int(np.count_nonzero(np.diff(np.concatenate([[0], rows.astype(np.int8)])) == 1))
 
 
-def jamb_candidates(model: DrawingModel, img, scale: float, have: list, min_px: int = 3) -> list[dict]:
+def jamb_candidates(model: DrawingModel, img, scale: float, have: list, min_px: int = 3, require_sill: bool = True) -> list[dict]:
     """Openings drawn inside the wall with no break in its faces (a window shown as a sill and jamb lines across the wall): the stretches of a wall between two
     consecutive heavy lines that cross the whole thickness of the wall. Most of these stretches are plain wall, so they are only candidates; the model looks at each
     and says what it is. Stretches that overlap a gap already found are left out."""
@@ -125,7 +134,7 @@ def jamb_candidates(model: DrawingModel, img, scale: float, have: list, min_px: 
             width = hi - lo
             if not MIN_MM <= width <= MAX_MM:
                 continue
-            if _heavy_lines(band, int(lo * scale), int(hi * scale)) < 3:
+            if require_sill and _heavy_lines(band, int(lo * scale), int(hi * scale)) < 3:
                 continue  # two heavy face lines and nothing between them is plain wall; a window symbol has a third line (the sill) between its faces
             lo, hi = lo + max(a, 0) / scale, hi + max(a, 0) / scale  # the band starts at pixel max(a, 0) of the sheet
             x0, y0, x1, y1 = (lo, e.y0_mm, hi, e.y0_mm) if e.orient == "h" else (e.x0_mm, lo, e.x0_mm, hi)
@@ -230,10 +239,13 @@ def _verify(path: str) -> dict:
         return {"kind": "unverified", "tag": None, "error": type(e).__name__}
 
 
-def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = None, page: int | None = None, schedule: list | None = None, workers: int = 6) -> list[Issue]:
+def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = None, page: int | None = None, schedule: list | None = None, workers: int = 6,
+                    tags: list | None = None) -> list[Issue]:
     """Find the openings on the floor, add them to the model (door D-001, window WN-001, opening O-001), tie each to its wall and to a schedule
     type, and return the issues the reconciliation raises. `schedule` is the opening types read from the schedule pages (label, width_m, height_m,
-    count, kind); the model's walls decide external or internal."""
+    count, kind); the model's walls decide external or internal. `tags` are the opening tags read from the plan by the model ((tag, x_mm, y_mm)); when None, the tags come from the
+    PDF's text layer. On a drawing that tags its openings the tags are evidence: a candidate with no tag near it, from the weaker detectors, is left out, and a tag with no opening near it
+    is searched for at its place."""
     cands = candidates(model)
     for c in cands:
         c["source"] = "gap in the wall"
@@ -241,7 +253,9 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         cands += dimension_candidates(model, pdf, page, {round(s["width_m"] * 1000) for s in schedule}, cands)
     cands += jamb_candidates(model, img, scale, cands)
     cands += end_gap_candidates(model, cands)
-    tags = text_tags(pdf, page, model) if pdf and page else []
+    tag_source = "read by the model" if tags is not None else "text layer"
+    if tags is None:
+        tags = text_tags(pdf, page, model) if pdf and page else []
     out_dir = tempfile.mkdtemp()
     paths = [_crop(img, scale, c, out_dir, i) for i, c in enumerate(cands)]
     with ThreadPoolExecutor(workers) as ex:
@@ -257,18 +271,46 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
             dropped += 1
         else:
             kept.append((c, v))
-    # each printed tag belongs to the one gap nearest to it (within 1.8 m); a tag is never shared between two openings
-    pairs = sorted((((tx - (c["x0"] + c["x1"]) / 2) ** 2 + (ty - (c["y0"] + c["y1"]) / 2) ** 2) ** 0.5, gi, ti) for gi, (c, _) in enumerate(kept) for ti, (_, tx, ty) in enumerate(tags))
-    gap_tag: dict = {}
-    used_tags: set = set()
-    for d, gi, ti in pairs:
-        if d <= 1800 and gi not in gap_tag and ti not in used_tags:
-            gap_tag[gi] = tags[ti][0]
-            used_tags.add(ti)
+
+    def pair(kept):
+        """Each printed tag belongs to the one gap nearest to it (within 1.8 m); a tag is never shared between two openings."""
+        pairs = sorted((((tx - (c["x0"] + c["x1"]) / 2) ** 2 + (ty - (c["y0"] + c["y1"]) / 2) ** 2) ** 0.5, gi, ti) for gi, (c, _) in enumerate(kept) for ti, (_, tx, ty) in enumerate(tags))
+        gap_tag, used, gap_dist = {}, set(), {}
+        for d, gi, ti in pairs:
+            if d <= 1800 and gi not in gap_tag and ti not in used:
+                gap_tag[gi] = tags[ti][0]
+                gap_dist[gi] = d
+                used.add(ti)
+        return gap_tag, used, gap_dist
+
+    gap_tag, used_tags, gap_dist = pair(kept)
+    if len(tags) >= TAGGED_MIN:  # a drawing that tags its openings: the tags are evidence
+        # a window's own tag stands within about a metre of its centre; a stretch of wall between two windows has only its neighbours' tags, further off
+        kept2 = [(c, v) for gi, (c, v) in enumerate(kept) if (gi in gap_tag and not (v["kind"] == "window" and c["width_mm"] > 1900 and gap_dist[gi] > 1000)) or not (c.get("source") in WEAK_SOURCES or (v["kind"] == "window" and c["width_mm"] > 1900))]
+        untagged = len(kept) - len(kept2)
+        kept = kept2
+        gap_tag, used_tags, gap_dist = pair(kept)
+        lost = [ti for ti in range(len(tags)) if ti not in used_tags]
+        near = [c for c in jamb_candidates(model, img, scale, [c for c, _ in kept], require_sill=False)
+                if any(((tags[ti][1] - (c["x0"] + c["x1"]) / 2) ** 2 + (tags[ti][2] - (c["y0"] + c["y1"]) / 2) ** 2) ** 0.5 <= 1800 for ti in lost) and c["width_mm"] <= 2400]
+        for c in near:
+            c["source"] = "at a printed tag"
+        with ThreadPoolExecutor(workers) as ex:
+            found = list(ex.map(_verify, [_crop(img, scale, c, out_dir, 1000 + i) for i, c in enumerate(near)]))
+        added = [(c, v) for c, v in zip(near, found) if v.get("kind") in ("door", "window", "opening")]
+        kept += added
+        gap_tag, used_tags, gap_dist = pair(kept)
+        lost = [tags[ti][0] for ti in range(len(tags)) if ti not in used_tags]
+        issues.append(Issue("tags_matched", "info", f"{len(tags)} opening tags were read from the plan ({tag_source}); {len(used_tags)} are matched to an opening, {len(added)} openings were found by searching at a tag, "
+                                                    f"{untagged} candidates with no tag near them were left out.", [], ""))
+        if lost:
+            issues.append(Issue("tags_unmatched", "warn", f"{len(lost)} printed opening tags have no opening near them ({', '.join(sorted(lost)[:12])}{'...' if len(lost) > 12 else ''}); their openings were not found, probably in a wall that was not measured.", [],
+                                "Check those places on the plan; the bill counts only the openings that were found."))
     for gi, (c, v) in enumerate(kept):
         text_tag = gap_tag.get(gi)
-        tag, how = (text_tag, "directly labelled (text layer)") if text_tag else ((v.get("tag") or "").strip().upper() or None, "directly labelled (read from the crop)")
-        made.append({**c, "kind": v["kind"], "tag": tag, "how": how if tag else "inferred"})
+        tag, how = (text_tag, f"directly labelled ({tag_source})") if text_tag else ((v.get("tag") or "").strip().upper() or None, "directly labelled (read from the crop)")
+        by_tag = tag_kind(text_tag) if text_tag else None  # the printed letter is stronger evidence than a look at a crop
+        made.append({**c, "kind": by_tag or v["kind"], "tag": tag, "how": how if tag else "inferred"})
     # a type the schedule knows, by tag; else by width when exactly one schedule type of that kind fits
     for m in made:
         if m["tag"] and m["tag"] in labels:
