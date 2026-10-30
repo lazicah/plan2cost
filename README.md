@@ -47,7 +47,7 @@ Everything in this repository. Nothing existed before: the author is a quantity 
 Plan 10 (one-storey bungalow) was run end to end on both hosts, the same code and the same plan. Muse Spark through the Meta Model API: external walls 36.2 m, internal 19.0 m, 11 windows and 4 doors, estimate 22.4M naira.
 Muse Spark Open on Baseten (`P2C_PROFILE=open`): external 36.8 m, internal 25.1 m, 11 windows and 4 doors, estimate 23.0M naira (+2.5%), 3 turns and about 3.5 minutes. The differences are in the walls the model checks add or leave.
 
-Every model call goes through an OpenAI-compatible endpoint: Muse Spark through the Meta Model API, or Muse Spark Open on Baseten (`P2C_PROFILE=open`). Configure it in `.env`. SAM 3.1 and Muse Voice Transcribe are planned for the site-photo check and voice input and are not in the estimate flow yet.
+Every model call goes through an OpenAI-compatible endpoint: Muse Spark through the Meta Model API, or Muse Spark Open on Baseten (`P2C_PROFILE=open`). Configure it in `.env`. **Muse Voice Transcribe** is in the new-estimate form: press the microphone, say the storey height, roof type, finish level and so on, and the form is filled from what was heard (the transcript is shown and the fields stay editable); it always uses the Meta Model API. SAM 3.1 is planned for the site-photo check and is not in the estimate flow yet.
 
 ## AI assistance
 

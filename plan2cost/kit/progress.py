@@ -9,6 +9,7 @@ RUNS_DIR = Path("workspace/runs")
 _SAVE = threading.Lock()
 STATUSES = ("running", "needs_input", "paused", "done", "failed")
 ROOF_TYPES = ("gable", "hip", "flat")  # the roof types we hold coefficients for
+FINISH_LEVELS = ("standard", "premium")  # which rates apply to tiles, sanitary ware, doors, luminaires and roof covering
 FLOOR_NAMES = ("ground", "first", "second", "third", "fourth")
 
 

@@ -87,9 +87,23 @@ class Handler(BaseHTTPRequestHandler):
         dest.write_bytes(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
         self._json(200, {"path": str(dest)})
 
+    def _voice(self) -> None:
+        """A WAV recording in; what was heard and the estimate inputs read from it out. The form is filled from it, and the person checks it before starting."""
+        from plan2cost.facts.spoken_inputs import read_spoken_inputs
+        from plan2cost.kit.voice import transcribe
+
+        wav = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        try:
+            heard = transcribe(wav)
+            self._json(200, {"transcript": heard.get("transcript", ""), "inputs": read_spoken_inputs(heard.get("transcript", ""))})
+        except (ValueError, RuntimeError, KeyError) as e:
+            self._json(400, {"error": str(e)})
+
     def do_POST(self) -> None:
         if self.path.startswith("/api/upload?name="):
             return self._upload()
+        if self.path == "/api/voice":
+            return self._voice()
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
         cmd = [sys.executable, "-m", "plan2cost.agent"]
         if self.path == "/api/start":
