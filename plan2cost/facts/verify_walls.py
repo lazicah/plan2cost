@@ -239,6 +239,61 @@ def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_as
     return log
 
 
+def _reach_wall(model: DrawingModel, orient: str, centre: float, end: float, sign: int, reach_mm: float = 1800, tol: float = 400) -> float | None:
+    """Where the end of a wall at `end` (running `orient`, on the line `centre`) meets another wall: `end` itself when one is already there, else the near face of the nearest wall
+    across the line within `reach_mm` ahead (the stretch between is a door or a window), else None."""
+    best = None
+    for e in model.walls():
+        if e.orient == orient:
+            continue
+        v = _wall(e)
+        if not (v.start_mm - tol <= centre <= v.end_mm + tol):
+            continue
+        face = v.centre_mm - sign * v.thickness_mm / 2
+        gap = (face - end) * sign
+        if -tol <= gap <= reach_mm and (best is None or abs(gap) < abs(best[0])):
+            best = (gap, face)
+    return None if best is None else (end if abs(best[0]) <= tol else best[1])
+
+
+def add_walls_at_tags(model: DrawingModel, unplaced: list, img, scale: float) -> list[Issue]:
+    """A printed opening tag with no wall near it stands where a wall was not measured, often a wall drawn with light lines (a screen, a glazed partition). Look for a pair of lines a
+    wall apart near the tag, even light ones, and add it as a wall when it runs between two walls (the stretch up to a wall counts: that is where a door or window is). It is added with
+    low confidence and says why, and the openings are then looked for on it again."""
+    log: list[Issue] = []
+    for u in unplaced:
+        tx, ty = u["x_mm"], u["y_mm"]
+        best = None
+        for orient in ("v", "h"):
+            box = (tx - 1500, ty - 2500, tx + 1500, ty + 2500) if orient == "v" else (tx - 2500, ty - 1500, tx + 2500, ty + 1500)
+            found = _bar(img, scale, box, orient, 1)
+            if not found:
+                continue
+            start, end, centre, thick = found
+            if abs(centre - (tx if orient == "v" else ty)) > 1500 or end - start < 1500:
+                continue
+            lo, hi = _reach_wall(model, orient, centre, start, -1), _reach_wall(model, orient, centre, end, 1)
+            if lo is None or hi is None:
+                continue
+            if best is None or hi - lo > best[1] - best[0]:
+                best = (lo, hi, centre, thick, orient)
+        if not best:
+            continue
+        lo, hi, centre, thick, orient = best
+        walls = [_wall(e) for e in model.walls()]
+        if any(w.orient == orient and abs(w.centre_mm - centre) <= max(w.thickness_mm, thick) and min(w.end_mm, hi) - max(w.start_mm, lo) > 0.5 * (hi - lo) for w in walls):
+            continue
+        t = float(np.median([e.thickness_mm for e in model.walls()])) if model.walls() else thick
+        thickness = t if abs(thick - t) <= 0.3 * t else round(thick / 10) * 10
+        n = 1 + max((int(e.id.split("-")[1]) for e in model.walls()), default=0)
+        x0, y0, x1, y1 = (lo, centre, hi, centre) if orient == "h" else (centre, lo, centre, hi)
+        new = Element(f"W-{n:03d}", "wall", "internal", model.page, model.floor, orient, round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1), round((hi - lo) / 1000, 3), float(thickness),
+                      evidence="geometrically measured", confidence="low", notes=[f"drawn with light lines; found where the printed tag {u['tag']} stands, with no wall measured there, and joined to walls at both ends"])
+        model.elements.append(new)
+        log.append(Issue("added_at_tag", "info", f"{new.id} added ({(hi - lo) / 1000:.1f} m): the plan prints the tag {u['tag']} here and a pair of light lines runs between two walls, so it is taken as a wall.", [new.id], "", "model check"))
+    return log
+
+
 def verify_walls(model: DrawingModel, img, scale: float, markup_path: str) -> bool:
     """Run the three checks, apply the edits, recompute totals and code checks. Returns True when the walls changed. A failed model call skips that check, never the run."""
     log: list[Issue] = []

@@ -28,3 +28,19 @@ def test_a_plan_that_does_not_tag_its_openings_costs_one_call():
         return {"tagged": False}
 
     assert read_tags(np.zeros((100, 300, 3), np.uint8), 0.1, ask=ask) == [] and len(calls) == 1
+
+
+def test_a_tag_is_put_at_its_true_place_and_one_that_is_not_there_is_dropped():
+    from plan2cost.facts.tags import refine
+
+    img = np.zeros((2000, 3000, 3), np.uint8)  # 0.1 px per mm: 20 m x 30 m... a 7 m square is 700 px
+    first = [("W3", 10000.0, 10000.0), ("D1", 20000.0, 5000.0), ("W9", 15000.0, 15000.0)]
+
+    def ask(prompt, path):
+        if '"W3"' in prompt:
+            return {"found": True, "x": 0.5, "y": 0.5}  # the tag is at the middle of the square around the first place
+        if '"D1"' in prompt:
+            return {"found": True, "x": 0.75, "y": 0.25}
+        return {"found": False}  # W9 was misread
+    got = refine(img, 0.1, first, ask=ask)
+    assert [t[0] for t in got] == ["W3", "D1"] and got[0][1:] == (10000.0, 10000.0) and got[1][1] > 20000 and got[1][2] < 5000

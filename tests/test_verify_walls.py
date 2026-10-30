@@ -85,3 +85,20 @@ def test_a_pair_of_light_lines_is_not_a_wall_but_a_pair_of_heavy_ones_is():
     assert _bar(drawing(5), SCALE, (0, 0, 10000, 3000), "h", min_face_px=3) is not None
     assert _bar(drawing(1), SCALE, (0, 0, 10000, 3000), "h", min_face_px=3) is None  # a porch edge, a kerb or a dimension chain
     assert _bar(drawing(1), SCALE, (0, 0, 10000, 3000), "h") is not None  # without the weight rule it would have been taken for a wall
+
+
+def test_a_wall_of_light_lines_where_a_tag_stands_is_added_between_two_walls_up_to_the_door_gap():
+    from plan2cost.facts.verify_walls import add_walls_at_tags
+
+    img = np.full((600, 700, 3), 255, np.uint8)  # 0.1 px per mm
+    for y in (100, 400):
+        cv2.rectangle(img, (0, y - 2), (699, y + 2), (0, 0, 0), -1)  # two heavy horizontal walls
+    for x in (250, 273):  # two light lines 230 mm apart, from y = 200 px down to the lower wall; between 100 and 200 px is the door gap
+        cv2.line(img, (x, 200), (x, 398), (0, 0, 0), 1)
+    walls = [Wall("h", 1000.0, 0.0, 7000.0, 230.0), Wall("h", 4000.0, 0.0, 7000.0, 230.0)]
+    m = build_model(result_for(walls, [1, 1]), "ground", 1)
+    log = add_walls_at_tags(m, [{"tag": "W3", "kind": "window", "x_mm": 2900.0, "y_mm": 3000.0}], img, SCALE)
+    new = m.walls()[-1]
+    assert [i.code for i in log] == ["added_at_tag"] and new.orient == "v" and 2400 < new.x0_mm < 2700 and new.confidence == "low"
+    assert new.y0_mm < 1300 and new.y1_mm > 3800  # up to the upper wall across the door gap, down to the lower wall
+    assert add_walls_at_tags(m, [{"tag": "W3", "kind": "window", "x_mm": 2900.0, "y_mm": 3000.0}], img, SCALE) == []  # already there: not added twice

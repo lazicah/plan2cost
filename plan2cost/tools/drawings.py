@@ -77,11 +77,12 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     def read_opening_tags():
         """The tags printed beside the openings (W1, D2...): from the PDF's text layer when it has one (found later), else read by the model."""
         from plan2cost.drawing.openings import text_tags
-        from plan2cost.facts.tags import read_tags
+        from plan2cost.facts.tags import read_tags, refine
 
         if is_pdf and text_tags(file, page, model):
             return None
-        return read_tags(img, scale)
+        tags = read_tags(img, scale)
+        return refine(img, scale, tags) if tags else tags
     step("Reading the room names and the opening tags")
     with ThreadPoolExecutor(2) as ex:  # the two reads are independent, so they run together
         f_rooms, f_tags = ex.submit(read_room_names), ex.submit(read_opening_tags)
@@ -103,6 +104,19 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     try:
         before = len(model.issues)
         locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)
+        if model.unplaced_tags:  # tags with no opening near them: a wall drawn with light lines may stand there; if one is found, the openings are looked for again with it in place
+            from plan2cost.drawing.model import refresh
+            from plan2cost.facts.spaces import _recompute_external
+            from plan2cost.facts.verify_walls import add_walls_at_tags
+
+            added = add_walls_at_tags(model, model.unplaced_tags, img, scale)
+            if added:
+                model.elements = [e for e in model.elements if e.category == "wall"]
+                refresh(model)
+                _recompute_external(model, img.shape[:2], scale)
+                model.issues += added
+                before = len(model.issues)
+                locate_openings(model, img, scale, file if is_pdf else None, page if is_pdf else None, None, tags=tags)
         draw_markup(model, str(models_dir / model.markup), pdf=file if is_pdf else None, page=page if is_pdf else None, image=None if is_pdf else file)
         issues += [i for i in model.issues[before:] if i.severity != "info"]
         ops = _openings(model)

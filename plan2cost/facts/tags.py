@@ -16,6 +16,12 @@ dimensions, grid bubbles with only a number or a single letter, and notes. For e
 Return only JSON: {"tags": [{"tag": "W3", "x": 0.42, "y": 0.18}]}"""
 
 
+LOOK = """This is a small part of a floor plan. Is there an opening tag printed in it that reads "{tag}" (usually inside a small circle beside a door or window)? If there is, give the centre
+of the circle as a fraction of this picture's width and height (x from the left, y from the top, each 0 to 1). Judge only what you can see; if the tag is not in this picture, say so.
+Return only JSON: {{"found": true or false, "x": 0.5, "y": 0.5}}"""
+REFINE_REACH_MM = 3500  # the model's first place for a tag is off by a few metres on a large sheet; the look at a 7 m square finds the tag itself
+
+
 def _save(img, path: str) -> str:
     cv2.imwrite(path, img)
     return path
@@ -78,3 +84,37 @@ def read_tags(img, scale: float, ask=None, workers: int = 6) -> list[tuple[str, 
             return []
     with ThreadPoolExecutor(workers) as ex:
         return dedupe([t for part in ex.map(one, range(len(ts))) for t in part])
+
+
+def refine(img, scale: float, tags: list[tuple[str, float, float]], ask=None, workers: int = 6) -> list[tuple[str, float, float]]:
+    """Put each tag at its true place: look at a 7 m square around where it was first placed and ask where the tag is in it. A tag that is not there was misread or read twice and is
+    dropped. The first places are good to a few metres on a large sheet, which is too coarse to say which opening a tag belongs to; this is good to a few tenths of a metre."""
+    from plan2cost.kit.client import chat_json, image_part
+
+    ask = ask or (lambda prompt, path: chat_json([{"type": "text", "text": prompt}, image_part(path)]))
+    h, w = img.shape[:2]
+    folder = tempfile.mkdtemp()
+    reach = int(REFINE_REACH_MM * scale)
+
+    def one(i):
+        tag, x, y = tags[i]
+        cx, cy = int(x * scale), int(y * scale)
+        x0, y0, x1, y1 = max(cx - reach, 0), max(cy - reach, 0), min(cx + reach, w), min(cy + reach, h)
+        if x1 - x0 < 50 or y1 - y0 < 50:
+            return None
+        crop = img[y0:y1, x0:x1]
+        small = cv2.resize(crop, None, fx=min(800 / max(crop.shape[:2]), 1.0), fy=min(800 / max(crop.shape[:2]), 1.0), interpolation=cv2.INTER_AREA)
+        try:
+            r = ask(LOOK.format(tag=tag), _save(small, f"{folder}/look{i}.jpg"))
+        except Exception:
+            return (tag, x, y)  # the look failed: keep the first place rather than lose the tag
+        try:
+            fx, fy = float(r["x"]), float(r["y"])
+        except (KeyError, TypeError, ValueError):
+            fx = fy = -1.0
+        if not r.get("found") or not (0 <= fx <= 1 and 0 <= fy <= 1):
+            return None
+        return (tag, (x0 + fx * (x1 - x0)) / scale, (y0 + fy * (y1 - y0)) / scale)
+    with ThreadPoolExecutor(workers) as ex:
+        out = [t for t in ex.map(one, range(len(tags))) if t]
+    return dedupe(out, radius_mm=800)
