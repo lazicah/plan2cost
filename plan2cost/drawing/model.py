@@ -75,6 +75,8 @@ class DrawingModel:
     markup: str = ""  # file name of the annotated plan, relative to the model file
     markup_frame: list = field(default_factory=list)  # [x0, y0, shrink, px_per_mm]: how the annotated plan's pixels map back to the page's, to turn a place on the picture into millimetres
     printed_mm: list = field(default_factory=list)  # the printed overall dimensions the building size is checked against
+    unplaced_tags: list = field(default_factory=list)  # opening tags read from the plan with no opening found near them: {tag, kind, x_mm, y_mm}
+    tagged: bool = False  # the plan tags its openings (enough tags were read)
     spaces: list = field(default_factory=list)  # named spaces the model saw: {name, kind, box_mm: [x0, y0, x1, y1]}; kind from the name (outdoor, void, circulation, wet, room)
 
     def walls(self) -> list:

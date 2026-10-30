@@ -27,6 +27,8 @@ class FloorData:
     openings: list = field(default_factory=list)  # Opening
     rooms: list = field(default_factory=list)  # room names read from the plan
     void_m2: float = 0.0  # open between floors (a space named Void): no slab, no floor finish; from the rough box the model saw
+    tagged: bool = False  # the plan tags its openings, so the count of printed tags is evidence of how many there are
+    unplaced: dict = field(default_factory=dict)  # tags with no opening found near them: {"window": n, "door": n}
 
     @property
     def footprint_m2(self) -> float:
@@ -122,6 +124,18 @@ def missing_openings(floors: list[FloorData], rates: dict, bearing_mm: float) ->
     for kind, coef, label, key, w, h, side in (("window", "plans_windows_per_m2_floor", "Windows", "windows_estimated_nr", 1.2, 1.2, True),
                                                ("door", "plans_doors_per_m2_floor", "Doors", "doors_estimated_nr", 0.9, 2.1, False)):
         found = sum(o.count for o in ops if o.kind == kind)
+        if any(f.tagged for f in floors):  # the plans tag their openings: the tags with no opening near them are the ones missed, counted as they are printed
+            n = sum(f.unplaced.get(kind, 0) for f in floors)
+            if not n:
+                continue
+            extra = (0.7 * n, float(n), float(n))  # the model can read a tag twice: the low end allows for it
+            it = _est(key, f"{label} counted from their printed tags but not located on a measured wall; standard size {int(w * 1000)} x {int(h * 1000)}mm", "nr", extra, ["plans_windows_per_m2_floor" if kind == "window" else "plans_doors_per_m2_floor"])
+            r = rates.get("window_base_nr", 0) + rates.get("window_per_m2", 0) * w * h if kind == "window" else rates.get("door_internal_nr")
+            it.rate = round(r, -2) if r else None
+            items.append(it)
+            extra_len = tuple(a + b * (w + 2 * bearing_mm / 1000) for a, b in zip(extra_len, extra)) if kind == "door" else extra_len
+            notes.append({"name": f"{kind}s_from_tags", "value": f"{found:g} located, {n} more counted from printed tags", "basis": f"{n} printed {kind} tags have no {kind} located near them (their walls were not measured); each is counted once at a standard size"})
+            continue
         want = _rng(coef, gfa)
         if found >= 0.6 * want[0]:
             continue

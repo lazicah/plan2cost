@@ -17,14 +17,15 @@ WINDOW_WIDTHS_MM = (600, 750, 900, 1200, 1500, 1800, 2400)
 MIN_MM, MAX_MM = 450, 3700  # narrower is a jamb or a break in a face line, wider is a gap in the detection
 
 PROMPT = """This is a crop of a floor plan. A thick orange bar marks a gap that was found in a wall. Say what the gap is:
-- "door": a door leaf or a swing arc is drawn in or beside the gap;
+- "door": a door leaf or a swing arc is drawn that belongs to THIS gap, its hinge at one end of the bar. A leaf or an arc that belongs to a different gap close by does not count;
 - "window": frame or sill lines run across the gap, or it carries a window tag;
 - "opening": an open gap in the wall with no door or window drawn (an arch, a pass-through, a doorway without a leaf);
-- "not_opening": the bar is not on a gap in a wall (a stair, furniture, a wall end, a column, a text label, two walls meeting).
+- "not_opening": the bar is not on a gap in a wall: a short stretch of wall with thick wall faces on both sides (hatched or solid), a stair, furniture, a wall end, a column, a text label, two walls meeting.
 Also read the tag printed next to it if there is one (like W3, D2, SD1, AW1, TD2), exactly as printed, else null.
 Judge only what you can see. Return only JSON: {"kind": "door|window|opening|not_opening", "tag": "W3" or null, "leaf": "single|double|sliding|none|unclear"}"""
 
 
+WALL_INK = 0.38  # share of a stretch's wall band drawn dark above which a door or opening candidate is a piece of wall (real door gaps measured 0.05 to 0.31, wall stubs 0.42 to 0.50)
 TAGGED_MIN = 4  # fewer tags than this and the drawing is not taken to tag its openings
 WEAK_SOURCES = ("between jamb lines", "between a wall end and the next wall", "where the wall faces are drawn lighter")  # detectors that need a tag to back them up on a tagged drawing
 
@@ -33,6 +34,22 @@ def near_void(c: dict, model: DrawingModel, reach_mm: float = 1500) -> bool:
     """Is the opening within reach of a space named Void? Windows on the walls of a void are often a glass facade from one floor to the next, and then have no tag of their own."""
     cx, cy = (c["x0"] + c["x1"]) / 2, (c["y0"] + c["y1"]) / 2
     return any(s["kind"] == "void" and s["box_mm"][0] - reach_mm <= cx <= s["box_mm"][2] + reach_mm and s["box_mm"][1] - reach_mm <= cy <= s["box_mm"][3] + reach_mm for s in model.spaces)
+
+
+def stretch_ink(img, scale: float, c: dict) -> float:
+    """How much of the wall's thickness is drawn dark along a candidate's stretch (0 to 1). A door gap is nearly empty (a leaf and a threshold line at most); a stretch of wall
+    drawn with thick faces and hatching is not."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+    half = int(c["thickness"] / 2 * scale)
+    if c["orient"] == "h":
+        a, b = sorted((int(c["x0"] * scale), int(c["x1"] * scale)))
+        y = int(c["y0"] * scale)
+        band = gray[max(y - half, 0):y + half + 1, max(a, 0):b + 1]
+    else:
+        a, b = sorted((int(c["y0"] * scale), int(c["y1"] * scale)))
+        x = int(c["x0"] * scale)
+        band = gray[max(a, 0):b + 1, max(x - half, 0):x + half + 1]
+    return float((band < 140).mean()) if band.size else 0.0
 
 
 def tag_kind(tag: str) -> str | None:
@@ -316,6 +333,8 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
             unverified += 1
         elif kind not in ("door", "window", "opening") or (c.get("source") == "where the wall faces are drawn lighter" and kind != "window"):  # a lighter-drawn stretch is a window symbol or nothing
             dropped += 1
+        elif kind in ("door", "opening") and c.get("source") != "gap in the wall" and stretch_ink(img, scale, c) > WALL_INK:  # a stretch drawn with heavy faces and hatching is wall, whatever the arc beside it
+            dropped += 1
         else:
             kept.append((c, v))
 
@@ -332,6 +351,7 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
 
     gap_tag, used_tags, gap_dist = pair(kept)
     if len(tags) >= TAGGED_MIN:  # a drawing that tags its openings: the tags are evidence
+        model.tagged = True
         # a window's own tag stands within about a metre of its centre; a stretch of wall between two windows has only its neighbours' tags, further off
         crop_tag = lambda v: bool(re.match(TAG, (v.get("tag") or "").strip().upper()))  # a tag the model read beside the opening in its crop is evidence too: the tag positions are coarse
         kept2 = [(c, v) for gi, (c, v) in enumerate(kept)
@@ -353,11 +373,21 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         kept += added
         gap_tag, used_tags, gap_dist = pair(kept)
         lost = [tags[ti][0] for ti in range(len(tags)) if ti not in used_tags]
+        matched = [tags[ti] for ti in used_tags]
+        unplaced = []  # a printed tag is an opening even where its wall was not measured: counted from the tag, at a standard size, unless it is the same tag read twice
+        for ti, (tg, tx, ty) in enumerate(tags):
+            kind = tag_kind(tg)
+            if ti in used_tags or not kind or any(m[0] == tg and ((m[1] - tx) ** 2 + (m[2] - ty) ** 2) ** 0.5 <= 3000 for m in matched):
+                continue
+            unplaced.append({"tag": tg, "kind": kind, "x_mm": round(tx), "y_mm": round(ty)})
+        model.unplaced_tags = unplaced
         issues.append(Issue("tags_matched", "info", f"{len(tags)} opening tags were read from the plan ({tag_source}); {len(used_tags)} are matched to an opening, {len(added)} openings were found by searching at a tag, "
                                                     f"{untagged} candidates with no tag near them were left out.", [], ""))
         if lost:
-            issues.append(Issue("tags_unmatched", "warn", f"{len(lost)} printed opening tags have no opening near them ({', '.join(sorted(lost)[:12])}{'...' if len(lost) > 12 else ''}); their openings were not found, probably in a wall that was not measured.", [],
-                                "Check those places on the plan; the bill counts only the openings that were found."))
+            n_w, n_d = sum(u["kind"] == "window" for u in unplaced), sum(u["kind"] == "door" for u in unplaced)
+            issues.append(Issue("tags_unmatched", "warn", f"{len(lost)} printed opening tags have no opening near them ({', '.join(sorted(lost)[:12])}{'...' if len(lost) > 12 else ''}), probably in walls that were not measured; "
+                                                          f"{n_w} windows and {n_d} doors are counted from the tags (the same tag read twice is counted once), at a standard size.", [],
+                                "Check those places on the plan; their sizes are standard, not measured."))
     for gi, (c, v) in enumerate(kept):
         text_tag = gap_tag.get(gi)
         tag, how = (text_tag, f"directly labelled ({tag_source})") if text_tag else ((v.get("tag") or "").strip().upper() or None, "directly labelled (read from the crop)")

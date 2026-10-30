@@ -11,7 +11,7 @@ from plan2cost.tools.records import add_fact, settle
 
 def _floor(d: dict) -> FloorData:
     ops = [Opening(o["label"], o["width_m"], o["height_m"], o["count"], o["kind"], o["external"], o.get("assumed_height", False)) for o in d.get("openings", [])]
-    return FloorData(d["name"], d["ext_m"], d["int_m"], d["junctions"], d["length_m"], d["width_m"], d["wall_plan_area_m2"], ops, d.get("rooms", []), d.get("void_m2", 0.0))
+    return FloorData(d["name"], d["ext_m"], d["int_m"], d["junctions"], d["length_m"], d["width_m"], d["wall_plan_area_m2"], ops, d.get("rooms", []), d.get("void_m2", 0.0), d.get("tagged", False), d.get("unplaced") or {})
 
 
 def compute_boq(run: Run) -> dict:

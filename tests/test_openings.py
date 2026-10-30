@@ -96,3 +96,16 @@ def test_a_plan_with_few_tags_is_not_taken_to_tag_its_openings(monkeypatch):
     monkeypatch.setattr(O, "_verify", lambda path: {"kind": "window", "tag": None})
     O.locate_openings(m, np.zeros((10, 10, 3), np.uint8), 0.1, tags=[("W1", 9000.0, 9000.0)])
     assert len(m.openings()) == 1  # one tag is not a tagged drawing: the weak candidate stays, as before
+
+
+def test_a_stretch_drawn_with_heavy_faces_is_wall_and_an_empty_gap_is_not():
+    import cv2
+    import numpy as np
+
+    from plan2cost.drawing.openings import stretch_ink
+
+    img = np.full((200, 600, 3), 255, np.uint8)
+    cv2.rectangle(img, (0, 80), (300, 120), (0, 0, 0), -1)  # solid wall to x = 300; the rest is an empty gap
+    wall = {"orient": "h", "x0": 1000.0, "y0": 1000.0, "x1": 2500.0, "y1": 1000.0, "thickness": 400.0}  # 0.1 px per mm: x 100 to 250 px
+    gap = {**wall, "x0": 3200.0, "x1": 5000.0}
+    assert stretch_ink(img, 0.1, wall) > 0.9 and stretch_ink(img, 0.1, gap) < 0.05
