@@ -295,6 +295,10 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         if s and abs(s["width_m"] * 1000 - o.width_mm) > 0.2 * s["width_m"] * 1000 and abs(s["width_m"] * 1000 - o.width_mm) > 150:
             issues.append(Issue("opening_width", "info", f"{o.id} ({o.mark}) measures {o.width_mm:.0f} mm on the drawing but the schedule says {s['width_m'] * 1000:.0f} mm.", [o.id],
                                 "The drawn gap includes the frame; check only if the difference is large."))
+    wide = [o for o in model.openings() if o.category == "window" and o.width_mm > 1900]
+    if wide:
+        issues.append(Issue("wide_windows", "warn", f"{len(wide)} windows are wider than 1.9 m ({', '.join(o.id for o in wide[:6])}); a stretch of plain wall between two window frames can look like a window.", [o.id for o in wide][:20],
+                            "Check these on the markup; a wall taken for a window leaves its wall area out of the bill."))
     if unverified:
         issues.append(Issue("openings_unverified", "warn", f"{unverified} candidate openings could not be checked by the model and are left out.", [], "Run the check again."))
     found: dict = {}
