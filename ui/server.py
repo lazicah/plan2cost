@@ -22,6 +22,8 @@ PORT = 8765
 LOG = ROOT / "workspace" / "console.log"  # what the background processes print, so a crashed run can be explained
 UPLOADS = ROOT / "workspace" / "uploads"  # files picked in the console are copied here, then handed to the agent by path
 UPLOAD_TYPES = {".pdf", ".png", ".jpg", ".jpeg", ".xlsx"}
+STATIC = {"style.css": "text/css; charset=utf-8", "app.js": "text/javascript; charset=utf-8", "voice.js": "text/javascript; charset=utf-8", "view3d.js": "text/javascript; charset=utf-8",
+          "main.js": "text/javascript; charset=utf-8"}  # the console's own files, served from ui/ (nothing else in that folder is)
 DOWNLOADS = {"bill_materials_labour.pdf": "application/pdf", "bill_materials_labour.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_priced.pdf": "application/pdf", "bill_unpriced.pdf": "application/pdf", "bill_priced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "bill_unpriced.xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
              "boq.json": "application/json", "tender_audit.json": "application/json"}
 
@@ -46,6 +48,8 @@ class Handler(BaseHTTPRequestHandler):
         self.path = self.path.split("?")[0]  # the page adds ?v=... to images so a redrawn plan is fetched again; routes ignore it
         if self.path in ("/", "/index.html"):
             self._send(200, (ROOT / "ui" / "index.html").read_bytes(), "text/html; charset=utf-8")
+        elif self.path.startswith("/ui/") and self.path[4:] in STATIC:
+            self._send(200, (ROOT / "ui" / self.path[4:]).read_bytes(), STATIC[self.path[4:]])
         elif self.path == "/api/runs":
             self._json(200, view.list_runs())
         elif re.match(r"^/api/runs/\d{8}-\d{6}/models/[\w.\-]+\.(jpg|json)$", self.path):  # the annotated plans and drawing models of a run

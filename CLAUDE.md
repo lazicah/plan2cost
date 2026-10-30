@@ -63,7 +63,10 @@ and doors that are a gap between a wall end and the next wall. Plan 10 (one-stor
 750 and the 900 doors, and only the door leaf would tell them apart). Plan 2 (two images, no text layer): windows found rose from 3 on both floors to about 27 (the author's bill has 36) and doors to about 18 (bill 21), with no change in wall lengths; some 1800 and 2400 windows are probably wall between two frames, so wide windows raise a warning. Plan 6 ground with its schedule: windows 23 to 25, 600 mm ones 12 to 13 of 16, 900 mm ones 5 to 6 of 4 (one more over-counted).
 
 ## Code layout
-See README.md. Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`; the prompt lives in `agent/system_instructions.md`.
+See README.md (the layout section lists every folder and what each file is for). After a code change restart the console server (`pkill -f ui/server.py; python ui/server.py`): it keeps the code it started with.
+The wall and opening readers are split by job: `drawing/opening_candidates.py` finds where openings may be, `drawing/openings.py` judges them and uses the opening tags as evidence, `facts/verify_walls.py` checks and repairs walls with closed questions, `facts/spaces.py` applies what space names mean, `tools/drawings.py` reads one floor in named steps.
+The console's scripts are in `ui/` (app.js, voice.js, view3d.js, main.js, style.css), served by `ui/server.py` from a short allowlist.
+ Dependencies run one way: `kit` <- `takeoff`, `drawing` <- `facts` <- `tools` <- `agent`. A new tool is one function in a `tools/<group>.py` file plus an entry in that file's `TOOLS`; the prompt lives in `agent/system_instructions.md`.
 
 ## Quote audit
 `audit_quote` (tools/audit.py, rules in takeoff/audit.py, quote reading in facts/quote.py) checks a contractor's quote against the filed BoQ. The model reads the
