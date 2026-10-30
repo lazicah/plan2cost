@@ -394,15 +394,36 @@ function build3d(box, d, opt) {
   const bar = box.querySelector('.bar'); const ctl = document.createElement('span'); ctl.className = 'small';
   ctl.innerHTML = `<button id="m3render" type="button">Make a realistic picture of this view</button> <label style="margin-left:10px"><input type="checkbox" id="m3roof" checked> roof</label> ${groups.map((x, i) => `<label style="margin-left:10px"><input type="checkbox" class="m3fl" data-i="${i}" checked> ${esc(x.name)} floor</label>`).join('')} <label style="margin-left:10px"><input type="checkbox" id="m3spin" ${opt.az === undefined ? 'checked' : ''}> turn slowly</label> <span class="mute" style="margin-left:10px">drag to turn, scroll to zoom</span>`;
   bar.insertBefore(ctl, bar.querySelector('.spacer'));
+  const inPoly = (pt, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > pt[1]) !== (b[1] > pt[1]) && pt[0] < (b[0] - a[0]) * (pt[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+  // the windows and doors on external walls that face the camera and are inside the picture (a count to hold the picture to; walls in front are not taken into account)
+  const visibleOpenings = () => {
+    let windows = 0, doors = 0; const v = new T.Vector3();
+    d.floors.forEach((fl, fi) => {
+      if (!groups[fi].g.visible) return;
+      fl.openings.forEach(p => {
+        const w = fl.walls.find(q => q.id === p.parent); if (!w || !w.external || p.kind === 'opening') return;
+        const mx = (p.x0 + p.x1) / 2, mz = (p.y0 + p.y1) / 2, horiz = Math.abs(w.x1 - w.x0) >= Math.abs(w.y1 - w.y0);
+        let n = horiz ? [0, 1] : [1, 0]; const probe = s => horiz ? [mx, mz + s] : [mx + s, mz];
+        const outside = s => fl.outline && fl.outline.length > 2 ? !inPoly(probe(s * 0.6), fl.outline) : (horiz ? (mz - cz) * s > 0 : (mx - cx) * s > 0);
+        const sign = outside(1) ? 1 : outside(-1) ? -1 : 0; if (!sign) return;
+        const nx = horiz ? 0 : sign, nz = horiz ? sign : 0;
+        v.set(mx, fi * H + (p.kind === 'window' ? d.sill_m + d.window_height_m / 2 : d.door_height_m / 2), mz);
+        if (nx * (camera.position.x - mx) + nz * (camera.position.z - mz) <= 0) return;
+        const q = v.clone().project(camera); if (Math.abs(q.x) > 1 || Math.abs(q.y) > 1) return;
+        if (p.kind === 'window') windows++; else doors++;
+      });
+    });
+    return {windows, doors};
+  };
   $('#m3render').onclick = async () => {
     const b = $('#m3render'), msg = $('#m3dmsg'); b.disabled = true; const spin = $('#m3spin'); controls.autoRotate = false; if (spin) spin.checked = false;
-    msg.textContent = 'Making the picture with Muse Image: about 30 seconds…';
+    msg.textContent = 'Making the picture with Muse Image and checking it against this view: 30 to 60 seconds…';
     try {
-      renderer.render(scene, camera); const png = await new Promise(ok => cv.toBlob(ok, 'image/png'));
-      const r = await fetch(`/api/runs/${m3run}/render`, {method: 'POST', body: png}), j = await r.json();
+      renderer.render(scene, camera); const png = await new Promise(ok => cv.toBlob(ok, 'image/png')), vis = visibleOpenings();
+      const r = await fetch(`/api/runs/${m3run}/render`, {method: 'POST', body: png, headers: {'X-Visible': JSON.stringify(vis)}}), j = await r.json();
       if (!r.ok) throw new Error(j.error || 'failed');
       const ov = document.createElement('div'); ov.style.cssText = 'position:absolute;inset:60px 0 34px 0;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;overflow:auto;z-index:5';
-      ov.innerHTML = `<img src="${j.url}" alt="a realistic picture of the house" style="max-width:100%;max-height:calc(100% - 60px);border-radius:8px;border:1px solid var(--line)"><div class="small mute" style="max-width:820px;text-align:center">An illustration made by Muse Image from this view. The finishes, proportions and the exact positions of windows are the model's interpretation: it is not to scale, and the bill comes from the measured plans, not from this picture.</div><div><a class="dl" href="${j.url}" download="house.webp">Save the picture</a> <button id="m3back" style="background:var(--card);color:var(--accent);border-color:var(--accent)">Back to the 3D model</button></div>`;
+      ov.innerHTML = `<img src="${j.url}" alt="a realistic picture of the house" style="max-width:100%;max-height:calc(100% - 60px);border-radius:8px;border:1px solid var(--line)"><div class="small mute" style="max-width:820px;text-align:center">${j.matched === true ? `<b>Checked:</b> the picture shows the same ${j.expected.windows} windows and ${j.expected.doors} doors as this view. ` : j.matched === false ? `<b>Not matching:</b> this view shows ${j.expected.windows} windows and ${j.expected.doors} doors, the picture about ${j.counted.windows} and ${j.counted.doors} (after ${j.attempts} tries). ` : ''}An illustration made by Muse Image from this view. The finishes, proportions and the exact positions of windows are the model's interpretation: it is not to scale, and the bill comes from the measured plans, not from this picture.</div><div><a class="dl" href="${j.url}" download="house.webp">Save the picture</a> <button id="m3back" style="background:var(--card);color:var(--accent);border-color:var(--accent)">Back to the 3D model</button></div>`;
       box.appendChild(ov); $('#m3back').onclick = () => ov.remove(); msg.textContent = 'Illustration made.';
     } catch (e) { msg.textContent = 'Could not make the picture: ' + e.message; } finally { b.disabled = false; }
   };

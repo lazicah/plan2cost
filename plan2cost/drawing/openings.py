@@ -26,7 +26,7 @@ Judge only what you can see. Return only JSON: {"kind": "door|window|opening|not
 
 
 TAGGED_MIN = 4  # fewer tags than this and the drawing is not taken to tag its openings
-WEAK_SOURCES = ("between jamb lines", "between a wall end and the next wall")  # detectors that need a tag to back them up on a tagged drawing
+WEAK_SOURCES = ("between jamb lines", "between a wall end and the next wall", "where the wall faces are drawn lighter")  # detectors that need a tag to back them up on a tagged drawing
 
 
 def tag_kind(tag: str) -> str | None:
@@ -145,6 +145,46 @@ def jamb_candidates(model: DrawingModel, img, scale: float, have: list, min_px: 
     return out
 
 
+def thin_face_candidates(model: DrawingModel, img, scale: float, have: list, min_run_mm: float = 300, jamb_mm: float = 60) -> list[dict]:
+    """Windows drawn as lighter lines inside the wall, with a dot or a short line at each end: along a wall the ink across its thickness drops from the heavy face lines to the
+    thin lines of the symbol. A stretch of 300 to 2400 mm where the wall is drawn at under 60% of its usual weight, but still drawn, is a candidate (widened by the jamb at each end).
+    Most such stretches are not openings (hatching, a notch), so the model looks at each; stretches that overlap an opening already found are left out."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+    dark = gray < 140
+    out = []
+    for e in model.walls():
+        half = int(e.thickness_mm / 2 * scale + 2)
+        if e.orient == "h":
+            a, b = sorted((int(e.x0_mm * scale), int(e.x1_mm * scale)))
+            c = int(e.y0_mm * scale)
+            band = dark[max(c - half, 0):c + half + 1, max(a, 0):b + 1]
+        else:
+            a, b = sorted((int(e.y0_mm * scale), int(e.y1_mm * scale)))
+            c = int(e.x0_mm * scale)
+            band = dark[max(a, 0):b + 1, max(c - half, 0):c + half + 1].T
+        if band.size == 0 or band.shape[1] < 20 or band.shape[0] < 4:
+            continue
+        frac = band.mean(axis=0)
+        solid = frac[frac >= 0.3]
+        if len(solid) < 0.3 * len(frac):
+            continue  # a wall that is not drawn heavily for most of its length has no weight to drop from
+        heavy = float(np.median(solid))
+        thin = (frac > 0.06) & (frac < 0.6 * heavy)
+        edges = np.diff(np.concatenate([[0], thin.astype(np.int8), [0]]))
+        for s, f in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)):
+            run = (f - s) / scale
+            if run < min_run_mm or run + 2 * jamb_mm > MAX_MM - 1000:
+                continue
+            lo, hi = max(a, 0) / scale + s / scale - jamb_mm, max(a, 0) / scale + f / scale + jamb_mm
+            x0, y0, x1, y1 = (lo, e.y0_mm, hi, e.y0_mm) if e.orient == "h" else (e.x0_mm, lo, e.x0_mm, hi)
+            mid = ((x0 + x1) / 2, (y0 + y1) / 2)
+            if any(h["wall"] == e.id and abs((h["x0"] + h["x1"]) / 2 - mid[0]) < 450 and abs((h["y0"] + h["y1"]) / 2 - mid[1]) < 450 for h in have + out):
+                continue
+            out.append({"wall": e.id, "orient": e.orient, "x0": x0, "y0": y0, "x1": x1, "y1": y1, "width_mm": round(hi - lo), "external": e.external_share >= 0.5, "thickness": e.thickness_mm,
+                        "source": "where the wall faces are drawn lighter"})
+    return out
+
+
 def _mm_per_pt(model: DrawingModel) -> float | None:
     """Millimetres of building to a point of the PDF page, or None when the model came from an image (no text layer to place)."""
     cal = model.calibrations[0]
@@ -252,6 +292,7 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
     if pdf and page and schedule:
         cands += dimension_candidates(model, pdf, page, {round(s["width_m"] * 1000) for s in schedule}, cands)
     cands += jamb_candidates(model, img, scale, cands)
+    cands += thin_face_candidates(model, img, scale, cands)
     cands += end_gap_candidates(model, cands)
     tag_source = "read by the model" if tags is not None else "text layer"
     if tags is None:
@@ -267,7 +308,7 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
         kind = v.get("kind")
         if kind == "unverified":
             unverified += 1
-        elif kind not in ("door", "window", "opening"):
+        elif kind not in ("door", "window", "opening") or (c.get("source") == "where the wall faces are drawn lighter" and kind != "window"):  # a lighter-drawn stretch is a window symbol or nothing
             dropped += 1
         else:
             kept.append((c, v))
@@ -286,7 +327,10 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
     gap_tag, used_tags, gap_dist = pair(kept)
     if len(tags) >= TAGGED_MIN:  # a drawing that tags its openings: the tags are evidence
         # a window's own tag stands within about a metre of its centre; a stretch of wall between two windows has only its neighbours' tags, further off
-        kept2 = [(c, v) for gi, (c, v) in enumerate(kept) if (gi in gap_tag and not (v["kind"] == "window" and c["width_mm"] > 1900 and gap_dist[gi] > 1000)) or not (c.get("source") in WEAK_SOURCES or (v["kind"] == "window" and c["width_mm"] > 1900))]
+        crop_tag = lambda v: bool(re.match(TAG, (v.get("tag") or "").strip().upper()))  # a tag the model read beside the opening in its crop is evidence too: the tag positions are coarse
+        kept2 = [(c, v) for gi, (c, v) in enumerate(kept)
+                 if not (c.get("source") in WEAK_SOURCES or (v["kind"] == "window" and c["width_mm"] > 1900))
+                 or crop_tag(v) or (gi in gap_tag and not (v["kind"] == "window" and c["width_mm"] > 1900 and gap_dist[gi] > 1000))]
         untagged = len(kept) - len(kept2)
         kept = kept2
         gap_tag, used_tags, gap_dist = pair(kept)

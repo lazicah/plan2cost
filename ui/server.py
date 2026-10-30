@@ -118,8 +118,11 @@ class Handler(BaseHTTPRequestHandler):
         if png[:8] != b"\x89PNG\r\n\x1a\n" or len(png) > 12 * 1024 * 1024:
             return self._json(400, {"error": "send the 3D view as a PNG picture"})
         try:
-            rel = render_view(Run.load(run_id), png)
-            self._json(200, {"url": f"/api/runs/{run_id}/{rel}"})
+            visible = json.loads(self.headers.get("X-Visible") or "null")
+            if not (isinstance(visible, dict) and all(isinstance(visible.get(k), int) and 0 <= visible[k] <= 200 for k in ("windows", "doors"))):
+                visible = None
+            r = render_view(Run.load(run_id), png, visible)
+            self._json(200, {"url": f"/api/runs/{run_id}/{r['path']}", "expected": r["expected"], "counted": r["counted"], "matched": r["matched"], "attempts": r["attempts"]})
         except OSError:
             self._json(404, {"error": "no such run"})
         except Exception as e:  # a content-safety block, a busy backend, a lost connection: say so, the 3D view is unaffected
