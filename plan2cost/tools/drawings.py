@@ -112,7 +112,7 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     step("Done")
     data = {"name": floor, "ext_m": float(t["external_m"]), "int_m": float(t["internal_m"]), "junctions": sum(len(e.connected) for e in model.walls()) // 2,
             "length_m": round(float(t["length_m"]) + outer, 2), "width_m": round(float(t["width_m"]) + outer, 2),
-            "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "tagged": model.tagged, "unplaced": {k: sum(1 for u in model.unplaced_tags if u["kind"] == k) for k in ("window", "door")}, "void_m2": round(sum((b[2] - b[0]) * (b[3] - b[1]) / 1e6 for b in (s["box_mm"] for s in model.spaces if s["kind"] == "void")), 1), "rooms": [r.name for r in rooms],
+            "wall_plan_area_m2": round(sum(e.length_m * e.thickness_mm / 1000 for e in model.walls()), 2), "openings": ops, "tagged": model.tagged, "tag_totals": dict(model.tag_totals), "unplaced": {k: sum(1 for u in model.unplaced_tags if u["kind"] == k) for k in ("window", "door")}, "void_m2": round(sum((b[2] - b[0]) * (b[3] - b[1]) / 1e6 for b in (s["box_mm"] for s in model.spaces if s["kind"] == "void")), 1), "rooms": [r.name for r in rooms],
             "route": model.route, "confidence": model.confidence, "markup": f"models/{model.markup}", "page": page}
     return {"data": data, "model": model, "issues": issues, "note": note.strip(), "page": page}
 

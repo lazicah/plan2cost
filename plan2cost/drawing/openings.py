@@ -381,6 +381,7 @@ def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = No
                 continue
             unplaced.append({"tag": tg, "kind": kind, "x_mm": round(tx), "y_mm": round(ty)})
         model.unplaced_tags = unplaced
+        model.tag_totals = {k: sum(1 for ti, (tg, _, _) in enumerate(tags) if tag_kind(tg) == k and (ti in used_tags or any(u['tag'] == tg and u['kind'] == k for u in unplaced))) for k in ('window', 'door')}  # distinct tags of each kind on the plan
         issues.append(Issue("tags_matched", "info", f"{len(tags)} opening tags were read from the plan ({tag_source}); {len(used_tags)} are matched to an opening, {len(added)} openings were found by searching at a tag, "
                                                     f"{untagged} candidates with no tag near them were left out.", [], ""))
         if lost:

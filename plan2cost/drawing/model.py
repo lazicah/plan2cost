@@ -77,6 +77,7 @@ class DrawingModel:
     printed_mm: list = field(default_factory=list)  # the printed overall dimensions the building size is checked against
     unplaced_tags: list = field(default_factory=list)  # opening tags read from the plan with no opening found near them: {tag, kind, x_mm, y_mm}
     tagged: bool = False  # the plan tags its openings (enough tags were read)
+    tag_totals: dict = field(default_factory=dict)  # tags read on the plan by kind (window, door), the same tag read twice counted once: how many openings the plan says there are
     spaces: list = field(default_factory=list)  # named spaces the model saw: {name, kind, box_mm: [x0, y0, x1, y1]}; kind from the name (outdoor, void, circulation, wet, room)
 
     def walls(self) -> list:
