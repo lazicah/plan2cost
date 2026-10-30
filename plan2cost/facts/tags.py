@@ -86,7 +86,7 @@ def read_tags(img, scale: float, ask=None, workers: int = 6) -> list[tuple[str, 
         return dedupe([t for part in ex.map(one, range(len(ts))) for t in part])
 
 
-def refine(img, scale: float, tags: list[tuple[str, float, float]], ask=None, workers: int = 6) -> list[tuple[str, float, float]]:
+def refine(img, scale: float, tags: list[tuple[str, float, float]], ask=None, workers: int = 10, reach_frac: float | None = None) -> list[tuple[str, float, float]]:
     """Put each tag at its true place: look at a 7 m square around where it was first placed and ask where the tag is in it. A tag that is not there was misread or read twice and is
     dropped. The first places are good to a few metres on a large sheet, which is too coarse to say which opening a tag belongs to; this is good to a few tenths of a metre."""
     from plan2cost.kit.client import chat_json, image_part
@@ -94,7 +94,7 @@ def refine(img, scale: float, tags: list[tuple[str, float, float]], ask=None, wo
     ask = ask or (lambda prompt, path: chat_json([{"type": "text", "text": prompt}, image_part(path)]))
     h, w = img.shape[:2]
     folder = tempfile.mkdtemp()
-    reach = int(REFINE_REACH_MM * scale)
+    reach = int(reach_frac * max(h, w)) if reach_frac else int(REFINE_REACH_MM * scale)  # without the scale of the drawing yet, a fraction of the sheet (7% each way is about 3.5 m on a 50 m sheet)
 
     def one(i):
         tag, x, y = tags[i]
@@ -118,3 +118,17 @@ def refine(img, scale: float, tags: list[tuple[str, float, float]], ask=None, wo
     with ThreadPoolExecutor(workers) as ex:
         out = [t for t in ex.map(one, range(len(tags))) if t]
     return dedupe(out, radius_mm=800)
+
+
+def has_text_tags(text: str, minimum: int = 4) -> bool:
+    """Does a PDF page's text layer carry opening tags (W1, D2...)? Then they are read from it, not by the model."""
+    return sum(1 for w in re.findall(r"\b[A-Z]{1,3}\d{1,2}[A-Za-z]?\b", text) if re.match(r"^(?:[STP]?D|[AST]?W)\d", w)) >= minimum
+
+
+def read_tags_fractional(img, ask=None) -> list[tuple[str, float, float]]:
+    """Tags as fractions of the picture (x from the left, y from the top), found and put at their true place without needing the drawing's scale, so this can run while the walls are
+    being traced. Convert with the picture's size and scale once the scale is known."""
+    h, w = img.shape[:2]
+    first = read_tags(img, 1.0, ask=ask)
+    placed = refine(img, 1.0, first, ask=ask, reach_frac=0.07) if first else first
+    return [(tag, x / w, y / h) for tag, x, y in placed]

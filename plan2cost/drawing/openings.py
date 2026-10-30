@@ -302,7 +302,7 @@ def _verify(path: str) -> dict:
         return {"kind": "unverified", "tag": None, "error": type(e).__name__}
 
 
-def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = None, page: int | None = None, schedule: list | None = None, workers: int = 6,
+def locate_openings(model: DrawingModel, img, scale: float, pdf: str | None = None, page: int | None = None, schedule: list | None = None, workers: int = 10,
                     tags: list | None = None) -> list[Issue]:
     """Find the openings on the floor, add them to the model (door D-001, window WN-001, opening O-001), tie each to its wall and to a schedule
     type, and return the issues the reconciliation raises. `schedule` is the opening types read from the schedule pages (label, width_m, height_m,

@@ -56,9 +56,27 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     is_pdf = file.lower().endswith(".pdf")
     models_dir = run.dir / "models"
     step = _stepper(run, floor)
+
+    def read_room_names():
+        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=170)[0] if is_pdf else file
+        return read_rooms(image, page_text(file, page) if is_pdf else "", floor)
+
+    def read_opening_tags():
+        """The tags printed beside the openings (W1, D2...), as fractions of the page: from the PDF's text layer when it has one (read later, with the walls), else read by the model."""
+        import cv2
+
+        from plan2cost.facts.tags import has_text_tags, read_tags_fractional
+
+        if is_pdf and has_text_tags(page_text(file, page)):
+            return None
+        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=200)[0] if is_pdf else file
+        return read_tags_fractional(cv2.imread(image))
+    early = ThreadPoolExecutor(2)  # neither read needs the walls, so both start now and run while the walls are traced and checked
+    f_rooms, f_tags = early.submit(read_room_names), early.submit(read_opening_tags)
     try:
         model = model_for_floor(file, page, floor, str(models_dir), review=True, on_measured=on_walls, on_step=step)
     except ValueError as e:
+        early.shutdown(wait=False, cancel_futures=True)
         return {"error": f"No walls could be measured on the {floor} floor plan ({e}). Ask the user for a clearer plan, or use assume_floor_like_ground."}
     t = model.totals
     ext_walls = [e for e in model.walls() if e.subtype == "external"]
@@ -68,32 +86,19 @@ def _measure(run: Run, floor: str, on_walls) -> dict:
     try:
         img, scale = plan_image(model, file if is_pdf else None, page if is_pdf else None, None if is_pdf else file, 200)
     except Exception as e:
+        early.shutdown(wait=False, cancel_futures=True)
         return {"error": f"The {floor} floor plan could not be drawn for the openings ({type(e).__name__})."}
-
-    def read_room_names():
-        image = render_pages(file, [page], tempfile.mkdtemp(), dpi=170)[0] if is_pdf else file
-        return read_rooms(image, page_text(file, page) if is_pdf else "", floor)
-
-    def read_opening_tags():
-        """The tags printed beside the openings (W1, D2...): from the PDF's text layer when it has one (found later), else read by the model."""
-        from plan2cost.drawing.openings import text_tags
-        from plan2cost.facts.tags import read_tags, refine
-
-        if is_pdf and text_tags(file, page, model):
-            return None
-        tags = read_tags(img, scale)
-        return refine(img, scale, tags) if tags else tags
-    step("Reading the room names and the opening tags")
-    with ThreadPoolExecutor(2) as ex:  # the two reads are independent, so they run together
-        f_rooms, f_tags = ex.submit(read_room_names), ex.submit(read_opening_tags)
-        try:
-            rooms = f_rooms.result()
-        except Exception as e:  # the room names are a refinement; a failed read never stops the floor
-            note = f"room names could not be read ({type(e).__name__})"
-        try:
-            tags = f_tags.result()
-        except Exception as e:  # without tags the openings are found as before
-            note += f" opening tags could not be read ({type(e).__name__})"
+    step("Collecting the room names and the opening tags")
+    try:
+        rooms = f_rooms.result()
+    except Exception as e:  # the room names are a refinement; a failed read never stops the floor
+        note = f"room names could not be read ({type(e).__name__})"
+    try:
+        frac = f_tags.result()
+        tags = None if frac is None else [(tag, fx * img.shape[1] / scale, fy * img.shape[0] / scale) for tag, fx, fy in frac]
+    except Exception as e:  # without tags the openings are found as before
+        note += f" opening tags could not be read ({type(e).__name__})"
+    early.shutdown(wait=False)
     ops: list[dict] = []
     step("Using the space names: porches and terraces are open air, voids have no slab")
     try:

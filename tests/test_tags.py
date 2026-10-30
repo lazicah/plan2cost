@@ -44,3 +44,25 @@ def test_a_tag_is_put_at_its_true_place_and_one_that_is_not_there_is_dropped():
         return {"found": False}  # W9 was misread
     got = refine(img, 0.1, first, ask=ask)
     assert [t[0] for t in got] == ["W3", "D1"] and got[0][1:] == (10000.0, 10000.0) and got[1][1] > 20000 and got[1][2] < 5000
+
+
+def test_a_pdf_text_layer_with_opening_tags_is_read_as_text_and_one_without_is_left_to_the_model():
+    from plan2cost.facts.tags import has_text_tags
+
+    assert has_text_tags("KITCHEN W1 W2 D1 D2 BATH 3600 W3") and not has_text_tags("KITCHEN BEDROOM 3600 2400 A1 B2 C3 K1")  # grid bubbles and room codes are not opening tags
+    assert not has_text_tags("W1 D1")
+
+
+def test_tags_read_without_the_scale_come_back_as_fractions_of_the_picture():
+    from plan2cost.facts.tags import read_tags_fractional
+
+    img = np.zeros((1000, 2000, 3), np.uint8)
+
+    def ask(prompt, path):
+        if "Does this floor plan label" in prompt:
+            return {"tagged": True}
+        if "List every window or door tag" in prompt:
+            return {"tags": [{"tag": "W1", "x": 0.5, "y": 0.5}]} if path.endswith("tile0.jpg") else {"tags": []}
+        return {"found": True, "x": 0.5, "y": 0.5}  # the second look: the tag is at the middle of the square around its first place
+    got = read_tags_fractional(img, ask=ask)
+    assert len(got) == 1 and got[0][0] == "W1" and 0 < got[0][1] < 0.5 and 0 < got[0][2] < 0.5  # tile 0 is the top-left quarter
