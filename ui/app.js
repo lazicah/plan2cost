@@ -149,7 +149,9 @@ function render(run) {
   // the Meta models this run used (only those it actually used), with what each did
   const eng = run.engine, spoken = (run.inputs || {}).spoken_inputs;
   const modelRows = [];
-  if (eng) modelRows.push([eng.name, `${eng.model} through ${eng.via}${eng.host ? ' (' + eng.host + ')' : ''}`, 'chose each step of the run; read the printed facts, room names and opening tags from the plan; judged every door and window crop; checked the walls; read quotes']);
+  const engineWork = 'chose each step of the run; read the printed facts, room names and opening tags from the plan; judged every door and window crop; checked the walls; read quotes';
+  if (eng) modelRows.push([eng.name, `${eng.model} through ${eng.via}${eng.host ? ' (' + eng.host + ')' : ''}`, engineWork]);
+  else modelRows.push(['Muse Spark', 'which model and host this run used was not recorded (it started before runs recorded it)', engineWork]);  // every run has an engine; only its name is unknown for an older run
   if (spoken) modelRows.push(['Muse Voice Transcribe', 'muse-voice-transcribe-1.0 through the Meta Model API', 'heard the spoken details; Muse Spark then read them into the form']);
   if (run.renders) modelRows.push(['Muse Image', `muse-image-1.0 through the Meta Model API; ${run.renders} picture${run.renders > 1 ? 's' : ''} from the 3D view`, 'made the illustration' + (run.sam_checks ? '' : '; ' + (eng ? eng.name : 'Muse Spark') + ' counted the windows and doors in it to hold it to the 3D view')]);
   if (run.sam_checks) modelRows.push(['SAM 3.1', `sam-3.1 through the Meta Model API; ${run.sam_checks} picture${run.sam_checks > 1 ? 's' : ''} checked`, 'counted and outlined the windows and doors in the picture; ' + (eng ? eng.name : 'Muse Spark') + ' counted them again, and the picture is held to the 3D view']);
