@@ -98,4 +98,13 @@ Models are called through an OpenAI-compatible endpoint (Meta Model API, or Muse
 
 ## Status
 
-Work in progress: floor plans to a budget estimate with ranges, bills in Excel and PDF, contractor quote and tender audit. Next: validation against a surveyed bill for the same plan, and the stage-photo check.
+Built and working: floor plans to a budget estimate with ranges (what the plan shows is measured, the rest estimated from sourced coefficients), bills in Excel and PDF in the order a surveyor expects, a bill of materials and labour, a 3D check of what was measured with an illustrative picture, voice input for the estimate's details, and an audit of a contractor's quote and of returned tender bills. It is a budget estimate, not a bill for tender, and says so.
+
+## Roadmap (not built)
+
+Most people who want to build do not have a plan yet. These are the next steps, in the order I would take them; none of them is in this version.
+1. **Describe the house instead of uploading a plan.** Say or type the number of storeys, rooms, ensuites, toilets, living and dining rooms, lobby and porch; get a cost from the same estimator, with wide ranges and every line marked as estimated.
+2. **A block plan from standard room sizes.** Code lays rooms out on a rectangular footprint with a central lobby, checks it against simple rules (room sizes, spans, daylight, ensuites beside their bedrooms), and feeds the result to the same take-off, 3D view and picture. An illustration to take to an architect, not a design.
+3. **Reading a hand sketch.** The model reads the topology (rooms, labels, doors, windows), code straightens it to a clean layout, the user gives one dimension to fix the scale, and confirms the result over the sketch.
+4. **Proof of progress on site.** Compare stage photos with the bill (SAM 3.1 is tested on photos, not yet in the flow) and report what is done and what is not.
+5. **Validation.** Check estimates against surveyed bills of the same buildings, and more drawings that were not used while building this.
