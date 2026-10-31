@@ -1,4 +1,4 @@
-"""Where each BoQ line sits in the bill. The order is the author's My Duplex bill: substructure, superstructure, internal finishes, services, external works (data/bill_structure.json)."""
+"""Where each BoQ line sits in the bill. The order is the author's generated reference bill: substructure, superstructure, internal finishes, services, external works (data/bill_structure.json)."""
 import json
 from functools import lru_cache
 from pathlib import Path

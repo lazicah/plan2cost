@@ -1,5 +1,5 @@
 {
- "_note": "The order of the bill follows the author's My Duplex bill (BESMM4 elemental format): substructure, then superstructure, then internal finishes, then services (plumbing and electrical), then external works. Keys with a prefix are placed by rule: opening_w* in windows, opening_d* in doors, lintel_* in external walls.",
+ "_note": "The order of the bill follows the author's generated reference bill (BESMM4 elemental format): substructure, then superstructure, then internal finishes, then services (plumbing and electrical), then external works. Keys with a prefix are placed by rule: opening_w* in windows, opening_d* in doors, lintel_* in external walls.",
  "bills": {
   "2": "Substructure",
   "3": "Frame",

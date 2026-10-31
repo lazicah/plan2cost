@@ -1,8 +1,8 @@
 {
- "_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so most ratios are that contractor's practice, not a range. Concrete is the exception: it uses the 1:2:4 mix quantities of the nigeriabuildingcost concrete calculator (7 bags of cement, 0.74 t of sand, 1.39 t of granite per m3, 5% waste), because the bill's sand (1.76 t per m3, about 1 m3 of sand plus 10% waste at 1.6 t/m3) and granite (1.61 t) are well above a mix; the bill's own figures are kept under evidence. Sand bulk density 1.6 t/m3 is confirmed by that site's sand calculator. Casting labour is the bill's 2,500 a bag (17,500 a m3 at 7 bags); the calculator's placing labour is 22,000 a m3.",
+ "_note": "Material and labour per unit of measured work, from the author's bill C and bill Bs for one 5-bedroom duplex (April 2026). One building, so most ratios are that contractor's practice, not a range. Concrete is the exception: it uses the 1:2:4 mix quantities of the nigeriabuildingcost concrete calculator (7 bags of cement, 0.74 t of sand, 1.39 t of granite per m3, 5% waste), because the bill's sand (1.76 t per m3, about 1 m3 of sand plus 10% waste at 1.6 t/m3) and granite (1.61 t) are well above a mix; the bill's own figures are kept under evidence. Sand bulk density 1.6 t/m3 is confirmed by that site's sand calculator. Casting labour is the bill's 2,500 a bag (17,500 a m3 at 7 bags); the calculator's placing labour is 22,000 a m3.",
  "sources": {
-  "simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)",
-  "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"
+  "bill_c": "bill C (PDF: materials and labour, 5 bedroom duplex)",
+  "bill_b": "bill B (PDF) (measured BoQ, April 2026)"
  },
  "materials": {
   "cement_bag": {

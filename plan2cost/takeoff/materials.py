@@ -1,5 +1,5 @@
 """The bill of materials and labour: each BoQ line turned into the materials (cement, sand, granite, bars, planks, blocks, tiles...) and the labour that make it, in the way of the
-author's SIMPLIFIED BOQ. The recipes are data/materials_labour.json: material per unit of measured work, derived from two bills of one duplex (eval/derive_materials.py), with
+author's bill C. The recipes are data/materials_labour.json: material per unit of measured work, derived from two bills of one duplex (eval/derive_materials.py), with
 unit rates for materials and labour. A line with no recipe (windows, doors, fittings, excavation) is carried at its BoQ rate. Quantities of estimated lines keep their low to high range."""
 import json
 import math
@@ -91,4 +91,4 @@ def bill_of_materials(items: list[dict]) -> dict:
         for s in sec["subs"]:
             s.update({k: round(sum(ln[k] for ln in s["lines"]), 2) for k in ("amount", "amount_low", "amount_high")})
         sec.update({k: round(sum(s[k] for s in sec["subs"]) + sum(c[k] for c in sec["carried"]), 2) for k in ("amount", "amount_low", "amount_high")})
-    return {"sections": sections, "total": total("amount"), "total_low": total("amount_low"), "total_high": total("amount_high"), "source": table()["sources"]["simplified"]}
+    return {"sections": sections, "total": total("amount"), "total_low": total("amount_low"), "total_high": total("amount_high"), "source": table()["sources"]["bill_c"]}

@@ -1,7 +1,7 @@
 """The bill as a document. A priced bill goes to a client (rates include the contractor's overhead, profit and other costs); an unpriced bill
 (quantities only) goes out for tender and the contractor fills in the rates. Preliminaries, overhead and profit live inside the rates, so the
 bill has no separate section for them. Items are numbered so a returned bill can be matched line by line without guessing. Lines sit under the bill
-headings of the author's My Duplex bill: substructure, superstructure, internal finishes, services, external works, each bill with its subtotal and a summary at the end."""
+headings of the author's generated reference bill: substructure, superstructure, internal finishes, services, external works, each bill with its subtotal and a summary at the end."""
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook

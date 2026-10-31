@@ -1,4 +1,4 @@
-"""The bill of materials and labour as a document (Excel and PDF), laid out like the author's SIMPLIFIED BOQ: each element with its material lines and labour lines and a subtotal,
+"""The bill of materials and labour as a document (Excel and PDF), laid out like the author's bill C: each element with its material lines and labour lines and a subtotal,
 inside the bills of the BoQ in the same order, with a summary at the end. Estimated lines show their low to high range."""
 from pathlib import Path
 

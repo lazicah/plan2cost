@@ -169,4 +169,4 @@ def load_rates(tier: str | None = None, path: str = "data/rates.json") -> dict:
     d = json.loads(Path(path).read_text())
     tier = tier if tier in d["tiers"] else d["default_tier"]
     return {"currency": d["currency"], "rates": {**d["rates"], **d["tiers"][tier]}, "tier": tier, "source": d.get("source", {}), "tier_notes": d.get("tier_notes", {}),
-            "label": f"{tier} finish level; the higher of the Owerri and Asaba rates for everything that does not change with specification"}
+            "label": f"{tier} finish level; the higher of the rates in bill A and bill B for everything that does not change with specification"}

@@ -1,14 +1,15 @@
-"""Material and labour constants from two bills the author supplied for the same 5-bedroom duplex at Asaba: SIMPLIFIED BOQ.pdf (materials and labour: cement bags, tonnes of
-sand and granite, rebar lengths, planks, labour rates) and BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (the measured quantities, April 2026). Pairing the two gives material per unit of
-measured work. Only numbers leave the PDFs (they stay in reference/, which is not committed). Run:  python -m eval.derive_materials
+"""Material and labour constants from two bills the author supplied for the same 5-bedroom duplex: bill C (PDF) (materials and labour: cement bags, tonnes of
+sand and granite, rebar lengths, planks, labour rates) and bill B (PDF) (the measured quantities, April 2026). Pairing the two gives material per unit of
+measured work. Only numbers leave the PDFs (they stay in reference/, which is not committed). Run:  python -m eval.derive_materials  (the bill C PDF is read from reference/boq/bill_c.pdf, or the path in P2C_BILL_C)
 Writes data/materials_labour.json: unit rates, recipes per BoQ line key, and the evidence behind each ratio."""
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
 
-SIMPLIFIED = "reference/boq/SIMPLIFIED BOQ.pdf"
-# Reinforcement from the nigeriabuildingcost rebar calculator (Enugu 2026): bar weights in kg per metre, and about 1,650 a kg (1,595 to 1,702 by size) for 6 m bars. The simplified bill works out to about 800 a kg,
+BILL_C = os.environ.get("P2C_BILL_C", "reference/boq/bill_c.pdf")  # the materials and labour bill; the file stays local (reference/ is not committed)
+# Reinforcement from the nigeriabuildingcost rebar calculator (Enugu 2026): bar weights in kg per metre, and about 1,650 a kg (1,595 to 1,702 by size) for 6 m bars. The bill C works out to about 800 a kg,
 # roughly half, and the measured BoQ steel rates (1.32M and 1.70M a tonne) agree with the calculator, so the higher price is used.
 BAR_KG_PER_M = {"Y8": 0.395, "Y10": 0.617, "Y12": 0.888, "Y16": 1.579, "Y20": 2.467, "Y25": 3.854}
 REBAR_PRICE_PER_KG = 1650
@@ -28,7 +29,7 @@ def text(pdf: str) -> str:
     return subprocess.run(["pdftotext", "-layout", pdf, "-"], capture_output=True, text=True, check=True).stdout
 
 
-def simplified_rows(t: str) -> list[dict]:
+def bill_c_rows(t: str) -> list[dict]:
     rows, section, sub = [], "", ""
     for line in t.split("\n"):
         m = re.match(r"SECTION (\d+): (.*)", line.strip())
@@ -46,17 +47,17 @@ def simplified_rows(t: str) -> list[dict]:
 
 
 def derive() -> dict:
-    S = simplified_rows(text(SIMPLIFIED))
+    S = bill_c_rows(text(BILL_C))
 
-    def s(pat, unit=None, sub=None, ex=None, nsub=None):  # simplified quantity
+    def s(pat, unit=None, sub=None, ex=None, nsub=None):  # a quantity from bill C
         return sum(r["qty"] for r in S if re.search(pat, r["item"], re.I) and (unit is None or r["unit"].startswith(unit)) and (sub is None or re.search(sub, r["sub"], re.I))
                    and not (ex and re.search(ex, r["item"], re.I)) and not (nsub and re.search(nsub, r["sub"], re.I)))
 
-    def rate(pat, unit=None):  # the unit rate the simplified bill uses (the most common one)
+    def rate(pat, unit=None):  # the unit rate the bill C uses (the most common one)
         rs = [r["rate"] for r in S if re.search(pat, r["item"], re.I) and (unit is None or r["unit"].startswith(unit)) and r["qty"]]
         return max(set(rs), key=rs.count) if rs else None
 
-    # concrete: cement bags against the measured cubic metres of the same elements (the Cubana bill's quantities, read off its pages), and the sand and granite that go with each bag
+    # concrete: cement bags against the measured cubic metres of the same elements (bill B's quantities, read off its pages), and the sand and granite that go with each bag
     parts = {"foundation footing": (r"^FOUNDATION FOOTING", 24), "column bases": (r"^COLUMN BASES", 53), "ground floor slab": (r"^GROUND FLOOR SLAB", 29), "floor beams": (r"^FLOOR BEAMS", 71),
              "floor slabs": (r"^FLOOR SLAB \(", 96), "staircase": (r"^STAIRCASE", 13), "roof beams and slab": (r"^ROOF BEAMS & ROOF SLAB", 19), "columns": (r"^COLUMNS", 28)}
     skip = r"Mortar|Blockwork|Parapet|Wire|Labour|Rebar|Formwork|Nail|Plank|Timber"
@@ -78,7 +79,7 @@ def derive() -> dict:
     r = {
         # 1:2:4 per the nigeriabuildingcost concrete mix calculator (5% waste, dry-volume factor 1.54): the author chose it over the bill's own sand and granite, which are well above a mix
         "concrete": {"cement_bag": MIX_124["cement_bag"], "sand_t": MIX_124["sand_t"], "granite_t": MIX_124["granite_t"]},
-        "blinding_per_m3": {"cement_bag": round(s(r"^Cement", "bag", r"^BLINDING") / 21, 3), "sand_t": round(s(r"Sand|Stone Dust", "ton", r"^BLINDING") / 21, 3)},  # 21 m3 of grade 15 blinding in the Cubana bill
+        "blinding_per_m3": {"cement_bag": round(s(r"^Cement", "bag", r"^BLINDING") / 21, 3), "sand_t": round(s(r"Sand|Stone Dust", "ton", r"^BLINDING") / 21, 3)},  # 21 m3 of grade 15 blinding in bill B
         "steel_per_t": {"rebar_length": round(1000 / (bending_kg / lengths), 1), "binding_wire_roll": evidence["binding_wire_rolls_per_t_steel"]},
         "formwork_per_m2": {"plank_1x12": round(planks / form_m2, 2), "nails_bag": round(s(r"^Nail", "bag", nsub="EARTHWORK SUPPORT") / form_m2, 4)},
         "block_per_m2": BLOCK_EXT, "block_int_per_m2": BLOCK_INT,
@@ -111,11 +112,11 @@ def derive() -> dict:
               "ceiling_per_m2": ("Ceiling work", "m2", rate(r"Labour – Ceiling", "m")), "painting_per_m2": ("Painting", "m2", rate(r"Labour – Painting", "m")),
               "screeding_for_paint_per_m2": ("Screeding for paint", "m2", rate(r"Wall Screeding for Paint", "m")), "carcassing_per_m": ("Roof carcassing", "m", rate(r"Carcassing", "m")),
               "roof_covering_per_m2": ("Fixing roof covering", "m2", rate(r"Labour – Roof Covering", "m")), "earthwork_support_per_m2": ("Fixing earthwork support", "m2", rate(r"Labour for fixing Earthwork", "m"))}
-    return {"_note": "Material and labour per unit of measured work, from the author's SIMPLIFIED BOQ and Cubana bills for one 5-bedroom duplex at Asaba (April 2026). One building, so most ratios are that contractor's practice, not a range. "
+    return {"_note": "Material and labour per unit of measured work, from the author's bill C and bill Bs for one 5-bedroom duplex (April 2026). One building, so most ratios are that contractor's practice, not a range. "
                      "Concrete is the exception: it uses the 1:2:4 mix quantities of the nigeriabuildingcost concrete calculator (7 bags of cement, 0.74 t of sand, 1.39 t of granite per m3, 5% waste), because the bill's sand (1.76 t per m3, about 1 m3 of "
                      "sand plus 10% waste at 1.6 t/m3) and granite (1.61 t) are well above a mix; the bill's own figures are kept under evidence. Sand bulk density 1.6 t/m3 is confirmed by that site's sand calculator. "
                      "Casting labour is the bill's 2,500 a bag (17,500 a m3 at 7 bags); the calculator's placing labour is 22,000 a m3.",
-            "sources": {"simplified": "SIMPLIFIED BOQ.pdf (materials and labour, 5 bedroom duplex, Asaba)", "cubana": "BOQ CUBANA MILLENIUM CITY - UPDATED.pdf (measured BoQ, April 2026)"},
+            "sources": {"bill_c": "bill C (PDF: materials and labour, 5 bedroom duplex)", "bill_b": "bill B (PDF) (measured BoQ, April 2026)"},
             "materials": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in materials.items()}, "labour": {k: {"name": n, "unit": u, "rate": v} for k, (n, u, v) in labour.items()},
             "bar_kg_per_m": BAR_KG_PER_M, "rebar_price_per_kg": REBAR_PRICE_PER_KG, "ratios": r, "evidence": evidence}
 
