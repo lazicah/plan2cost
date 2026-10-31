@@ -24,11 +24,11 @@ An AI agent that helps Africans building a home or small commercial building (es
 
 | Model | Where | Code |
 |---|---|---|
-| Muse Spark (Meta Model API) | The agent loop that chooses each step; reads printed page facts, room names and opening tags; judges every door and window crop; checks and repairs walls with closed questions; reads contractors' quotes and tender bills; reads the spoken details; counts the windows and doors in a picture | `agent/loop.py`, `facts/`, `drawing/openings.py`, `agent/render.py` |
+| Muse Spark (Meta Model API) | The agent loop that chooses each step; reads printed page facts, room names and opening tags; judges every door and window crop; checks and repairs walls with closed questions; reads contractors' quotes and tender bills; reads the spoken details; the second counter of the windows and doors in a picture | `agent/loop.py`, `facts/`, `drawing/openings.py`, `agent/render.py` |
 | Muse Spark Open (Baseten) | The same pipeline end to end: `P2C_PROFILE=open` | `kit/client.py` |
 | Muse Voice Transcribe | The microphone button on the new-estimate form: the spoken storey height, roof, finish and so on | `kit/voice.py`, `ui/voice.js` |
 | Muse Image | The "realistic picture" made from the 3D view, held to the windows and doors the view shows | `kit/imagegen.py`, `agent/render.py` |
-| SAM 3.1 | Tested on photos, not used in this version (it fails on CAD line drawings) | `facts/sam.py` |
+| SAM 3.1 | Counts and outlines every window and door in the realistic picture (teal and purple boxes), as one of two independent counters; the picture is held to the windows and doors the 3D view shows. It fails on CAD line drawings, so it is used on pictures only | `facts/sam.py`, `agent/render.py` |
 
 The console's run page shows which of these a run actually used ("Meta models used in this run"). The models read, judge and describe; code measures every length.
 

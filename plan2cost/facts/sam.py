@@ -43,7 +43,7 @@ def parse(text: str) -> list[Segment]:
 def _call(prompt_text: str, image_path: str) -> str:
     b64 = base64.b64encode(open(image_path, "rb").read()).decode()
     mime = "image/png" if image_path.lower().endswith(".png") else "image/jpeg"
-    r = get_client().responses.create(model="sam-3.1", input=[{"type": "message", "role": "user", "content": [
+    r = get_client("meta").responses.create(model="sam-3.1", input=[{"type": "message", "role": "user", "content": [
         {"type": "input_text", "text": prompt_text}, {"type": "input_image", "image_url": f"data:{mime};base64,{b64}"}]}])
     return r.output_text
 

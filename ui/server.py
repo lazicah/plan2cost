@@ -69,9 +69,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(f.read_bytes())
             else:
                 self._json(404, {"error": "no such file"})
-        elif re.match(r"^/api/runs/\d{8}-\d{6}/renders/render_\d+\.webp$", self.path):  # the illustrations Muse Image made from the 3D view
+        elif re.match(r"^/api/runs/\d{8}-\d{6}/renders/render_\d+(_sam\.jpg|\.webp)$", self.path):  # the illustrations Muse Image made from the 3D view, and SAM 3.1's overlays on them
             f = progress.RUNS_DIR / self.path.split("/")[3] / "renders" / self.path.split("/")[5]
-            self._send(200, f.read_bytes(), "image/webp") if f.is_file() else self._json(404, {"error": "no such file"})
+            self._send(200, f.read_bytes(), "image/jpeg" if f.suffix == ".jpg" else "image/webp") if f.is_file() else self._json(404, {"error": "no such file"})
         elif re.match(r"^/api/runs/\d{8}-\d{6}/pages/p\d+\.jpg$", self.path):  # page thumbnails
             f = progress.RUNS_DIR / self.path.split("/")[3] / "pages" / self.path.split("/")[5]
             self._send(200, f.read_bytes(), "image/jpeg") if f.is_file() else self._json(404, {"error": "no such file"})
@@ -126,7 +126,8 @@ class Handler(BaseHTTPRequestHandler):
             if not (isinstance(visible, dict) and all(isinstance(visible.get(k), int) and 0 <= visible[k] <= 200 for k in ("windows", "doors"))):
                 visible = None
             r = render_view(Run.load(run_id), png, visible)
-            self._json(200, {"url": f"/api/runs/{run_id}/{r['path']}", "expected": r["expected"], "counted": r["counted"], "matched": r["matched"], "attempts": r["attempts"]})
+            self._json(200, {"url": f"/api/runs/{run_id}/{r['path']}", "overlay": f"/api/runs/{run_id}/{r['overlay']}" if r["overlay"] else None, "expected": r["expected"],
+                             "counts": r["counts"], "matched": r["matched"], "attempts": r["attempts"]})
         except OSError:
             self._json(404, {"error": "no such run"})
         except Exception as e:  # a content-safety block, a busy backend, a lost connection: say so, the 3D view is unaffected
