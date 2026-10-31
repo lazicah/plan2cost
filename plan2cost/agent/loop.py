@@ -84,6 +84,9 @@ def step(run: Run, llm: Callable[[list], str], tools: dict | None = None) -> Non
 def run_agent(run: Run, llm: Callable[[list], str] = default_llm, max_turns: int = 30, tools: dict | None = None) -> Run:
     """Drive the agent on a run until it is done, needs the user, or runs out of turns. The first call seeds the checklist and the opening message; a failure pauses the run with everything so far saved, so it can be resumed."""
     if not run.messages:
+        from plan2cost.kit.client import engine
+
+        run.data.setdefault("engine", engine())  # which model and host this run uses, shown in the console
         seed_checklist(run)
         make_thumbs(run)
         floors = "\n".join(f"- {f['name']}: {f['file'].split('/')[-1]}" + (f" (page {f['page']})" if f.get("page") else "") for f in run.floors)

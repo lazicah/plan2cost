@@ -5,7 +5,7 @@ const money = n => n == null ? '' : Number(n).toLocaleString(undefined, {maximum
 const NAMES = ['ground', 'first', 'second', 'third', 'fourth'];
 let current = null, lastKey = '', mode = 'run';
 let formFloors = [{name: 'ground', file: null}];
-let formRoof = '', formQuote = null, formFinish = 'standard';
+let formRoof = '', formQuote = null, formFinish = 'standard', formSpoken = false;  // formSpoken: the details were spoken, so the run records that Muse Voice Transcribe was used
 
 async function api(path, body) {
   const r = await fetch(path, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {});
@@ -67,7 +67,7 @@ async function start() {
   try {
     const floors = [];
     for (const f of formFloors) { const r = await upload(f.file); if (r.error) return msg(r.error); floors.push({name: f.name, file: r.path, page: f.page || 1}); }
-    const body = {floors, storey_height_m: height, roof_type: formRoof, pitch_deg: $('#pitch').value, overhang_m: $('#overhang').value, finish_level: formFinish};
+    const body = {floors, storey_height_m: height, roof_type: formRoof, pitch_deg: $('#pitch').value, overhang_m: $('#overhang').value, finish_level: formFinish, spoken: formSpoken};
     if (formQuote) { const r = await upload(formQuote); if (r.error) return msg(r.error); body.quote = r.path; }
     const r = await api('/api/start', body);
     if (r.error) return msg(r.error);
@@ -146,13 +146,20 @@ function render(run) {
   const models = Object.entries(run.models || {}).map(([f, m]) => `<section class="card"><h2>Walls found: ${esc(f)} floor</h2><div class="small">${m.walls} walls, ${money(m.total_m)} m (external ${money(m.external_m)}, internal ${money(m.internal_m)}) by the ${esc(m.route)} route, ${esc(m.confidence)} confidence.</div>
       ${(m.issues || []).length ? `<ul class="small">${m.issues.map(i => `<li class="${i.severity === 'error' ? 'escalated' : 'assumed'}">${esc(i.message)}</li>`).join('')}</ul>` : '<div class="small proven">All checks passed.</div>'}
       <a href="/api/runs/${run.id}/${esc(m.markup)}?v=${run.turn}" target="_blank"><img src="/api/runs/${run.id}/${esc(m.markup)}?v=${run.turn}" alt="annotated plan" style="width:100%;border:1px solid var(--line);border-radius:8px;margin-top:8px"></a></section>`).join('');
+  // the Meta models this run used (only those it actually used), with what each did
+  const eng = run.engine, spoken = (run.inputs || {}).spoken_inputs;
+  const modelRows = [];
+  if (eng) modelRows.push([eng.name, `${eng.model} through ${eng.via}${eng.host ? ' (' + eng.host + ')' : ''}`, 'chose each step of the run; read the printed facts, room names and opening tags from the plan; judged every door and window crop; checked the walls; read quotes']);
+  if (spoken) modelRows.push(['Muse Voice Transcribe', 'muse-voice-transcribe-1.0 through the Meta Model API', 'heard the spoken details; Muse Spark then read them into the form']);
+  if (run.renders) modelRows.push(['Muse Image', `muse-image-1.0 through the Meta Model API; ${run.renders} picture${run.renders > 1 ? 's' : ''} from the 3D view`, 'made the illustration; ' + (eng ? eng.name : 'Muse Spark') + ' counted the windows and doors in it to hold it to the 3D view']);
+  const modelsUsed = modelRows.length ? `<section class="card"><h2>Meta models used in this run</h2><table class="small">${modelRows.map(r => `<tr><td><b>${esc(r[0])}</b><div class="mute">${esc(r[1])}</div></td><td>${esc(r[2])}</td></tr>`).join('')}</table><div class="small mute" style="margin-top:6px">The code measures every length; the models read, judge and describe. SAM 3.1 is not used in this version.</div></section>` : '';
   const view3d = Object.keys(run.models || {}).length ? `<section class="card row"><button id="open3d">View the house in 3D</button><span class="small mute">An illustrative model from the walls and openings that were measured. It is not used for any quantity.</span></section>` : '';
   const downloads = run.files.length ? `<section class="card"><h2>Files</h2>${run.files.map(f => `<a class="dl" href="/api/runs/${run.id}/files/${esc(f)}">${esc(f.replace(/_/g, ' ').replace('.xlsx', ' (Excel)').replace('.pdf', ' (PDF)').replace('.json', ' (data)'))}</a>`).join('')}
       <div class="small mute" style="margin-top:6px">A budget estimate has estimated lines, so no bill for tender is made from it: quantities must be measured from full drawings first.</div></section>` : '';
   const audit = run.audit ? `<section class="card"><h2>Contractor quote audit</h2><div class="small">${run.audit.lines} quote lines, ${run.audit.matched} matched to our BoQ. On the matched lines the quote totals ${money(run.audit.quote_total_on_matched_lines)} against ${money(run.audit.our_total_on_matched_lines)} at your rates; priced work the quote leaves out is about ${money(run.audit.our_priced_work_not_in_quote)}.</div>
       <table class="small"><tr><th>Line</th><th>What we found</th><th>What to ask</th></tr>${run.audit.flags.map(f => `<tr><td>${esc(f.line)}</td><td class="${f.severity === 'error' ? 'escalated' : f.severity === 'warn' ? 'assumed' : ''}">${esc(f.message)}</td><td class="mute">${esc(f.ask)}</td></tr>`).join('')}</table></section>` : '';
   $('#main').innerHTML = `<section class="card row"><span class="pill ${run.status}">${esc(run.status.replace('_', ' '))}</span><span>Turn ${run.turn}</span><span class="spacer"></span><span class="small">${done}/${run.checklist.length} checklist items settled</span></section>
-    ${progress}${stopped}${reading}${tiles}${view3d}${q}${gallery}
+    ${progress}${stopped}${reading}${tiles}${modelsUsed}${view3d}${q}${gallery}
     <div class="cols"><section class="card"><h2>What the agent did</h2>${turns}</section>
       <div style="display:grid;gap:16px;align-content:start"><section class="card"><h2>Checklist</h2><table>${checklist}</table></section>
       <section class="card"><h2>Facts and where they came from</h2><table><tr><th>Name</th><th class="n">Value</th><th>Source</th><th>Basis</th></tr>${facts || '<tr><td class="mute">None yet</td></tr>'}</table></section></div></div>${models}${boq}${mat}${downloads}${audit}`;
@@ -175,5 +182,5 @@ async function tick() {
   if (key !== lastKey) { if (document.activeElement?.id !== 'ans') render(run); lastKey = key; }
 }
 $('#runs').onchange = e => { current = e.target.value; mode = 'run'; lastKey = ''; tick(); };
-$('#newbtn').onclick = () => { mode = 'form'; formFloors = [{name: 'ground', file: null}]; formRoof = ''; formQuote = null; formFinish = 'standard'; renderForm(); };
+$('#newbtn').onclick = () => { mode = 'form'; formFloors = [{name: 'ground', file: null}]; formRoof = ''; formQuote = null; formFinish = 'standard'; formSpoken = false; renderForm(); };
 async function showLog() { if ($('#logbox').open) $('#log').textContent = (await api('/api/log')).tail || '(empty)'; }

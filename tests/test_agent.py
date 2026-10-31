@@ -106,6 +106,7 @@ def test_loop_pauses_for_the_user_and_resumes_with_their_answer():
     llm = script(A("ask_user", question="Is the ground floor plan the one with the garage?", item="C1"), A("read_floor", floor="ground"))
     run = run_agent(new_run(), llm, max_turns=10, tools=STUBBED)
     assert run.status == "needs_input" and run.turn == 1
+    assert run.data["engine"]["profile"] in ("meta", "open") and run.data["engine"]["model"]  # the run records which model it used
     with pytest.raises(ValueError):
         resume(run, None, llm)
     run = Run.load(run.id)
@@ -197,3 +198,14 @@ def test_the_recorded_model_keeps_the_markup_path_the_console_needs(monkeypatch)
     seed_checklist(run)
     drawings._record(run, "ground", {"data": floor_data("ground"), "model": Model(), "issues": [], "note": "", "page": 1})
     assert run.data["models"]["ground"]["markup"] == "models/markup_ground_p1.jpg"
+
+
+def test_a_run_records_which_model_and_host_it_used(monkeypatch):
+    from plan2cost.kit.client import engine
+
+    monkeypatch.setenv("P2C_BASE_URL", "https://api.meta.ai/v1")
+    monkeypatch.setenv("P2C_OPEN_BASE_URL", "https://inference.baseten.co/v1")
+    monkeypatch.setenv("P2C_MODEL", "muse-spark-1.3")
+    meta, open_ = engine("meta"), engine("open")
+    assert (meta["name"], meta["model"], meta["host"]) == ("Muse Spark", "muse-spark-1.3", "api.meta.ai") and meta["via"] == "the Meta Model API"
+    assert open_["name"] == "Muse Spark Open" and open_["host"] == "inference.baseten.co" and "Baseten" in open_["via"]

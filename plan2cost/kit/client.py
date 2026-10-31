@@ -35,6 +35,16 @@ def model_name(profile: str | None = None) -> str:
     return os.environ.get(prefix + "MODEL", "meta-models/muse-spark-open-1026" if prefix == "P2C_OPEN_" else "muse-spark-1.3")
 
 
+def engine(profile: str | None = None) -> dict:
+    """Which model and host a run uses, for the console and the record: the profile, the model id, a plain name and the host the calls go to."""
+    from urllib.parse import urlparse
+
+    profile = profile or active_profile()
+    base = os.environ.get(PROFILES[profile] + "BASE_URL", "")
+    return {"profile": profile, "model": model_name(profile), "name": "Muse Spark Open" if profile == "open" else "Muse Spark",
+            "via": "a partner host (Baseten)" if profile == "open" else "the Meta Model API", "host": urlparse(base).hostname or ""}
+
+
 def image_part(path: str) -> dict:
     """A picture file as the image part of a chat message (base64 data URL)."""
     mime = mimetypes.guess_type(path)[0] or "image/png"

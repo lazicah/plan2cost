@@ -30,6 +30,7 @@ async function toggleMic() {
         if (i.finish_level) { formFinish = i.finish_level; $('#finish').value = formFinish; }
         if (i.pitch_deg) $('#pitch').value = i.pitch_deg;
         if (i.overhang_m) $('#overhang').value = i.overhang_m;
+        if (Object.keys(i).length) formSpoken = true;
         const set = Object.entries(i).map(([k, v]) => k.replace(/_/g, ' ') + ' ' + v).join(', ');
         msg.innerHTML = 'Heard: <i>“' + esc(j.transcript) + '”</i>. ' + (set ? 'Filled in: ' + esc(set) + '. Please check the fields.' : 'No details were recognised; fill the fields by hand.');
       } catch (e) { msg.textContent = 'Could not use the recording: ' + e.message; }

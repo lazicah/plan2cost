@@ -160,6 +160,8 @@ class Handler(BaseHTTPRequestHandler):
                 cmd += ["--floor", f"{f['name']}={existing_file(f['file'])}{page}"]
             if body.get("finish_level") in ("standard", "premium"):
                 cmd += ["--finish", body["finish_level"]]
+            if body.get("spoken"):
+                cmd += ["--spoken"]
             for flag, key in (("--pitch", "pitch_deg"), ("--overhang", "overhang_m")):
                 if body.get(key) not in (None, ""):
                     cmd += [flag, str(float(body[key]))]
