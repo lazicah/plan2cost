@@ -1,0 +1,62 @@
+{
+  "case": "plan2",
+  "floor": "foundation section",
+  "model": "muse-spark-1.3",
+  "time": "2026-10-29T00:00:41",
+  "extraction": {
+    "values": {
+      "footing_width_mm": 675,
+      "footing_thickness_mm": 225,
+      "blinding_mm": 50,
+      "slab_mm": 150,
+      "fill_depth_mm": 775,
+      "overall_depth_mm": 1200
+    },
+    "unprinted": [],
+    "layers_close": true,
+    "questions": [
+      "Individual hardcore and laterite thicknesses not printed separately; only combined 775mm fill total shown - not split"
+    ],
+    "materials": {
+      "blinding_material": "SANDCRETE BLINDING",
+      "mesh": "A 141"
+    },
+    "dimensions": [
+      {
+        "value_mm": 150,
+        "meaning": "floor slab thickness"
+      },
+      {
+        "value_mm": 775,
+        "meaning": "combined hardcore + laterite fill depth"
+      },
+      {
+        "value_mm": 225,
+        "meaning": "strip footing thickness"
+      },
+      {
+        "value_mm": 50,
+        "meaning": "blinding thickness"
+      },
+      {
+        "value_mm": 1200,
+        "meaning": "overall depth"
+      }
+    ],
+    "page": 3
+  },
+  "checks": {
+    "footing_width_mm": true,
+    "footing_thickness_mm": true,
+    "blinding_mm": true,
+    "slab_mm": true,
+    "fill_depth_mm": true,
+    "overall_depth_mm": true
+  },
+  "pct_error": {
+    "values_wrong_pct": 0.0
+  },
+  "questions": [
+    "Individual hardcore and laterite thicknesses not printed separately; only combined 775mm fill total shown - not split"
+  ]
+}

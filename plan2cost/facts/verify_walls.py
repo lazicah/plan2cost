@@ -1,0 +1,305 @@
+"""Model-checked walls: the model judges what a picture shows, code does the measuring and the editing. Three checks, each with a closed question about a crop of
+the plan, and an edit only when the model's answer and the geometry agree:
+- a run that overshoots the last joint of the building: the model says whether the stretch is on a wall; if not, code trims the run back to the joint;
+- two runs on one line that overlap (centre lines closer than a wall thickness): the same wall found twice, so code drops the one that lies inside the other (geometry, no model call: the model's answer on this was not stable);
+- a place where the model sees a wall with no line on it: code searches the plan there for a wall-like bar whose both ends meet existing walls, and adds it only if found.
+Every edit is logged as an issue marked "model check", so a person can see what changed; a model answer on its own never sets a length."""
+import tempfile
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+from plan2cost.drawing.model import DrawingModel, Element, Issue, refresh, wall_of
+from plan2cost.drawing.qc import joints
+
+MAGENTA, CYAN = (255, 0, 255), (255, 200, 0)  # BGR
+
+ON_WALL = """This is a crop of a building floor plan. A program drew a thick {colour} line over a stretch of line work and treated it as a wall. Is there a real wall under the {colour} line:
+two thick parallel faces (solid, hatched or poche-filled) forming a bar of wall? Or is it only a thin line, such as a grid line, dimension line, extension line, leader or a line running off past the building?
+Judge only what you can see. Return only JSON: {{"on_wall": true or false or null (null if you cannot tell), "why": "one short sentence"}}"""
+SAME_WALL = """This is a crop of a floor plan. A program drew two lines over it, {a} and {b}, both along the same wall line and overlapping. Are they one wall found twice, or two different walls
+(for example two leaves of a cavity, or a wall and a separate thin line next to it)? Return only JSON: {{"same_wall": true or false or null, "why": "one short sentence"}}"""
+MISSED = """This is a floor plan with the walls a program measured drawn on it: red are external walls, blue internal walls, numbers are ids. List walls of the building that are drawn on the plan
+as a wall but have no coloured line on them. For each give its place as a box on THIS picture, as fractions of the picture's width and height (x0, y0, x1, y1, from the top left), tight around the
+missing wall, and whether the wall is horizontal ("h") or vertical ("v") on the picture. Judge only what you can see; do not list door or window gaps, grid lines or dimension lines.
+Return only JSON: {"missed": [{"box": [0.0, 0.0, 0.0, 0.0], "orient": "h", "what": "short plain description"}]}"""
+
+
+def _ask(prompt: str, crop) -> dict:
+    from plan2cost.kit.client import chat_json, image_part
+
+    path = str(Path(tempfile.mkdtemp()) / "crop.jpg")
+    cv2.imwrite(path, crop)
+    return chat_json([{"type": "text", "text": prompt}, image_part(path)])
+
+
+def _crop(img, scale: float, box_mm: tuple, draw: list, min_side: int = 700, max_side: int = 1400):
+    """The plan inside a box (x0, y0, x1, y1 in mm) with lines drawn on it: draw = [((x0, y0), (x1, y1), colour)] in mm."""
+    h, w = img.shape[:2]
+    x0, y0, x1, y1 = (int(max(v * scale, 0)) for v in box_mm)
+    x1, y1 = min(x1, w), min(y1, h)
+    out = img[y0:y1, x0:x1].copy()
+    if out.size == 0:
+        return None
+    for (a, b, colour) in draw:
+        cv2.line(out, (int(a[0] * scale) - x0, int(a[1] * scale) - y0), (int(b[0] * scale) - x0, int(b[1] * scale) - y0), colour, max(4, int(max(out.shape[:2]) / 160)))
+    k = min_side / max(out.shape[:2]) if max(out.shape[:2]) < min_side else min(1.0, max_side / max(out.shape[:2]))
+    return cv2.resize(out, None, fx=k, fy=k, interpolation=cv2.INTER_AREA if k < 1 else cv2.INTER_CUBIC)
+
+
+def trim_overshoots(model: DrawingModel, img, scale: float, ask=_ask) -> list[Issue]:
+    """Runs that go more than 0.6 m past the last joint of the building: ask whether the stretch is on a wall, trim it back if not."""
+    els = model.walls()
+    walls = [wall_of(e) for e in els]
+    pts = joints(walls)
+    if len(pts) < 4:
+        return []
+    x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
+    y0, y1 = min(p[1] for p in pts), max(p[1] for p in pts)
+    log: list[Issue] = []
+    for e, w in zip(els, walls):
+        lo, hi = (x0, x1) if w.orient == "h" else (y0, y1)
+        for side, beyond in (("start", lo - w.start_mm), ("end", w.end_mm - hi)):
+            if beyond <= 600:
+                continue
+            a, b = (w.start_mm, lo) if side == "start" else (hi, w.end_mm)
+            pa, pb = ((a, w.centre_mm), (b, w.centre_mm)) if w.orient == "h" else ((w.centre_mm, a), (w.centre_mm, b))
+            pad = 1500
+            box = (min(pa[0], pb[0]) - pad, min(pa[1], pb[1]) - pad, max(pa[0], pb[0]) + pad, max(pa[1], pb[1]) + pad)
+            crop = _crop(img, scale, box, [(pa, pb, MAGENTA)])
+            if crop is None:
+                continue
+            r = ask(ON_WALL.format(colour="magenta"), crop)
+            if r.get("on_wall") is False:
+                if side == "start":
+                    w.start_mm = lo
+                    e.x0_mm, e.y0_mm = (lo, e.y0_mm) if e.orient == "h" else (e.x0_mm, lo)
+                else:
+                    w.end_mm = hi
+                    e.x1_mm, e.y1_mm = (hi, e.y1_mm) if e.orient == "h" else (e.x1_mm, hi)
+                e.notes.append(f"trimmed by {beyond / 1000:.1f} m after the model saw no wall past the last joint")
+                log.append(Issue("trimmed", "info", f"{e.id} trimmed back by {beyond / 1000:.1f} m to the last joint: the model saw no wall there ({r.get('why', '')}).", [e.id], "", "model check"))
+    return log
+
+
+def merge_duplicates(model: DrawingModel) -> list[Issue]:
+    """Pairs flagged as overlapping on one line (centre lines closer than a wall thickness, so the faces would occupy the same space): the shorter run, when it lies
+    inside the longer, is the same wall found twice and is dropped. This is geometry, so the model is not asked; a pair that only partly overlaps is left as a question."""
+    log: list[Issue] = []
+    byid = {e.id: e for e in model.walls()}
+    for issue in [i for i in model.issues if i.code == "overlap"]:
+        a, b = (byid.get(i) for i in issue.elements[:2])
+        if not a or not b:
+            continue
+        short, long_ = (a, b) if wall_of(a).length_mm <= wall_of(b).length_mm else (b, a)
+        ws, wl = wall_of(short), wall_of(long_)
+        if min(ws.end_mm, wl.end_mm) - max(ws.start_mm, wl.start_mm) < 0.9 * ws.length_mm:
+            continue
+        byid.pop(short.id)
+        model.elements = [e for e in model.elements if e.id != short.id]
+        log.append(Issue("merged", "info", f"{short.id} dropped as the same wall as {long_.id}: the two lie on one line, closer than a wall thickness.", [long_.id], "", "code check"))
+    return log
+
+
+def _runs(mask, min_len: int):
+    """Stretches of set cells in a 1-D mask as (start, end), at least min_len long."""
+    edges = np.diff(np.concatenate([[0], mask.astype(np.int8), [0]]))
+    return [(int(a), int(b)) for a, b in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)) if b - a >= min_len]
+
+
+def _bar(img, scale: float, box_mm: tuple, orient: str, min_face_px: int = 1):
+    """The longest wall-like bar of the given orientation inside a box: (start, end, centre, thickness) in mm along and across, or None. A bar is either one solid
+    heavy band 120 to 350 mm thick, or two long face lines 100 to 350 mm apart (a cut wall with hatching or white between its faces). The face lines must be as heavy as the faces of the walls already measured (`min_face_px`): a pair of light lines, such as a porch edge, a kerb or a dimension chain, is not a wall. Lines are found from how much of
+    each row of the picture (each column, for a vertical wall) is ink after joining gaps of up to 1.3 m, so a door gap does not split a wall."""
+    h, w = img.shape[:2]
+    x0, y0, x1, y1 = (int(max(v * scale, 0)) for v in box_mm)
+    x1, y1 = min(x1, w), min(y1, h)
+    if x1 - x0 < 10 or y1 - y0 < 10:
+        return None
+    dark = (cv2.cvtColor(img[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY) < 140).astype(np.uint8)
+    if orient == "v":
+        dark, (x0, y0) = dark.T, (y0, x0)  # work on a horizontal wall; x0 is now the start along the wall and y0 the start across it
+    close_px, min_px = max(3, int(1300 * scale)), int(600 * scale)
+    d = cv2.morphologyEx(dark, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (max(3, int(250 * scale)), 1)))  # long horizontal ink only: text and ticks go
+    rows = d.mean(axis=1) >= 0.35
+    lines = []  # (start, end, centre, thickness) in px
+    for r0, r1 in _runs(rows, 1):
+        cols = _runs(d[r0:r1].min(axis=0) > 0, 1)
+        joined: list = []
+        for a, b in cols:  # a gap of up to 1.3 m (a door, a window) does not split the wall
+            joined[-1:] = [(joined[-1][0], b)] if joined and a - joined[-1][1] <= close_px else joined[-1:] + [(a, b)]
+        joined = [c for c in joined if c[1] - c[0] >= min_px]
+        if joined:
+            s, e = max(joined, key=lambda c: c[1] - c[0])
+            lines.append((s, e, (r0 + r1) / 2, r1 - r0))
+    found = [(s, e, c, t) for s, e, c, t in lines if 120 <= t / scale <= 350]
+    for i, (s1, e1, c1, t1) in enumerate(lines):
+        for s2, e2, c2, t2 in lines[i + 1:]:
+            over = min(e1, e2) - max(s1, s2)
+            if t1 / scale < 120 and t2 / scale < 120 and min(t1, t2) >= min_face_px and 100 <= abs(c1 - c2) / scale <= 350 and over >= min_px:
+                found.append((max(s1, s2), min(e1, e2), (c1 + c2) / 2, abs(c1 - c2) + (t1 + t2) / 2))
+    if not found:
+        return None
+    longest = max(f[1] - f[0] for f in found)
+    s, e, c, t = max((f for f in found if f[1] - f[0] >= 0.9 * longest), key=lambda f: f[3])  # of the long ones, the widest pair: the two faces, not a face and a centre line
+    return ((x0 + s) / scale, (x0 + e) / scale, (y0 + c) / scale, t / scale)
+
+
+def _extent(model: DrawingModel) -> tuple:
+    """The box the measured walls span, in mm."""
+    ws = [wall_of(e) for e in model.walls()]
+    xs = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "h" else (w.centre_mm,))]
+    ys = [v for w in ws for v in ((w.start_mm, w.end_mm) if w.orient == "v" else (w.centre_mm,))]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def face_weight_px(model: DrawingModel, img, scale: float) -> int:
+    """How heavy the face lines of the walls already measured are, in pixels (the median thickness of the heavy line groups across a wall's band), so a candidate wall can be
+    required to be drawn as heavily. Returns 1 when it cannot be told."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+    dark = gray < 140
+    weights = []
+    for e in model.walls():
+        half = int(e.thickness_mm / 2 * scale + 2)
+        if e.orient == "h":
+            a, b = sorted((int(e.x0_mm * scale), int(e.x1_mm * scale)))
+            c = int(e.y0_mm * scale)
+            band = dark[max(c - half, 0):c + half + 1, max(a, 0):b + 1]
+        else:
+            a, b = sorted((int(e.y0_mm * scale), int(e.y1_mm * scale)))
+            c = int(e.x0_mm * scale)
+            band = dark[max(a, 0):b + 1, max(c - half, 0):c + half + 1].T
+        if band.size == 0 or band.shape[1] < 20:
+            continue
+        rows = band.mean(axis=1) >= 0.5
+        weights += [r1 - r0 for r0, r1 in _runs(rows, 1)]
+    return max(1, int(np.median(weights))) if weights else 1
+
+
+def _meets(model: DrawingModel, orient: str, centre: float, end: float, tol: float = 250) -> bool:
+    """Does a perpendicular wall cross the line `centre` at position `end` along it?"""
+    for e in model.walls():
+        if e.orient == orient:
+            continue
+        v = wall_of(e)
+        if abs(v.centre_mm - end) <= v.thickness_mm / 2 + tol and v.start_mm - tol <= centre <= v.end_mm + tol:
+            return True
+    return False
+
+
+def add_missed(model: DrawingModel, img, scale: float, markup_path: str, ask=_ask) -> list[Issue]:
+    """Ask the model where a drawn wall has no line, then look for a bar of wall in that place; add it only when both its ends meet existing walls."""
+    if len(model.markup_frame) != 4:
+        return []
+    fx, fy, shrink, mscale = model.markup_frame
+    mimg = cv2.imread(markup_path)
+    mh, mw = mimg.shape[:2]
+    r = ask(MISSED, mimg)
+    log: list[Issue] = []
+    walls = [wall_of(e) for e in model.walls()]
+    face_px = face_weight_px(model, img, scale)
+    for m in (r.get("missed") or [])[:6]:
+        try:
+            bx0, by0, bx1, by1 = (float(v) for v in m["box"])
+            orient = m["orient"] if m.get("orient") in ("h", "v") else None
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not orient or not (0 <= bx0 < bx1 <= 1.0 and 0 <= by0 < by1 <= 1.0):
+            continue
+        to_mm = lambda px, py: ((px * mw / shrink + fx) / mscale, (py * mh / shrink + fy) / mscale)
+        (ax, ay), (bx, by) = to_mm(bx0, by0), to_mm(bx1, by1)
+        pad = 300
+        ex0, ey0, ex1, ey1 = _extent(model)  # search along the whole building, so a wall the model marked in two pieces is found whole (a door gap does not split it)
+        box = (ex0, ay - pad, ex1, by + pad) if orient == "h" else (ax - pad, ey0, bx + pad, ey1)
+        found = _bar(img, scale, box, orient, max(1, int(face_px * 0.6)))
+        what = m.get("what", "")
+        if not found:
+            log.append(Issue("missed_not_found", "info", f"The model saw a wall with no line ({what}) but no wall-like bar could be found there.", [], "Look at that place on the plan.", "model check"))
+            continue
+        start, end, centre, thick = found
+        if not (_meets(model, orient, centre, start) and _meets(model, orient, centre, end)):
+            log.append(Issue("missed_not_added", "warn", f"The model saw a wall with no line ({what}) and a bar of {(end - start) / 1000:.1f} m was found, but its ends do not both meet walls, so it was not added.", [], "Check this place on the plan; add the wall if it is there.", "model check"))
+            continue
+        if any(w.orient == orient and abs(w.centre_mm - centre) <= max(w.thickness_mm, thick) and min(w.end_mm, end) - max(w.start_mm, start) > 0.5 * (end - start) for w in walls):
+            continue  # already measured
+        t = float(np.median([e.thickness_mm for e in model.walls()])) if model.walls() else thick
+        thickness = t if abs(thick - t) <= 0.3 * t else round(thick / 10) * 10
+        n = 1 + max((int(e.id.split("-")[1]) for e in model.walls()), default=0)
+        x0, y0, x1, y1 = (start, centre, end, centre) if orient == "h" else (centre, start, centre, end)
+        new = Element(f"W-{n:03d}", "wall", "internal", model.page, model.floor, orient, round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1), round((end - start) / 1000, 3), float(thickness),
+                      evidence="geometrically measured", confidence="low", notes=["added after the model saw a wall with no line here; found by code and joined to walls at both ends"])
+        model.elements.append(new)
+        walls.append(wall_of(new))
+        log.append(Issue("added", "info", f"{new.id} added ({(end - start) / 1000:.1f} m internal): the model saw a wall here ({what}) and code found it joining walls at both ends.", [new.id], "", "model check"))
+    return log
+
+
+def _reach_wall(model: DrawingModel, orient: str, centre: float, end: float, sign: int, reach_mm: float = 1800, tol: float = 400) -> float | None:
+    """Where the end of a wall at `end` (running `orient`, on the line `centre`) meets another wall: `end` itself when one is already there, else the near face of the nearest wall
+    across the line within `reach_mm` ahead (the stretch between is a door or a window), else None."""
+    best = None
+    for e in model.walls():
+        if e.orient == orient:
+            continue
+        v = wall_of(e)
+        if not (v.start_mm - tol <= centre <= v.end_mm + tol):
+            continue
+        face = v.centre_mm - sign * v.thickness_mm / 2
+        gap = (face - end) * sign
+        if -tol <= gap <= reach_mm and (best is None or abs(gap) < abs(best[0])):
+            best = (gap, face)
+    return None if best is None else (end if abs(best[0]) <= tol else best[1])
+
+
+def add_walls_at_tags(model: DrawingModel, unplaced: list, img, scale: float) -> list[Issue]:
+    """A printed opening tag with no wall near it stands where a wall was not measured, often a wall drawn with light lines (a screen, a glazed partition). Look for a pair of lines a
+    wall apart near the tag, even light ones, and add it as a wall when it runs between two walls (the stretch up to a wall counts: that is where a door or window is). It is added with
+    low confidence and says why, and the openings are then looked for on it again."""
+    log: list[Issue] = []
+    for u in unplaced:
+        tx, ty = u["x_mm"], u["y_mm"]
+        best = None
+        for orient in ("v", "h"):
+            box = (tx - 1500, ty - 2500, tx + 1500, ty + 2500) if orient == "v" else (tx - 2500, ty - 1500, tx + 2500, ty + 1500)
+            found = _bar(img, scale, box, orient, 1)
+            if not found:
+                continue
+            start, end, centre, thick = found
+            if abs(centre - (tx if orient == "v" else ty)) > 1500 or end - start < 1500:
+                continue
+            lo, hi = _reach_wall(model, orient, centre, start, -1), _reach_wall(model, orient, centre, end, 1)
+            if lo is None or hi is None:
+                continue
+            if best is None or hi - lo > best[1] - best[0]:
+                best = (lo, hi, centre, thick, orient)
+        if not best:
+            continue
+        lo, hi, centre, thick, orient = best
+        walls = [wall_of(e) for e in model.walls()]
+        if any(w.orient == orient and abs(w.centre_mm - centre) <= max(w.thickness_mm, thick) and min(w.end_mm, hi) - max(w.start_mm, lo) > 0.5 * (hi - lo) for w in walls):
+            continue
+        t = float(np.median([e.thickness_mm for e in model.walls()])) if model.walls() else thick
+        thickness = t if abs(thick - t) <= 0.3 * t else round(thick / 10) * 10
+        n = 1 + max((int(e.id.split("-")[1]) for e in model.walls()), default=0)
+        x0, y0, x1, y1 = (lo, centre, hi, centre) if orient == "h" else (centre, lo, centre, hi)
+        new = Element(f"W-{n:03d}", "wall", "internal", model.page, model.floor, orient, round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1), round((hi - lo) / 1000, 3), float(thickness),
+                      evidence="geometrically measured", confidence="low", notes=[f"drawn with light lines; found where the printed tag {u['tag']} stands, with no wall measured there, and joined to walls at both ends"])
+        model.elements.append(new)
+        log.append(Issue("added_at_tag", "info", f"{new.id} added ({(hi - lo) / 1000:.1f} m): the plan prints the tag {u['tag']} here and a pair of light lines runs between two walls, so it is taken as a wall.", [new.id], "", "model check"))
+    return log
+
+
+def verify_walls(model: DrawingModel, img, scale: float, markup_path: str) -> bool:
+    """Run the three checks, apply the edits, recompute totals and code checks. Returns True when the walls changed. A failed model call skips that check, never the run."""
+    log: list[Issue] = []
+    for step in (lambda: trim_overshoots(model, img, scale), lambda: merge_duplicates(model), lambda: add_missed(model, img, scale, markup_path)):
+        try:
+            log += step()
+        except Exception as ex:
+            log.append(Issue("verify_skipped", "info", f"A model check of the walls was skipped ({type(ex).__name__}).", [], "", "model check"))
+    changed = any(i.code in ("trimmed", "merged", "added") for i in log)
+    if changed:
+        refresh(model)
+    model.issues += log
+    return changed

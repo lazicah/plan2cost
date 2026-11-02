@@ -1,0 +1,59 @@
+{
+  "case": "plan2",
+  "floor": "measure_walls",
+  "model": "classical image processing (no model); scale from the PDF",
+  "time": "2026-10-28T23:32:59",
+  "extraction": {
+    "plan2": {
+      "scale": "fitted to printed chain dimensions (13 bays match)",
+      "walls": 21,
+      "total_m": 103.64,
+      "external_m": 52.9,
+      "internal_m": 50.75,
+      "junction_ends": 26,
+      "by_thickness_m": {
+        "150": 1.69,
+        "100": 1.08,
+        "230": 100.88
+      },
+      "confidence": "medium"
+    },
+    "plan6_ground": {
+      "scale": "fitted to printed chain dimensions (10 bays match)",
+      "walls": 14,
+      "total_m": 70.41,
+      "external_m": 67.32,
+      "internal_m": 3.09,
+      "junction_ends": 5,
+      "by_thickness_m": {
+        "100": 7.44,
+        "230": 62.97
+      },
+      "confidence": "medium"
+    },
+    "plan6_first": {
+      "scale": "fitted to printed chain dimensions (10 bays match)",
+      "walls": 16,
+      "total_m": 63.26,
+      "external_m": 57.17,
+      "internal_m": 6.09,
+      "junction_ends": 7,
+      "by_thickness_m": {
+        "100": 2.69,
+        "150": 60.57
+      },
+      "confidence": "medium"
+    }
+  },
+  "girth": {
+    "plan2_blockwork": 103.64,
+    "plan2_trench": 70.26
+  },
+  "pct_error": {
+    "plan2_blockwork": 1.1,
+    "plan2_trench": 0.8,
+    "plan6_ground_total": 62.1,
+    "plan6_first_total": 63.7
+  },
+  "questions": []
+}

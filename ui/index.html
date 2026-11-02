@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan2Cost Console</title>
+<link rel="stylesheet" href="/ui/style.css">
+</head>
+<body>
+<header>
+  <h1>Plan2<span>Cost</span> <span class="mute" style="font-weight:400">console</span></h1>
+  <select id="runs" aria-label="Run"></select>
+  <div class="spacer"></div>
+  <button id="newbtn">New estimate</button>
+</header>
+<main id="main"></main>
+<details id="logbox" style="max-width:1280px;margin:0 auto;padding:0 16px 24px"><summary class="small mute">Process log (errors from background runs appear here)</summary><pre id="log"></pre></details>
+<script src="/ui/app.js"></script>
+<script src="/ui/voice.js"></script>
+<script src="/ui/view3d.js"></script>
+<script src="/ui/main.js"></script>
+</body>
+</html>

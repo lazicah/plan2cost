@@ -1,0 +1,20 @@
+{
+  "_note": "Window counts per floor and width, from the author (two mirrored flats, so each is twice the per-flat number). 600mm recounted 2026-10-28: 16 ground, 6 first, total 22 = schedule AW1. Doors not yet given.",
+  "ground": {
+    "900": 4,
+    "600": 16
+  },
+  "first": {
+    "900": 16,
+    "600": 6
+  },
+  "_ground_600_per_flat_by_room": {
+    "Entrance porch": 1,
+    "Living room": 1,
+    "Pantry": 1,
+    "Bathroom": 1,
+    "Staff room": 2,
+    "Bathroom in guest room": 1,
+    "Guest bedroom": 1
+  }
+}

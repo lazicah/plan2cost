@@ -1,0 +1,391 @@
+{
+  "case": "plan6",
+  "floor": "plan symbols with legend",
+  "model": "muse-spark-1.3",
+  "time": "2026-10-28T11:36:57",
+  "extraction": {
+    "openings": [
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 750,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "G009 STAFF RM south wall, dim 750 in chain 925-750-1095, swing arc",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "ground",
+        "kind": "window",
+        "width_mm": 970,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "G010 BATHROOM west wall to TERRACE G011, dim 970 between 230 wall segments",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "G008 BATHROOM south wall, horiz dims 610-900, swing arc",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "G005 KITCHEN south wall to terrace, bottom dim 900 in 710-900-2365, swing arc",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "ground",
+        "kind": "window",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "G005 KITCHEN east wall, vert dim 900 between 600 and 230",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 750,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "G020 STAFF RM. S-wall hinged door swing with arc; 750 in 1095/750/925 wall chain",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "G016 KITCHEN S-wall hinged door swing; bottom dim chain 2365/900/710",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "window",
+        "width_mm": 970,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "G021 BATHROOM E-wall thin multi-line window symbol; vertical 970 dim alongside wall",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "window",
+        "width_mm": 1800,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "G016 KITCHEN E-wall large window symbol at sink; 1800 segment on E dimension chain opposite kitchen",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 1200,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "G001 ENTRANCE PORCH to G002 LIVING ROOM hinged door with swing arc dimensioned 1200",
+        "tile": "r1c0"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "hinged arc in N wall of G014 V.T, 900 printed beside gap",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "window",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "glazing break in S wall below G014, 900 in bottom dimension chain",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 1165,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "hinged arc at SE corner G013 LIVING to G012 PORCH, 1165 beside leaf",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "ground",
+        "kind": "door",
+        "width_mm": 3600,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "offset parallel sliding leaves in E wall of G013, 3600 in right chain",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 600,
+        "height_mm": null,
+        "wall": "external",
+        "count": 2,
+        "evidence": "Top external wall of BEDROOM 104 window with 600 in 900-230-600-970 chain + west external wall of BATHROOM 105 window with vertical 600 dim",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 2,
+        "evidence": "West external wall of BEDROOM 104 two window symbols with vertical dims 900 and 900",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 750,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "Bottom wall of BEDROOM 104 hinged door with horizontal dim 750 in 1505-750-1715 chain",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "BEDROOM 104 east entrance from corridor hinged door with vertical 900 dim",
+        "tile": "r0c0"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 4,
+        "evidence": "glazing breaks with no arc: 2 on east wall of Bedroom 4 (117) aligned with 900 segments on right chain, 1 on north wall of Bedroom 4 (117) aligned with 900 in top chain 970-600-230-900, 1 on east wall of Bedroom 3 (115) aligned with vertical 900 dimension",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 600,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "small glazing break on east wall serving Bathroom 118 aligned with 600 segment on right dimension chain",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 750,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "gap with swing in south wall of Bedroom 4 (117) centered on horizontal 750 dimension below Bedroom 4",
+        "tile": "r0c1"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 2,
+        "evidence": "two gaps in west wall of Master Bedroom with glazing lines, each on a 900 vertical dimension segment",
+        "tile": "r1c0"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 1200,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "hinged door with swing arc Master Bedroom to Terrace on 1200 segment of 1420-1200-3150 chain",
+        "tile": "r1c0"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 600,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "glazing break in Master/Terrace wall on 600 segment of bottom dimension chain",
+        "tile": "r1c0"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "hinged door with swing arc at top of tile on 900 dimension",
+        "tile": "r1c0"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 750,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "hinged bathroom door with swing arc on 105-750 dimension",
+        "tile": "r1c0"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 950,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "950 dimension on gap in north wall of 119 MASTER BEDROOM with leaf line and dashed swing arc into bedroom",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 750,
+        "height_mm": null,
+        "wall": "internal",
+        "count": 1,
+        "evidence": "750 dimension at doorway into 122 BATHROOM from closet passage with leaf and swing arc",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 900,
+        "height_mm": null,
+        "wall": "external",
+        "count": 3,
+        "evidence": "two 900 dims along east external wall of MASTER BEDROOM with glazing symbols plus one 900 dim on south external wall of 122 BATHROOM with glazing symbol",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "first",
+        "kind": "window",
+        "width_mm": 600,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "600 dim on wall between MASTER BEDROOM and 120 TERRACE with thin multi-line glazing symbol",
+        "tile": "r1c1"
+      },
+      {
+        "floor": "first",
+        "kind": "door",
+        "width_mm": 1200,
+        "height_mm": null,
+        "wall": "external",
+        "count": 1,
+        "evidence": "1200 dim at opening from MASTER BEDROOM to 120 TERRACE with leaf and dashed swing arc onto terrace",
+        "tile": "r1c1"
+      }
+    ],
+    "questions": [
+      "North wall windows of G009/G008 - top chain dims 600 and 970 cannot be matched confidently to opening centres, no clear width assignment.",
+      "West wall window of G009 STAFF RM - symbol visible but no printed width alongside.",
+      "West wall opening between G005 KITCHEN and G011 TERRACE - possible sliding door, conflicting dims 1775 in vertical chain vs 4570 internal label, kind/width cannot be confirmed.",
+      "Openings east of section line in G007 and G004 cut by right tile edge and excluded as belonging mostly to neighbouring tile.",
+      "G018 GUEST BEDROOM entrance hinged door swing is inside tile but leaf width unclear - adjacent dims 750/620/900/610, confirm width",
+      "G019 BATHROOM hinged door swing is inside tile but no clear printed width alongside opening - confirm width",
+      "North external wall central recess opening under top dim 600 and STAFF RM. N/E small windows - symbols visible but width association with 600/970/600 chain segments unclear, confirm sizes",
+      "G020 STAFF RM. E-wall small window symbol fully inside tile but no certain printed width - confirm if 600 high-level type",
+      "W-wall of KITCHEN vertical chain 600/900/2065 with wall break - classify as window/other/internal door and confirm width",
+      "No heights, sill/head levels or elevations given in tile - all height_mm set null, confirm",
+      "Openings cut by left tile edge in GUEST BEDROOM N-wall and G015 DINING/stair area ignored as belonging mostly to west neighbour tile - confirm exclusion",
+      "West wall of G002 LIVING ROOM full-length glazing - no printed opening width, 4570 is room dimension - confirm type and size",
+      "South side of G001 ENTRANCE PORCH open/colonnade with +300 - confirm if counted as opening and width",
+      "G006 PANTRY and north stair entrance at top edge cut by tile boundary - excluded as mostly in northern tile - confirm",
+      "G017 PANT door swing visible but no printed width, cannot size",
+      "North wall 1200 openings at top edge cut by tile edge, centre mostly outside tile",
+      "S side of G012 ENTRANCE PORCH open with no leaf, no clear printed opening width",
+      "Top-right red triangle with steps is stairs/entrance arrow, not counted as opening",
+      "Internal door to BATHROOM 105 - swing visible but no printed width found in tile",
+      "Internal door to BOX RM. 103 - swing visible but no printed width found in tile",
+      "Internal door to BATHROOM 107 - swing visible but no printed width (1040 is wall) found in tile",
+      "Door/opening at east tile edge to landing/BEDROOM 106 area with vertical 900 dim - cut by tile edge, excluded as centre belongs to neighbouring tile - confirm there",
+      "South edge opening to FAMILY LOUNGE 101 / TERRACE 102 with 4200 dim - cut by tile edge, centre likely in lower tile - confirm there",
+      "No heights dimensioned in plan or elevation in this tile so all height_mm set to null",
+      "South wall opening of Bedroom 3 (115) - symbol visible but no horizontal opening width printed in this tile - confirm width",
+      "Internal doors to Bedroom 3 (115), Bathroom 116, Box Rm 114 and Bathroom 118 - swings visible but no printed opening widths in this tile - confirm widths",
+      "No heights or sill/head levels dimensioned in this tile - confirm heights for all openings",
+      "No heights printed for any opening - heights assumed null",
+      "South edge of Terrace on 2025 dimension - open edge/railing or sliding opening? Cannot classify as door/window/other",
+      "Top 900 door also shows 650 dimension beside leaf - confirm structural opening width is 900",
+      "South front of 120 TERRACE with 2025/600/525/1200 chain and 4350 overall - cannot determine which segments are sliding/open/balustrade vs solid, no clear leaf or glazing symbol - needs clarification",
+      "Openings cut by top and left image borders belonging mostly to rooms above and mirrored unit to west excluded per tile rule"
+    ]
+  },
+  "checks": {
+    "ground": {
+      "900": [
+        2,
+        4
+      ],
+      "600": [
+        0,
+        14
+      ]
+    },
+    "first": {
+      "900": [
+        11,
+        16
+      ],
+      "600": [
+        5,
+        4
+      ]
+    }
+  },
+  "pct_error": {
+    "windows_missed_pct": 52.6
+  },
+  "questions": [
+    "North wall windows of G009/G008 - top chain dims 600 and 970 cannot be matched confidently to opening centres, no clear width assignment.",
+    "West wall window of G009 STAFF RM - symbol visible but no printed width alongside.",
+    "West wall opening between G005 KITCHEN and G011 TERRACE - possible sliding door, conflicting dims 1775 in vertical chain vs 4570 internal label, kind/width cannot be confirmed.",
+    "Openings east of section line in G007 and G004 cut by right tile edge and excluded as belonging mostly to neighbouring tile.",
+    "G018 GUEST BEDROOM entrance hinged door swing is inside tile but leaf width unclear - adjacent dims 750/620/900/610, confirm width",
+    "G019 BATHROOM hinged door swing is inside tile but no clear printed width alongside opening - confirm width",
+    "North external wall central recess opening under top dim 600 and STAFF RM. N/E small windows - symbols visible but width association with 600/970/600 chain segments unclear, confirm sizes",
+    "G020 STAFF RM. E-wall small window symbol fully inside tile but no certain printed width - confirm if 600 high-level type",
+    "W-wall of KITCHEN vertical chain 600/900/2065 with wall break - classify as window/other/internal door and confirm width",
+    "No heights, sill/head levels or elevations given in tile - all height_mm set null, confirm"
+  ]
+}

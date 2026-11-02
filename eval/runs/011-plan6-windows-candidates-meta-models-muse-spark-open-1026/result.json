@@ -1,0 +1,622 @@
+{
+  "case": "plan6",
+  "floor": "candidates, two-pass, mirror check",
+  "model": "meta-models/muse-spark-open-1026",
+  "time": "2026-10-28T22:35:37",
+  "extraction": [
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "top",
+      "kind": "window",
+      "evidence": "Top exterior wall directly below the 600 dimension ticks shows a gap in the hatched wall with thin parallel lines along the wall (frame/glass) inside the gap and no leaf or swing arc; hatching stops at both jambs, matching window symbol.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 447.7,
+      "across_pts": 151.5,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "top",
+      "kind": "window",
+      "evidence": "Directly below the 600 on the top 970/600 chain the north exterior wall (two thick lines with diagonal hatch) stops at both jambs. The gap is crossed by a thin rectangle with 2-3 parallel lines along the wall and no swing arc, matching the window definition (gap + frame/glass lines, never an arc). The 600 dimension spans that opening/right portion of the recessed opening in the top wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 730.3,
+      "across_pts": 151.5,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "wall_piece",
+      "evidence": "Directly above the 600 dimension on the bottom chain the southernmost wall is drawn as a continuous cut wall - two thick parallel lines with diagonal blockwork hatching between them - with no gap, no thin window rectangle/parallel glass lines and no door leaf/quarter-circle arc in that 600mm span.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 356.2,
+      "across_pts": 676.6,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "wall_piece",
+      "evidence": "At the bottom of the strip the exterior south wall (below G001 ENTRANCE PORCH) at the 600mm interval to the right of the vertical dashed section line is drawn as two thick parallel lines with continuous diagonal hatching between them. There is no gap in the wall, no thin rectangle with 2-3 parallel glass/sill lines for a window, and no leaf + quarter-circle dashed swing arc for a door. The 600mm therefore spans a solid hatched wall length.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 434.9,
+      "across_pts": 676.6,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "wall_piece",
+      "evidence": "At the bottom wall the 600mm extent aligns with a continuous length of cut wall shown as two thick parallel lines with diagonal hatching between and no opening. No gap in the hatch, no thin parallel window lines/sill in a gap, and no door leaf with quarter-circle swing arc is visible at that span.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 743.3,
+      "across_pts": 676.6,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "wall_piece",
+      "evidence": "bottom 600 dimension segment aligns with southernmost exterior wall at bottom of strip; that length shows continuous solid hatched wall (two thick parallel lines with diagonal brick hatch between) with no gap, no door leaf/arc and no window thin-line rectangle - solid wall_piece",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 821.9,
+      "across_pts": 676.6,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "left",
+      "kind": "window",
+      "evidence": "Left exterior wall (west wall of G009) shows a gap in the hatched wall filled by a thin rectangle with parallel lines along the wall (frame/glass/sill) and no door leaf or swing arc, aligned with the 600mm dimension on the left chain.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 189.8,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "left",
+      "kind": "window",
+      "evidence": "At the 600mm level on the left dimension chain the left outer hatched wall has a clear gap where the hatch stops at both jambs and thin parallel lines cross the gap along the wall with no door leaf or swing arc, matching the window symbol.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 267.1,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "left",
+      "kind": "wall_piece",
+      "evidence": "At the vertical interval marked 600 on the left dimension chain the leftmost (west) wall shows continuous cut-wall hatching - two thick parallel wall lines with diagonal brick/block hatch between them - with no gap, no thin window rectangle/parallel glass lines and no door leaf/arc. The nearby window is dimensioned 970 and lies outside this 600 interval; the 600 interval itself is solid hatched wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 437.3,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "left",
+      "kind": "wall_piece",
+      "evidence": "Leftmost vertical (west) wall at the vertical interval between the extension lines of the 600 dimension on the left chain is continuous double-line hatched wall with no gap. The 970 window on that wall lies outside that 600 interval (between the two 600s). No door leaf/arc and no window gap/thin-lines at the 600 span - solid hatched wall_piece.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 454.3,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "right",
+      "kind": "window",
+      "evidence": "Far right vertical 600 dimension projects to the north end of the east (right) wall; there the diagonal hatched wall is interrupted by a narrow gap with thin parallel lines along the wall (window frame/glass/sill) and no leaf or quarter-circle swing arc.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 301.2,
+      "across_pts": 717.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "right",
+      "kind": "window",
+      "evidence": "On the right exterior wall at the 600mm vertical span the hatched cut-wall stops at both jambs and the gap contains a thin rectangle with parallel lines along the wall (frame/glass/sill) with no leaf or swing arc, matching the window symbol example; the 600mm extension lines align with the jambs of that opening, symmetric to the 600mm window on the left wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 189.8,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "right",
+      "kind": "wall_piece",
+      "evidence": "At the vertical extent of the 600 on the far-right chain the outer wall is continuous double-line with diagonal hatch between, no gap/thin window rectangle and no leaf/arc. The small bathroom window (hatched wall stops at jambs, thin parallel lines in gap) sits below with its head at the lower extension line of the 600 dimension, so the 600 length itself is solid hatched wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 267.1,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "right",
+      "kind": "window",
+      "evidence": "At the right/east wall at the vertical level of the 600mm tick the hatched wall is interrupted by a window gap \u2013 thin parallel frame/glass lines in the wall thickness with the 970 window dimension alongside \u2013 hatching stops at both jambs, no door leaf or swing arc.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 437.3,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 600,
+      "side": "right",
+      "kind": "wall_piece",
+      "evidence": "At the vertical level of the 600 on the right-hand chain the extreme right/east exterior wall is a continuous cut wall - two thick parallel lines with diagonal brick hatch between - with no gap, no door leaf/quarter-circle arc and no window frame/glass lines. The window on that east wall (970) sits at the junction between the two 600 bays, not inside the 600 span, so the 600 bay itself spans solid hatched wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 454.3,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom exterior hatched wall at the 900 dimension shows a window opening - a gap in the hatch with thin parallel frame/glass lines across it, no door leaf/arc, with the 900 extension lines aligning to its jambs.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 573.0,
+      "across_pts": 676.6,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom horizontal wall at the 900 dimension is interrupted by a gap where the hatched wall stops at both jambs and a thin rectangle with 2-3 parallel lines along the wall sits in the gap (window frame/glass/sill). No door leaf or quarter-circle swing arc is present. The 900 extension lines align with that window opening.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 605.1,
+      "across_pts": 676.6,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "window",
+      "evidence": "At the vertical interval spanned by the 900 on the left chain (between its two horizontal extension lines) the west/left wall shows a gap in the diagonal brick hatch with the hatch stopping at both jambs and a thin rectangle in the gap holding two parallel lines along the wall - the window symbol, no arc, not solid hatch.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 211.1,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "wall_piece",
+      "evidence": "Left exterior wall at the 900mm span shows continuous hatched wall (two thick lines with diagonal hatch) with no gap, no door leaf/arc and no window thin-line rectangle - solid wall length.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 236.5,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "door",
+      "evidence": "At the 900mm tick on the left dimension chain the left exterior (hatched) wall has a gap/break with a thin leaf line and a dashed quarter-circle swing arc extending inward into the G006 PANTRY area. This is the standard hinged-door symbol (gap + leaf + arc), not a window's thin parallel-line infill and not a continuous solid-hatched wall_piece.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 406.4,
+      "across_pts": 296.1,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "window",
+      "evidence": "On the right wall the 900mm dimension spans a gap in the hatched cut wall. In the gap sits a thin rectangle with parallel lines along the wall (frame/glass/sill) - the window symbol described - with hatched wall stopping at both jambs. No door leaf or swing arc is present, and it is not solid hatched wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 322.4,
+      "across_pts": 717.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "door",
+      "evidence": "At the 900mm segment on the right dimension chain the hatched wall shows a gap with a thin leaf and a dashed quarter-circle swing arc to the other jamb - the standard hinged door symbol - not a window's thin parallel-line infill or a solid hatched wall_piece.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 406.4,
+      "across_pts": 717.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "wall_piece",
+      "evidence": "At the 900mm interval on the right vertical dimension chain the right/east exterior wall is a continuous length of cut wall - two thick parallel lines with diagonal brick/block hatch between - with no gap, no thin parallel window lines/sill and no door leaf/quarter-circle arc. Solid hatched wall for that 900 length.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 211.1,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "window",
+      "evidence": "At the vertical interval spanned by the 900 dimension on the right chain, the right outer wall shows a gap in the hatched wall with thin parallel lines along the wall thickness and no door leaf/arc, matching the window symbol example; the hatching stops at both jambs and the opening contains the frame/glass lines.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 236.5,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "ground",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "wall_piece",
+      "evidence": "At the y-range of the 900 on the right chain the far-right outer wall is a continuous cut wall - two thick parallel lines with diagonal hatch between - with no gap, no thin window rectangle/lines and no door leaf/arc. The 900 itself dimensions the solid hatched interior pantry wall (710/900/2365 chain) but the outer wall at that same height is uninterrupted solid wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 407.1,
+      "across_pts": 883.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "top",
+      "kind": "window",
+      "evidence": "At the top dimension chain the 600mm bay is centered in the strip. The top hatched exterior wall is interrupted there by a gap containing a thin rectangle with 2-3 parallel lines along the wall (frame/glass/sill), hatched wall stops at both jambs, no leaf or swing arc \u2013 the window symbol described.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 432.9,
+      "across_pts": 142.4,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "top",
+      "kind": "window",
+      "evidence": "Top external hatched wall directly below the 600 ticks is interrupted by a gap. Hatching stops at both jambs and in the gap a thin rectangle with 2-3 parallel lines along the wall is visible, no leaf/arc. The 600 dimension aligns with that opening, matching the window symbol definition (gap crossed by thin lines, never an arc).",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 715.6,
+      "across_pts": 142.4,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "wall_piece",
+      "evidence": "Bottom horizontal wall segment under the 600mm dimension shows continuous hatched wall (two thick parallel lines with diagonal hatch between) with no gap, no thin window lines and no door leaf/arc - solid wall for that length.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 307.3,
+      "across_pts": 690.8,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom (south) wall at the 600 tick is interrupted: hatched wall stops at both jambs and gap holds thin parallel rectangle/lines for frame/glass with no door leaf/arc. The 600 dimension ticks align with those jambs, matching window width, just east of the vertical dashed grid line and east of the terrace door arc.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 420.0,
+      "across_pts": 690.8,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom chain shows 600 segment; directly above its extension lines the lowermost hatched wall (Master Bedroom south wall / Terrace north wall) is interrupted \u2013 hatch stops at both jambs and the gap contains a thin rectangle with 2-3 parallel lines along the wall (frame/glass/sill) with no leaf or swing arc, the standard window symbol. The opening width aligns with the 600mm dimension, not a solid hatched wall and not a door.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 728.4,
+      "across_pts": 690.8,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom/south wall eastern 600mm segment under the 600 dimension shows a gap in the diagonal-hatched wall with thin parallel lines along the wall (frame/glass/sill) and no door swing arc; the dimension extension lines align with the jambs of that opening, not solid hatched wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 841.1,
+      "across_pts": 690.8,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "left",
+      "kind": "window",
+      "evidence": "Left vertical dimension chain 600mm extension lines align with a gap in the left outer hatched wall; the gap is crossed by thin parallel frame/glass lines with no leaf/arc, matching the window symbol (hatched wall stops at both jambs).",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 322.5,
+      "across_pts": 282.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 600,
+      "side": "right",
+      "kind": "window",
+      "evidence": "At the 600mm level on the right dimension chain the right exterior wall shows a gap in the diagonal-hatched wall with thin parallel frame/glass lines inside and no arc. The 600 extension lines align with the jambs of that opening - the standard window symbol (bathroom high window).",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 322.5,
+      "across_pts": 859.7,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "top",
+      "kind": "window",
+      "evidence": "Top wall under the 900 dimension shows hatched wall stopped at both jambs with a gap containing a thin rectangle with 2-3 parallel lines along the wall (frame/glass/sill) and no leaf/arc; the 900 extension lines align with those jambs, 230 is the adjacent pier.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 405.1,
+      "across_pts": 142.4,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "top",
+      "kind": "window",
+      "evidence": "Top horizontal wall under the 900 dimension shows hatched wall stopping at both jambs with a gap containing a thin rectangle with 2-3 parallel lines along the wall (window symbol, no arc). The 900 extension lines align with that opening, not a solid hatched wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 558.1,
+      "across_pts": 142.4,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "top",
+      "kind": "window",
+      "evidence": "Top hatched wall (two thick lines with diagonal hatch) is interrupted at the 900mm span by a gap containing thin parallel lines along the wall for frame/glass/sill - the standard window symbol - with no door leaf or swing arc.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 590.2,
+      "across_pts": 142.4,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "top",
+      "kind": "wall_piece",
+      "evidence": "Top wall directly below the 900mm segment shows continuous cut-wall hatching (two thick parallel wall lines with diagonal hatch between) with no gap/opening, no thin window rectangle/parallel glass lines and no door leaf/arc. The window on that top wall lies to the right of the 900 span; the 900 spans solid hatched wall between the 230 wall/corner and the window jamb.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 743.3,
+      "across_pts": 142.4,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom exterior wall is a hatched cut wall interrupted within the 900 span by a gap holding thin parallel lines along the wall (frame/glass/sill) with a small outward sill projection. No door leaf or quarter-circle swing arc is present. The 900 extension lines align with this opening, matching the window symbol (gap in hatched wall crossed by thin lines, never an arc).",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 558.1,
+      "across_pts": 690.8,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "bottom",
+      "kind": "window",
+      "evidence": "Bottom horizontal wall at the 900mm span shows a gap in the hatched wall crossed by thin parallel lines along the wall (frame/glass/sill) with hatching stopping at both jambs, no leaf or swing arc - matches window symbol, not door or solid wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 590.2,
+      "across_pts": 690.8,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "window",
+      "evidence": "On the left exterior wall the 900mm dimension spans a gap in the hatched wall filled with thin parallel lines along the wall (frame/glass/sill) with no leaf or swing arc. Hatched wall stops at both jambs. Matches window symbol, not a door.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 201.2,
+      "across_pts": 282.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "window",
+      "evidence": "Left vertical wall at the 900mm interval shows a clear gap in the hatched cut-wall with a thin rectangular infill containing 2-3 parallel lines along the wall line and no door swing arc. Extension lines of the 900 dimension align with the jambs of this opening (230 solid wall and 600 window below), matching the window symbol definition.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 294.8,
+      "across_pts": 282.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "window",
+      "evidence": "On the left 900mm extent the hatched exterior wall is interrupted by a gap containing a thin rectangle with 2-3 parallel lines along the wall (frame/glass/sill) and no leaf or quarter-circle swing arc, matching the window symbol definition.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 496.9,
+      "across_pts": 282.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "left",
+      "kind": "window",
+      "evidence": "On the left exterior hatched wall (230 thick) the vertical interval bracketed by the 900 dimension shows a gap in the diagonal wall hatch crossed by thin parallel lines along the wall (frame/glass/sill) with no leaf or quarter-circle swing arc. This matches the window symbol, not a door or solid wall_piece, and the 900 extension lines bracket this opening.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 600.9,
+      "across_pts": 282.0,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "window",
+      "evidence": "Far right wall at the 900mm dimension shows a gap in the hatched wall filled with thin parallel lines (frame/glass/sill) and no leaf or swing arc, matching the window symbol; the dimension extension lines align with the jambs of that opening.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 201.2,
+      "across_pts": 859.7,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "window",
+      "evidence": "On the far right vertical wall the 900mm extension lines bracket a gap in the hatched wall. In the gap is a thin rectangle with parallel lines along the wall (frame/glass/sill) and no leaf or swing arc, matching the window symbol. Same as the mirrored 900mm window on the left wall.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 294.8,
+      "across_pts": 859.7,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "window",
+      "evidence": "Far right vertical exterior wall has a gap in the hatched wall crossed by thin parallel lines along the wall (window frame/glass/sill) with no leaf or swing arc; the 900mm dimension extension lines on the right align with that opening.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 496.9,
+      "across_pts": 859.7,
+      "page_w_pts": 1190.9
+    },
+    {
+      "floor": "first",
+      "width_mm": 900,
+      "side": "right",
+      "kind": "wall_piece",
+      "evidence": "Rightmost vertical wall at the 900 span shows continuous diagonal hatching between the two thick wall lines with no gap, no thin window lines and no door leaf/arc. The 900 dimension measures the solid wall length from the bottom corner up to the notch, so it is a solid hatched wall piece, not an opening.",
+      "count": 1,
+      "pass": 1,
+      "along_pts": 600.9,
+      "across_pts": 859.7,
+      "page_w_pts": 1190.9
+    }
+  ],
+  "checks": {
+    "score": {
+      "ground": {
+        "900": [
+          5,
+          4
+        ],
+        "600": [
+          7,
+          16
+        ]
+      },
+      "first": {
+        "900": [
+          12,
+          16
+        ],
+        "600": [
+          7,
+          6
+        ]
+      }
+    },
+    "mirror": {
+      "ground": {
+        "600": {
+          "A": 3,
+          "B": 4
+        },
+        "900": {
+          "A": 1,
+          "B": 4
+        }
+      },
+      "first": {
+        "600": {
+          "A": 3,
+          "B": 4
+        },
+        "900": {
+          "A": 7,
+          "B": 5
+        }
+      }
+    }
+  },
+  "pct_error": {
+    "windows_missed_pct": 26.2
+  },
+  "questions": []
+}

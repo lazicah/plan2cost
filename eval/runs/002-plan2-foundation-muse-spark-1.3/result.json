@@ -1,0 +1,107 @@
+{
+  "case": "plan2",
+  "floor": "foundation",
+  "model": "muse-spark-1.3",
+  "time": "2026-10-28T09:51:26",
+  "extraction": {
+    "strip": {
+      "width_mm": 675,
+      "thickness_mm": 225,
+      "blinding_mm": 50,
+      "blinding_material": "SANDCRETE",
+      "slab_mm": 150,
+      "mesh": "A 141",
+      "notes": [
+        "675mm x 225mm MASS CONCRETE STRIP FOUNDATION BASE",
+        "50mm THICK SANDCRETE BLINDING",
+        "150mm THICK MASS CONCRETE FLOOR SLAB WITH B. R. C. WIRE MESH A 141",
+        "WELL COMPACTED HARDCORE FILLING",
+        "EARTH LATERITE BACKFILLING"
+      ]
+    },
+    "pad_bases": [
+      {
+        "type": "BASE TYPE 1",
+        "length_mm": 1200,
+        "width_mm": 1200,
+        "thickness_mm": 250,
+        "count": 4,
+        "rebar": [
+          "06-Y1202@200c/c B"
+        ]
+      },
+      {
+        "type": "BASE TYPE 2",
+        "length_mm": 1400,
+        "width_mm": 1400,
+        "thickness_mm": 250,
+        "count": 5,
+        "rebar": [
+          "07-Y1202@200c/c B"
+        ]
+      },
+      {
+        "type": "BASE TYPE 3",
+        "length_mm": 1500,
+        "width_mm": 1500,
+        "thickness_mm": 250,
+        "count": 5,
+        "rebar": [
+          "08-Y1204@200c/c B"
+        ]
+      },
+      {
+        "type": "BASE TYPE 4",
+        "length_mm": 1600,
+        "width_mm": 1600,
+        "thickness_mm": 250,
+        "count": 4,
+        "rebar": [
+          "09-Y1205@175c/c B"
+        ]
+      },
+      {
+        "type": "BASE TYPE 5",
+        "length_mm": 1700,
+        "width_mm": 1700,
+        "thickness_mm": 250,
+        "count": 1,
+        "rebar": [
+          "11-Y1206@150c/c B"
+        ]
+      }
+    ],
+    "section_depths_mm": [],
+    "questions": [
+      "Vertical depth dimensions printed at right-hand side of SECTION A-A are illegible in image - confirm overall foundation excavation depth and other level dimensions",
+      "Confirm meaning of 1200 dimension shown in padbase sections and 50 dimension shown below 250 thick pad base",
+      "Confirm column size and starter/link details in padbase sections including 10Y1005@200 reference",
+      "Confirm thickness of WELL COMPACTED HARDCORE FILLING and EARTH LATERITE BACKFILLING - no thickness printed",
+      "Confirm whether B in base reinforcement notes means bottom layer only and confirm top steel if any"
+    ]
+  },
+  "checks": {
+    "base_1": true,
+    "base_2": true,
+    "base_3": true,
+    "base_4": true,
+    "base_5": true,
+    "strip_width_mm": true,
+    "strip_thickness_mm": true,
+    "pit_excavation_m3": [
+      48,
+      48
+    ]
+  },
+  "pct_error": {
+    "pit_excavation_m3": 0.0,
+    "fields_wrong_pct": 0.0
+  },
+  "questions": [
+    "Vertical depth dimensions printed at right-hand side of SECTION A-A are illegible in image - confirm overall foundation excavation depth and other level dimensions",
+    "Confirm meaning of 1200 dimension shown in padbase sections and 50 dimension shown below 250 thick pad base",
+    "Confirm column size and starter/link details in padbase sections including 10Y1005@200 reference",
+    "Confirm thickness of WELL COMPACTED HARDCORE FILLING and EARTH LATERITE BACKFILLING - no thickness printed",
+    "Confirm whether B in base reinforcement notes means bottom layer only and confirm top steel if any"
+  ]
+}

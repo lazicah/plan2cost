@@ -1,10 +1,6 @@
-from plan2cost.tools.takeoff import Plan, Room, takeoff, missing_inputs
+from plan2cost.takeoff.units import to_10mm
 
 
-def test_takeoff_basic():
-    p = Plan(rooms=[Room("a", 4, 3)], wall_height_m=3, openings_area_m2=4)
-    assert takeoff(p) == {"floor_area_m2": 12.0, "wall_area_m2": 38.0}
-
-
-def test_missing_inputs_flags_openings():
-    assert "door/window schedule missing" in missing_inputs(Plan(rooms=[Room("a", 4, 3)]))
+def test_dimensions_round_half_up_to_the_nearest_10mm():
+    assert to_10mm(0.675) == 0.68
+    assert to_10mm(0.674) == 0.67

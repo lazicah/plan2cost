@@ -1,0 +1,192 @@
+"""The verified drawing model: what the interpreter found on a plan page, as a register that can be saved, checked, drawn on the plan and read by
+later steps. Nothing here measures from pixels or asks a model; it holds what code measured, with where each thing came from and how far to
+trust it. Every number carries an evidence label, and what could not be settled is kept as an issue, not hidden in a total."""
+import json
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+
+from plan2cost.drawing.walls_cv import Wall, building_size_m
+
+# How a fact is known. A printed dimension is read, a length is measured from traced geometry, a classification is inferred from conventions.
+EVIDENCE = ("directly labelled", "geometrically measured", "inferred", "approximate", "unresolved")
+
+
+@dataclass
+class Calibration:
+    """How a drawing's units become millimetres: the method, the scale, what it was checked against and how far to trust it."""
+    id: str
+    view: str
+    method: str
+    mm_per_unit: float
+    unit: str  # "pt" (vector page) or "px" (raster image)
+    basis: str
+    annotated_mm: list = field(default_factory=list)  # printed dimensions the scale was checked against
+    agreement: float | None = None  # share of the printed dimensions that agree (vector) or the fit error (raster)
+    evidence: str = "directly labelled"
+    confidence: str = "medium"
+    detail: dict = field(default_factory=dict)
+
+
+@dataclass
+class Element:
+    """One thing found on the plan: a wall, or a door, window or opening in a wall. It carries its place on the sheet in millimetres, its size, how it is known (the evidence label), how far to trust it, and notes on how it was found or changed."""
+    id: str
+    category: str  # wall
+    subtype: str  # external, internal
+    page: int
+    floor: str
+    orient: str  # "h" or "v" in the sheet frame
+    x0_mm: float
+    y0_mm: float
+    x1_mm: float
+    y1_mm: float
+    length_m: float
+    thickness_mm: float
+    convention: str = "centre-line"
+    external_share: float = 0.0  # part of the run with the outdoors on one side
+    connected: list = field(default_factory=list)  # ids of the walls it meets
+    evidence: str = "geometrically measured"
+    confidence: str = "medium"
+    notes: list = field(default_factory=list)
+    gaps_mm: list = field(default_factory=list)  # stretches along the run (sheet frame) where both faces are broken: candidate openings
+    parent: str = ""  # for a door, window or opening: the id of the wall it is in
+    mark: str = ""  # the tag on the drawing (W3, D2...) and the schedule type it was matched to
+    width_mm: float = 0.0  # measured from the drawing, for an opening
+
+
+def wall_of(e: Element) -> Wall:
+    """A wall element as the plain `Wall` run the geometry code works with: its centre line across (y for a horizontal run, x for a vertical one), start and end along it, and thickness."""
+    return Wall(e.orient, e.y0_mm if e.orient == "h" else e.x0_mm, e.x0_mm if e.orient == "h" else e.y0_mm, e.x1_mm if e.orient == "h" else e.y1_mm, e.thickness_mm)
+
+
+@dataclass
+class Issue:
+    """Something a person should look at: a code, a severity (error, warn, info), what is wrong, the elements involved, what to check, and who raised it (code, the model review, a model check, the space names)."""
+    code: str
+    severity: str  # error, warn, info
+    message: str
+    elements: list = field(default_factory=list)
+    check: str = ""  # what a person should look at
+    source: str = "code"  # code or model review
+
+
+@dataclass
+class DrawingModel:
+    """What was found on one floor plan page: the calibration, the elements, the issues raised, the totals, the named spaces and the opening tags. It is saved as JSON next to the annotated plan and read by the take-off, the console and the 3D view."""
+    page: int
+    floor: str
+    route: str  # vector, raster
+    confidence: str
+    calibrations: list = field(default_factory=list)
+    elements: list = field(default_factory=list)
+    issues: list = field(default_factory=list)
+    totals: dict = field(default_factory=dict)
+    markup: str = ""  # file name of the annotated plan, relative to the model file
+    markup_frame: list = field(default_factory=list)  # [x0, y0, shrink, px_per_mm]: how the annotated plan's pixels map back to the page's, to turn a place on the picture into millimetres
+    printed_mm: list = field(default_factory=list)  # the printed overall dimensions the building size is checked against
+    unplaced_tags: list = field(default_factory=list)  # opening tags read from the plan with no opening found near them: {tag, kind, x_mm, y_mm}
+    tagged: bool = False  # the plan tags its openings (enough tags were read)
+    tag_totals: dict = field(default_factory=dict)  # tags read on the plan by kind (window, door), the same tag read twice counted once: how many openings the plan says there are
+    spaces: list = field(default_factory=list)  # named spaces the model saw: {name, kind, box_mm: [x0, y0, x1, y1]}; kind from the name (outdoor, void, circulation, wet, room)
+
+    def walls(self) -> list:
+        return [e for e in self.elements if e.category == "wall"]
+
+    def openings(self) -> list:
+        return [e for e in self.elements if e.category in ("door", "window", "opening")]
+
+    def summary(self) -> dict:
+        return {"floor": self.floor, "page": self.page, "route": self.route, "confidence": self.confidence, **self.totals, "walls": len(self.walls()),
+                "issues": [{"severity": i.severity, "code": i.code, "message": i.message, "source": i.source} for i in self.issues if i.severity != "info"],
+                "markup": self.markup}
+
+    def save(self, path: str | Path) -> None:
+        Path(path).write_text(json.dumps(asdict(self), indent=1))
+
+    @classmethod
+    def load(cls, path: str | Path) -> "DrawingModel":
+        d = json.loads(Path(path).read_text())
+        keep = lambda klass, row: {k: v for k, v in row.items() if k in klass.__dataclass_fields__}  # a model saved by a newer or older version still loads
+        return cls(**{**keep(cls, d), "calibrations": [Calibration(**keep(Calibration, c)) for c in d["calibrations"]], "elements": [Element(**keep(Element, e)) for e in d["elements"]],
+                      "issues": [Issue(**keep(Issue, i)) for i in d["issues"]]})
+
+
+def touching(a: Wall, b: Wall, tol_mm: float = 150) -> bool:
+    """Do two runs meet (a joint, a corner or a crossing)? Parallel runs never do."""
+    if a.orient == b.orient:
+        return False
+    h, v = (a, b) if a.orient == "h" else (b, a)
+    return h.start_mm - tol_mm <= v.centre_mm <= h.end_mm + tol_mm and v.start_mm - tol_mm <= h.centre_mm <= v.end_mm + tol_mm
+
+
+def merge_gaps(gaps: list, start: float, end: float, join_mm: float = 60) -> list:
+    """One interval per opening: overlapping or touching gaps are joined, and a gap at the very end of a run is not an opening (it is where the run stops)."""
+    out: list = []
+    for a, b in sorted(gaps):
+        if out and a <= out[-1][1] + join_mm:
+            out[-1][1] = max(out[-1][1], b)
+        else:
+            out.append([a, b])
+    return [[round(a, 1), round(b, 1)] for a, b in out if a > start + 100 and b < end - 100]
+
+
+def stable_order(walls: list[Wall]) -> list[int]:
+    """Indexes in a fixed order, so the same drawing always gives the same ids: horizontal runs top to bottom, then vertical runs left to right,
+    each by where it starts. Positions are rounded to 50mm so a one-pixel wobble does not reshuffle ids."""
+    return sorted(range(len(walls)), key=lambda i: (walls[i].orient != "h", round(walls[i].centre_mm / 50), round(walls[i].start_mm / 50)))
+
+
+def build_model(result: dict, floor: str, page: int, printed_mm: list | None = None) -> DrawingModel:
+    """Make the register from an interpreter result that kept its walls (`keep=True`)."""
+    walls: list[Wall] = result["_walls"]
+    fractions = result["_fractions"]
+    unit, mm_unit = result["_unit"], result["_mm_per_unit"]
+    conf = result.get("confidence", "medium")
+    order = stable_order(walls)
+    ids = {i: f"W-{n:03d}" for n, i in enumerate(order, 1)}
+    elements = []
+    for i in order:
+        w, f = walls[i], fractions[i]
+        x0, y0, x1, y1 = (w.start_mm, w.centre_mm, w.end_mm, w.centre_mm) if w.orient == "h" else (w.centre_mm, w.start_mm, w.centre_mm, w.end_mm)
+        notes = ["part of this run has the outdoors on one side and part does not"] if 0.15 < f < 0.85 else []
+        elements.append(Element(ids[i], "wall", "external" if f >= 0.5 else "internal", page, floor, w.orient, round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1),
+                                round(w.length_mm / 1000, 3), float(w.thickness_mm), external_share=round(float(f), 2),
+                                connected=sorted(ids[j] for j, v in enumerate(walls) if j != i and touching(w, v)), confidence=conf, notes=notes,
+                                gaps_mm=merge_gaps(w.gaps, w.start_mm, w.end_mm)))
+    cal = result.get("_calibration", {})
+    method = cal.get("method", "unknown")
+    strong = method.startswith("printed dimensions") or "overall dimensions" in method
+    calibration = Calibration("C-001", f"page {page}, {floor} floor plan", method, round(float(mm_unit), 4), unit, cal.get("basis", result.get("scale", "")),
+                              annotated_mm=cal.get("printed_overall_mm", []), agreement=cal.get("agree", cal.get("fit_error")),
+                              evidence="directly labelled" if strong else "approximate", confidence="high" if strong and conf == "high" else "medium" if strong else "low",
+                              detail={k: v for k, v in cal.items() if k not in ("basis", "method", "readings")})
+    size = building_size_m(walls)  # between the outermost joints: a run overshooting the building does not inflate it
+    model = DrawingModel(page, floor, result.get("route", result.get("source", "")), conf, [calibration], elements, totals=compute_totals(elements, size),
+                         printed_mm=printed_mm if printed_mm is not None else cal.get("printed_overall_mm", []))
+    from plan2cost.drawing.qc import run_checks
+
+    model.issues = run_checks(model, model.printed_mm)
+    return model
+
+
+def compute_totals(elements: list, size: tuple) -> dict:
+    """Wall lengths from the elements (total, external by share, internal, by thickness) with the building's size between the outermost joints."""
+    ext = sum(e.length_m * e.external_share for e in elements)
+    total = sum(e.length_m for e in elements)
+    by_thickness: dict = {}
+    for e in elements:
+        by_thickness[int(e.thickness_mm)] = round(by_thickness.get(int(e.thickness_mm), 0) + e.length_m, 2)
+    return {"total_m": round(total, 2), "external_m": round(ext, 2), "internal_m": round(total - ext, 2), "by_thickness_m": by_thickness, "length_m": round(size[0], 2), "width_m": round(size[1], 2)}
+
+
+def refresh(model: DrawingModel) -> None:
+    """After walls were trimmed, removed or added: the joints, totals and code checks again from the walls as they now are."""
+    from plan2cost.drawing.qc import run_checks
+
+    els = model.walls()
+    walls = [wall_of(e) for e in els]
+    for e, w in zip(els, walls):
+        e.connected = sorted(o.id for o, v in zip(els, walls) if o is not e and touching(w, v))
+        e.length_m = round(w.length_mm / 1000, 3)
+    model.totals = compute_totals(els, building_size_m(walls))
+    model.issues = run_checks(model, model.printed_mm) + [i for i in model.issues if i.source != "code"]  # what the model checks and the space names said stays on record

@@ -1,0 +1,193 @@
+{
+  "case": "plan6",
+  "floor": "ground",
+  "model": "muse-spark-1.3",
+  "time": "2026-10-27T13:38:30",
+  "extraction": {
+    "floor": "ground",
+    "wall_runs": [
+      {
+        "label": "External E-W walls North and South - overall",
+        "length_mm": 19430,
+        "kind": "end_to_end",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": true,
+        "evidence": "19430 printed on top second chain and bottom overall chain spanning outer faces"
+      },
+      {
+        "label": "External N-S side walls East and West - overall",
+        "length_mm": 17150,
+        "kind": "end_to_end",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": true,
+        "evidence": "17150 printed on left/right vertical overall chain"
+      },
+      {
+        "label": "Unit E-W width outer centre to party centre",
+        "length_mm": 9600,
+        "kind": "centre_line",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "9600 printed top second chain left and right of 230 party wall; 9600+230+9600=19430"
+      },
+      {
+        "label": "Grid bay 1-2 and 6-7",
+        "length_mm": 1800,
+        "kind": "centre_line",
+        "thickness_mm": null,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "1800 printed topmost grid chain over 1-2 and 6-7 and bottom 1800 chain"
+      },
+      {
+        "label": "Grid bay 5-6",
+        "length_mm": 3600,
+        "kind": "centre_line",
+        "thickness_mm": null,
+        "end_thickness_mm": null,
+        "count": 1,
+        "external": false,
+        "evidence": "3600 printed topmost grid chain between 5-6"
+      },
+      {
+        "label": "Staff Rm clear width",
+        "length_mm": 2770,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "2770 written inside G009/G020 STAFF RM."
+      },
+      {
+        "label": "Guest Bedroom clear width",
+        "length_mm": 3370,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "3370 written inside G007/G018 GUEST BEDROOM"
+      },
+      {
+        "label": "Bathroom clear width",
+        "length_mm": 1570,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "1570 written inside G008/G019 BATHROOM"
+      },
+      {
+        "label": "Kitchen clear width",
+        "length_mm": 3970,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "3970 written inside G005/G016 KITCHEN"
+      },
+      {
+        "label": "Dining clear width",
+        "length_mm": 3970,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "3970 written inside G004/G015 DINING"
+      },
+      {
+        "label": "Living Room clear length left",
+        "length_mm": 5250,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 1,
+        "external": false,
+        "evidence": "5250 written inside G002 LIVING ROOM"
+      },
+      {
+        "label": "Living Room clear length right",
+        "length_mm": 5285,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 1,
+        "external": false,
+        "evidence": "5285 written inside G013 LIVING ROOM"
+      },
+      {
+        "label": "Entrance Porch clear width",
+        "length_mm": 4350,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "4350 written inside G001/G012 ENTRANCE PORCH"
+      },
+      {
+        "label": "V.T. clear width",
+        "length_mm": 1720,
+        "kind": "in_to_in",
+        "thickness_mm": 150,
+        "end_thickness_mm": [
+          230,
+          230
+        ],
+        "count": 2,
+        "external": false,
+        "evidence": "1720 written inside G003/G014 V.T. with 150 wall labels flanking"
+      },
+      {
+        "label": "Pantry clear length",
+        "length_mm": 3685,
+        "kind": "in_to_in",
+        "thickness_mm": 230,
+        "end_thickness_mm": null,
+        "count": 2,
+        "external": false,
+        "evidence": "3685 written inside G006/G017 PANTRY"
+      }
+    ],
+    "questions": [
+      "Confirm external wall thickness - 230 labels seen on outer and party walls; are all external walls 230mm?",
+      "Confirm internal partition thickness - 150 seen near V.T. vs 230 elsewhere; which internal walls are 150mm vs 230mm?",
+      "Confirm N-S overall 17150 vs 10230+6900 breakdown - which vertical chain represents masonry girth?",
+      "Confirm grid 2-3-4 dimensions (3400? 4200?) - top chain partially legible; provide clear grid-to-grid centre-line values for grids 2-3 and 3-4?",
+      "Are pantry/terrace dwarf walls and entrance porch 400/450 upstands masonry? Thicknesses 400/450 seen at south end - include or exclude from girth?"
+    ]
+  },
+  "girth": {
+    "ground_ext_girth_230_m": 72.24,
+    "ground_int_girth_230_m": 80.8,
+    "ground_int_girth_150_m": 3.9,
+    "ground_total_girth_150_m": 3.9,
+    "ground_total_girth_230_m": 153.04
+  },
+  "pct_error": {
+    "ground_ext_girth_230_m": 26.7,
+    "ground_int_girth_230_m": 4.2,
+    "ground_int_girth_150_m": 33.6,
+    "ground_total_girth_230_m": 16.3
+  },
+  "questions": [
+    "Confirm external wall thickness - 230 labels seen on outer and party walls; are all external walls 230mm?",
+    "Confirm internal partition thickness - 150 seen near V.T. vs 230 elsewhere; which internal walls are 150mm vs 230mm?",
+    "Confirm N-S overall 17150 vs 10230+6900 breakdown - which vertical chain represents masonry girth?",
+    "Confirm grid 2-3-4 dimensions (3400? 4200?) - top chain partially legible; provide clear grid-to-grid centre-line values for grids 2-3 and 3-4?",
+    "Are pantry/terrace dwarf walls and entrance porch 400/450 upstands masonry? Thicknesses 400/450 seen at south end - include or exclude from girth?",
+    "Grid bay 1-2 and 6-7: wall thickness or length is not readable on the drawing.",
+    "Grid bay 5-6: wall thickness or length is not readable on the drawing."
+  ]
+}
