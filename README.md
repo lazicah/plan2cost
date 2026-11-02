@@ -53,14 +53,14 @@ After the model-checked wall pass, plan 2's ground floor measures 111.7 m agains
 
 ## Built during the hackathon (Oct 27 to Nov 4, 2026)
 
-Everything in this repository. Nothing existed before: the author is a quantity surveyor and used professional experience, textbooks and public sites for the measurement conventions, rates and coefficients, with sources named in `data/` and `CLAUDE.md`. The author's own bills and drawings used for checking are not in this repo.
+Everything in this repository. Nothing existed before: the author is a quantity surveyor and used professional experience, textbooks and public sites for the measurement conventions, rates and coefficients, with sources named in `data/` and `CLAUDE.md`. The author's own bills and drawings used for checking are not in this repo, except one sample plan with its title block blanked (`samples/plan2/`), shared with permission for testing.
 
 ## Models
 
 Plan 10 (one-storey bungalow) was run end to end on both hosts, the same code and the same plan. Muse Spark through the Meta Model API: external walls 36.2 m, internal 19.0 m, 11 windows and 4 doors, estimate 22.4M naira.
 Muse Spark Open on Baseten (`P2C_PROFILE=open`): external 36.8 m, internal 25.1 m, 11 windows and 4 doors, estimate 23.0M naira (+2.5%), 3 turns and about 3.5 minutes. The differences are in the walls the model checks add or leave.
 
-Every model call goes through an OpenAI-compatible endpoint: Muse Spark through the Meta Model API, or Muse Spark Open on Baseten (`P2C_PROFILE=open`). Configure it in `.env`. **Muse Voice Transcribe** is in the new-estimate form: press the microphone, say the storey height, roof type, finish level and so on, and the form is filled from what was heard (the transcript is shown and the fields stay editable); it always uses the Meta Model API. SAM 3.1 is planned for the site-photo check and is not in the estimate flow yet.
+Every model call goes through an OpenAI-compatible endpoint: Muse Spark through the Meta Model API, or Muse Spark Open on Baseten (`P2C_PROFILE=open`). Configure it in `.env`. **Muse Voice Transcribe** is in the new-estimate form: press the microphone, say the storey height, roof type, finish level and so on, and the form is filled from what was heard (the transcript is shown and the fields stay editable); it always uses the Meta Model API. **Muse Image** turns the 3D view into a realistic picture, and **SAM 3.1** outlines and counts its windows and doors (with Muse Spark as a second counter) to check the picture against the measured model; a picture never sets a quantity.
 
 ## AI assistance
 
@@ -92,6 +92,7 @@ eval/         ground-truth cases, the scripts that score the wall and opening re
 ui/           console: server.py (standard library only), index.html and the scripts it loads in order (app.js: form and run view, voice.js: voice input, view3d.js: 3D view and picture,
               main.js: start-up), style.css; new estimate form with voice input, live progress, annotated plans, BoQ with ranges, bills, 3D view, quote and bid audit
 docs/         the measurement strategy (measurement-strategy.md)
+samples/      a sample two-storey plan to try (title block blanked), with the inputs used in the demo
 tests/        unit tests (python -m pytest -q)
 ```
 
@@ -102,7 +103,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # add your key
 python -m pytest -q
-python -m plan2cost.agent --floor ground=ground.pdf --floor first=first.jpg --storey-height 3.0 --roof hip
+python -m plan2cost.agent --floor ground=samples/plan2/ground.png --floor first=samples/plan2/first.png --storey-height 3.0 --roof hip   # the sample plan
 python ui/server.py   # the console
 ```
 
